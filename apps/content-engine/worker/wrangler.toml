@@ -1,0 +1,25 @@
+name = "content-engine"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Serve the built React client from the worker
+[assets]
+directory = "../client/dist"
+binding = "ASSETS"
+
+[vars]
+NODE_ENV = "production"
+
+# Cron trigger — runs comment agent every 4 hours
+[triggers]
+crons = ["0 */4 * * *"]
+
+# Secrets — set via: wrangler secret put KEY_NAME
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
+# ELEVENLABS_API_KEY
+# WHATSAPP_TOKEN
+# WHATSAPP_PHONE_NUMBER_ID
+# YOUTUBE_API_KEY
+# OPENAI_API_KEY
