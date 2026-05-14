@@ -46,9 +46,9 @@ export default function App() {
               Escale Suas Operações
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="flex items-center justify-center gap-2 border-2 border-[#A31621] text-[#A31621] px-8 py-4 font-bold tracking-wide text-lg hover:bg-[#A31621]/5 transition-colors">
+            <a href="#sistemas" className="flex items-center justify-center gap-2 border-2 border-[#A31621] text-[#A31621] px-8 py-4 font-bold tracking-wide text-lg hover:bg-[#A31621]/5 transition-colors">
               Ver Nossos Sistemas
-            </button>
+            </a>
           </div>
         </div>
 
@@ -119,6 +119,50 @@ export default function App() {
                 Copy psicologicamente projetada que fala diretamente com os desejos do seu mercado local, gerando urgência e aumentando o LTV (Lifetime Value) do cliente.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Seção Sistemas */}
+      <section id="sistemas" className="bg-[#F5F4F0] py-24">
+        <div className="max-w-7xl mx-auto px-6 md:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-[#A31621] tracking-tight mb-4">Nossos Sistemas</h2>
+            <p className="text-lg text-[#555555] max-w-2xl mx-auto font-medium">
+              Ferramentas e integrações que conectam cada ponto da jornada do cliente — do primeiro contato ao pós-venda automatizado.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                tag: '01',
+                title: 'CRM Inteligente',
+                desc: 'Pipeline de vendas com scoring automático de leads, segmentação comportamental e alertas em tempo real para sua equipe fechar mais negócios.',
+              },
+              {
+                tag: '02',
+                title: 'Sequências de E-mail & WhatsApp',
+                desc: 'Fluxos multicanal disparados por gatilhos de comportamento — abandono de carrinho, aniversário, inatividade — sem nenhuma ação manual.',
+              },
+              {
+                tag: '03',
+                title: 'Páginas de Alta Conversão',
+                desc: 'Landing pages e checkouts otimizados com testes A/B contínuos, integrados diretamente ao seu sistema de pagamento e CRM.',
+              },
+              {
+                tag: '04',
+                title: 'Relatórios & Analytics',
+                desc: 'Dashboard unificado com métricas de CAC, LTV, taxa de recompra e ROI por canal — tudo em tempo real para decisões baseadas em dados.',
+              },
+            ].map((item) => (
+              <div key={item.tag} className="flex gap-6 p-8 border border-[#A31621]/10 bg-white/60 hover:border-[#A31621]/30 hover:shadow-lg transition-all duration-300 group">
+                <span className="text-4xl font-extrabold text-[#A31621]/15 group-hover:text-[#A31621]/25 transition-colors leading-none select-none">{item.tag}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-[#A31621] mb-2 uppercase tracking-wide">{item.title}</h3>
+                  <p className="text-[#555555] leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
