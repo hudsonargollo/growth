@@ -1,10 +1,102 @@
 import { db } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
 
+// ── Scoring ───────────────────────────────────────────────────────────────────
 function scoreProduct(p) {
-  return Math.round((p.rating / 5) * 40 + Math.min(p.reviews / 10000, 1) * 30 + Math.max(0, (1 - p.price / 500)) * 30)
+  const ratingScore = (p.rating / 5) * 40
+  const reviewScore = Math.min(p.reviews / 10000, 1) * 30
+  const priceScore  = Math.max(0, (1 - p.price / 500)) * 30
+  return Math.round(ratingScore + reviewScore + priceScore)
 }
 
+// ── MercadoLibre OAuth app token ──────────────────────────────────────────────
+async function getMercadoLibreToken() {
+  if (!process.env.ML_APP_ID || !process.env.ML_CLIENT_SECRET) {
+    throw new Error(
+      'MercadoLibre credentials not configured.\n' +
+      '1. Create a free app at https://developers.mercadolibre.com\n' +
+      '2. Set ML_APP_ID and ML_CLIENT_SECRET in server/.env'
+    )
+  }
+
+  const res = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'client_credentials',
+      client_id:     process.env.ML_APP_ID,
+      client_secret: process.env.ML_CLIENT_SECRET,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`MercadoLibre auth failed: ${err.message ?? res.status}`)
+  }
+
+  const json = await res.json()
+  return json.access_token
+}
+
+// ── MercadoLibre search ───────────────────────────────────────────────────────
+const ML_SITE_MAP = {
+  brazil:    'MLB',
+  argentina: 'MLA',
+  mexico:    'MLM',
+  chile:     'MLC',
+  colombia:  'MCO',
+}
+
+async function fetchMercadoLibre({ category, limit = 20 }) {
+  const token  = await getMercadoLibreToken()
+  const siteId = ML_SITE_MAP[process.env.ML_SITE ?? 'brazil'] ?? 'MLB'
+  const query  = encodeURIComponent(category)
+  const url    = `https://api.mercadolibre.com/sites/${siteId}/search?q=${query}&limit=${limit}&sort=relevance`
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`MercadoLibre search error ${res.status}: ${err.slice(0, 200)}`)
+  }
+
+  const json    = await res.json()
+  const results = json.results ?? []
+
+  if (results.length === 0) {
+    console.warn(`[mining] MercadoLibre returned 0 results for "${category}" on site ${siteId}`)
+  }
+
+  return results.map((item) => ({
+    id:            uid(),
+    marketplace:   'mercadolibre',
+    title:         item.title,
+    price:         item.price ?? 0,
+    rating:        item.reviews?.rating_average ?? 0,
+    reviews:       item.reviews?.total ?? 0,
+    affiliateLink: item.permalink ?? '',
+    imageUrl:      item.thumbnail ?? '',
+    currency:      item.currency_id ?? 'BRL',
+    sourceApi:     'mercadolibre',
+    lastSeen:      new Date().toISOString(),
+  }))
+}
+
+// ── Amazon PA-API ─────────────────────────────────────────────────────────────
+async function fetchAmazon({ category }) {
+  if (!process.env.AMAZON_ACCESS_KEY || !process.env.AMAZON_SECRET_KEY || !process.env.AMAZON_PARTNER_TAG) {
+    throw new Error(
+      'Amazon PA-API credentials not configured.\n' +
+      'Required: AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_PARTNER_TAG\n' +
+      'Note: PA-API requires an approved Amazon Associates account.'
+    )
+  }
+  throw new Error('Amazon PA-API: AWS Signature V4 signing not yet implemented.')
+}
+
+// ── Main session runner ───────────────────────────────────────────────────────
 export async function runMiningSession({ marketplace, category }) {
   console.log(`[mining] Starting — marketplace: ${marketplace}, category: ${category}`)
   const sessionId = uid()
@@ -14,22 +106,40 @@ export async function runMiningSession({ marketplace, category }) {
   })
   if (sErr) throw new Error(sErr.message)
 
-  // TODO: Replace with real MercadoLibre / Amazon API calls
-  const products = Array.from({ length: 5 }, (_, i) => ({
-    id:            uid(),
-    marketplace,
-    title:         `Stub Product ${i + 1} (${category})`,
-    price:         Math.round(20 + Math.random() * 280),
-    rating:        +(3.5 + Math.random() * 1.5).toFixed(1),
-    reviews:       Math.round(100 + Math.random() * 9900),
-    affiliateLink: `https://example.com/product/${i}`,
-    imageUrl:      '',
-    currency:      'USD',
-    sourceApi:     marketplace,
-    lastSeen:      new Date().toISOString(),
-  })).map((p) => ({ ...p, score: scoreProduct(p) }))
+  const rawProducts = []
+  const errors      = []
 
-  const { data: saved, error: pErr } = await db.from('products').insert(products).select()
+  if (marketplace === 'mercadolibre' || marketplace === 'both') {
+    try {
+      const items = await fetchMercadoLibre({ category })
+      rawProducts.push(...items)
+      console.log(`[mining] MercadoLibre: ${items.length} products for "${category}"`)
+    } catch (e) {
+      errors.push(`MercadoLibre: ${e.message}`)
+      console.error('[mining] MercadoLibre error:', e.message)
+    }
+  }
+
+  if (marketplace === 'amazon' || marketplace === 'both') {
+    try {
+      const items = await fetchAmazon({ category })
+      rawProducts.push(...items)
+    } catch (e) {
+      errors.push(`Amazon: ${e.message}`)
+      console.error('[mining] Amazon error:', e.message)
+    }
+  }
+
+  if (rawProducts.length === 0) {
+    await db.from('mining_sessions').update({
+      status: 'failed', completedAt: new Date().toISOString(),
+    }).eq('id', sessionId)
+    throw new Error(errors.join(' | '))
+  }
+
+  const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p) }))
+
+  const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
   if (pErr) throw new Error(pErr.message)
 
   const entries = saved.map((p) => ({
@@ -43,21 +153,36 @@ export async function runMiningSession({ marketplace, category }) {
   if (eErr) throw new Error(eErr.message)
 
   await db.from('mining_sessions').update({
-    status: 'completed', productCount: saved.length, completedAt: new Date().toISOString(),
+    status:       'completed',
+    productCount: saved.length,
+    completedAt:  new Date().toISOString(),
   }).eq('id', sessionId)
 
   console.log(`[mining] Complete — ${saved.length} products saved`)
-  return { status: 'completed', sessionId, count: saved.length }
+  return {
+    status:   'completed',
+    sessionId,
+    count:    saved.length,
+    warnings: errors.length > 0 ? errors : undefined,
+  }
 }
 
 export async function getCatalog() {
-  const { data, error } = await db.from('products').select('*').order('score', { ascending: false }).limit(100)
+  const { data, error } = await db
+    .from('products')
+    .select('*')
+    .order('score', { ascending: false })
+    .limit(100)
   if (error) throw new Error(error.message)
   return data
 }
 
 export async function getSessions() {
-  const { data, error } = await db.from('mining_sessions').select('*').order('createdAt', { ascending: false }).limit(20)
+  const { data, error } = await db
+    .from('mining_sessions')
+    .select('*')
+    .order('createdAt', { ascending: false })
+    .limit(20)
   if (error) throw new Error(error.message)
   return data
 }
