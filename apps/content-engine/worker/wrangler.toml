@@ -20,7 +20,13 @@ crons = ["0 */4 * * *"]
 # Required for mining:
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY
-#   MERCADOLIBRE_TOKEN          (optional — public search works without it)
+#   ML_APP_ID                   (MercadoLibre app — developers.mercadolibre.com)
+#   ML_CLIENT_SECRET            (MercadoLibre app secret)
+#
+# MercadoPago (payments — already set):
+#   MERCADOPAGO_ACCESS_TOKEN    ✓ set
+#   MERCADOPAGO_CLIENT_ID       ✓ set
+#   MERCADOPAGO_CLIENT_SECRET   ✓ set
 #
 # Required for scripts:
 #   OPENAI_API_KEY
