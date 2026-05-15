@@ -1,9 +1,49 @@
-import React from 'react';
-import { ArrowRight, Cpu, Layers, Workflow } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { ArrowRight, Cpu, Layers, Workflow, LogIn } from 'lucide-react'
+import { supabase } from './lib/supabase.js'
+import AuthModal from './components/AuthModal.jsx'
+import TeamDashboard from './pages/TeamDashboard.jsx'
 
 export default function App() {
+  const [user, setUser]           = useState(null)
+  const [showAuth, setShowAuth]   = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Restore session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+      setAuthLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Show dashboard if logged in
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#A31621] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (user) {
+    return <TeamDashboard user={user} onLogout={() => setUser(null)} />
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F4F0] text-[#1A1A1A] font-sans antialiased selection:bg-[#A31621] selection:text-[#F5F4F0]">
+
+      {/* Auth Modal */}
+      {showAuth && (
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onSuccess={(u) => { setUser(u); setShowAuth(false) }}
+        />
+      )}
 
       {/* Navegação */}
       <nav className="flex items-center justify-between px-6 md:px-8 py-6 max-w-7xl mx-auto border-b border-[#A31621]/10">
@@ -22,9 +62,19 @@ export default function App() {
           <a href="#sistemas" className="hover:text-[#A31621] transition-colors">SISTEMAS</a>
           <a href="#contato" className="hover:text-[#A31621] transition-colors">CONTATO</a>
         </div>
-        <button className="hidden sm:block bg-[#A31621] text-[#F5F4F0] px-6 py-2.5 font-bold tracking-wide hover:bg-[#8B121C] transition-all duration-300">
-          SOLICITAR AUDITORIA
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Login button */}
+          <button
+            onClick={() => setShowAuth(true)}
+            className="flex items-center gap-2 border border-[#A31621] text-[#A31621] px-4 py-2 text-sm font-bold tracking-wide hover:bg-[#A31621] hover:text-[#F5F4F0] transition-all duration-300"
+          >
+            <LogIn size={15} />
+            ENTRAR
+          </button>
+          <button className="hidden sm:block bg-[#A31621] text-[#F5F4F0] px-6 py-2.5 font-bold tracking-wide hover:bg-[#8B121C] transition-all duration-300">
+            SOLICITAR AUDITORIA
+          </button>
+        </div>
       </nav>
 
       {/* Seção Hero */}
@@ -52,7 +102,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Elemento Visual Hero (Dashboard ao Vivo) */}
+        {/* Elemento Visual Hero */}
         <div className="relative w-full max-w-md mx-auto lg:max-w-none">
           <div className="absolute inset-0 bg-gradient-to-tr from-[#A31621]/5 to-transparent z-0 transform translate-x-4 translate-y-4"></div>
           <div className="relative z-10 border border-[#A31621]/20 bg-[#F5F4F0] p-6 md:p-8 shadow-2xl">
@@ -134,26 +184,10 @@ export default function App() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              {
-                tag: '01',
-                title: 'CRM Inteligente',
-                desc: 'Pipeline de vendas com scoring automático de leads, segmentação comportamental e alertas em tempo real para sua equipe fechar mais negócios.',
-              },
-              {
-                tag: '02',
-                title: 'Sequências de E-mail & WhatsApp',
-                desc: 'Fluxos multicanal disparados por gatilhos de comportamento — abandono de carrinho, aniversário, inatividade — sem nenhuma ação manual.',
-              },
-              {
-                tag: '03',
-                title: 'Páginas de Alta Conversão',
-                desc: 'Landing pages e checkouts otimizados com testes A/B contínuos, integrados diretamente ao seu sistema de pagamento e CRM.',
-              },
-              {
-                tag: '04',
-                title: 'Relatórios & Analytics',
-                desc: 'Dashboard unificado com métricas de CAC, LTV, taxa de recompra e ROI por canal — tudo em tempo real para decisões baseadas em dados.',
-              },
+              { tag: '01', title: 'CRM Inteligente', desc: 'Pipeline de vendas com scoring automático de leads, segmentação comportamental e alertas em tempo real para sua equipe fechar mais negócios.' },
+              { tag: '02', title: 'Sequências de E-mail & WhatsApp', desc: 'Fluxos multicanal disparados por gatilhos de comportamento — abandono de carrinho, aniversário, inatividade — sem nenhuma ação manual.' },
+              { tag: '03', title: 'Páginas de Alta Conversão', desc: 'Landing pages e checkouts otimizados com testes A/B contínuos, integrados diretamente ao seu sistema de pagamento e CRM.' },
+              { tag: '04', title: 'Relatórios & Analytics', desc: 'Dashboard unificado com métricas de CAC, LTV, taxa de recompra e ROI por canal — tudo em tempo real para decisões baseadas em dados.' },
             ].map((item) => (
               <div key={item.tag} className="flex gap-6 p-8 border border-[#A31621]/10 bg-white/60 hover:border-[#A31621]/30 hover:shadow-lg transition-all duration-300 group">
                 <span className="text-4xl font-extrabold text-[#A31621]/15 group-hover:text-[#A31621]/25 transition-colors leading-none select-none">{item.tag}</span>
@@ -167,7 +201,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* Seção Footer / CTA */}
+      {/* Footer / CTA */}
       <footer id="contato" className="bg-[#1A1A1A] py-16 px-6 md:px-8 text-[#F5F4F0]">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 border-b border-white/10 pb-16 mb-8">
           <div className="max-w-xl">
@@ -180,7 +214,7 @@ export default function App() {
         </div>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-[#777777] gap-6">
           <div className="flex items-center gap-3">
-            <svg width="24" height="14" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="24" height="14" viewBox="0 0 40 24" fill="none">
               <path d="M2 3.5L18 12L2 20.5V3.5Z" stroke="#F5F4F0" strokeWidth="3" strokeLinejoin="round"/>
               <path d="M38 3.5L22 12L38 20.5V3.5Z" stroke="#F5F4F0" strokeWidth="3" strokeLinejoin="round"/>
             </svg>
@@ -194,5 +228,5 @@ export default function App() {
       </footer>
 
     </div>
-  );
+  )
 }
