@@ -118,7 +118,19 @@ model CommentReplyJob {
   @@map("comment_reply_jobs")
 }
 
-// ─── Mining Sessions ─────────────────────────────────────────────────────────
+// ─── Tool Credentials ────────────────────────────────────────────────────────
+
+model ToolCredential {
+  id               String   @id @default(cuid())
+  toolId           String   @unique
+  login            String   @default("")
+  passwordEncrypted String  @default("") // AES-GCM encrypted, base64url
+  iv               String   @default("") // base64url initialisation vector
+  updatedAt        DateTime @updatedAt
+  updatedBy        String   @default("") // user_id
+
+  @@map("tool_credentials")
+}
 
 model MiningSession {
   id          String   @id @default(cuid())

@@ -6,10 +6,15 @@ import { generateScript, listScripts }                        from './services/s
 import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
+import credentialsRouter                                      from './routes/credentials.js'
 
 const app = new Hono()
 
-app.use('*', cors())
+app.use('*', cors({
+  origin: ['https://growth-clube.hudsonargollo2.workers.dev', 'http://localhost:5173', 'http://localhost:5174'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+}))
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() }))
@@ -82,6 +87,9 @@ app.post('/api/comments/:id/reject', async (c) => {
   const result = await reviewComment(c.env, c.req.param('id'), 'rejected')
   return c.json(result)
 })
+
+// ── Credentials (encrypted) ───────────────────────────────────────────────────
+app.route('/api/credentials', credentialsRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.onError((err, c) => {
