@@ -3,23 +3,40 @@ main = "src/index.js"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Serve the built React client from the worker
 [assets]
 directory = "../client/dist"
 binding = "ASSETS"
 
 [vars]
-NODE_ENV = "production"
+NODE_ENV    = "production"
+LLM_MODEL   = "gpt-4o-mini"
+ML_SITE     = "brazil"   # MercadoLibre site: brazil | argentina | mexico | chile | colombia
 
 # Cron trigger — runs comment agent every 4 hours
 [triggers]
 crons = ["0 */4 * * *"]
 
-# Secrets — set via: wrangler secret put KEY_NAME
-# SUPABASE_URL
-# SUPABASE_SERVICE_ROLE_KEY
-# ELEVENLABS_API_KEY
-# WHATSAPP_TOKEN
-# WHATSAPP_PHONE_NUMBER_ID
-# YOUTUBE_API_KEY
-# OPENAI_API_KEY
+# ── Secrets (set via: wrangler secret put KEY_NAME) ───────────────────────────
+# Required for mining:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   MERCADOLIBRE_TOKEN          (optional — public search works without it)
+#
+# Required for scripts:
+#   OPENAI_API_KEY
+#
+# Required for voiceover:
+#   ELEVENLABS_API_KEY
+#
+# Required for delivery:
+#   WHATSAPP_TOKEN
+#   WHATSAPP_PHONE_NUMBER_ID
+#
+# Required for comment agent:
+#   YOUTUBE_API_KEY
+#   YOUTUBE_CHANNEL_ID          (or YOUTUBE_VIDEO_IDS = "id1,id2,id3")
+#   YOUTUBE_OAUTH_TOKEN         (optional — needed to actually post replies)
+#   OPENAI_API_KEY
+#
+# Encryption:
+#   CREDENTIALS_SECRET          (32-byte hex — already set)

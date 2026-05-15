@@ -92,7 +92,7 @@ function CredentialRow({ label, value, isPassword, isAdmin, onSave }) {
         </div>
       ) : (
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          <span className="text-xs text-gray-700 truncate flex-1 font-mono">{display}</span>
+          <span className="text-sm text-gray-700 truncate flex-1 font-mono">{display}</span>
           {isPassword && value && (
             <button onClick={(e) => { e.stopPropagation(); setShowPass((s) => !s) }}
               className="p-1 rounded hover:bg-gray-100 text-gray-400 shrink-0">
@@ -118,40 +118,40 @@ function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave })
   const creds = tool.credentials ?? { login: '', password: '' }
 
   return (
-    <div className={`group flex flex-col gap-4 p-5 border rounded-2xl transition-all duration-200 ${
+    <div className={`group flex flex-col gap-5 p-6 border rounded-2xl transition-all duration-200 ${
       granted
-        ? 'bg-white border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5'
+        ? 'bg-white border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
         : 'bg-gray-50/60 border-gray-100 opacity-50'
     }`}>
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
           style={{ backgroundColor: tool.color + '18' }}>
-          <Icon size={20} style={{ color: tool.color }} />
+          <Icon size={26} style={{ color: tool.color }} />
         </div>
         {isAdmin ? (
           <button onClick={() => onToggle(tool.id)}
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
+            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
               granted ? 'bg-[#A31621] border-[#A31621]' : 'border-gray-300 hover:border-[#A31621]'
             }`}>
-            {granted && <Check size={11} className="text-white" />}
+            {granted && <Check size={13} className="text-white" />}
           </button>
         ) : (
-          granted ? <Unlock size={14} className="text-green-500" /> : <Lock size={14} className="text-gray-300" />
+          granted ? <Unlock size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-300" />
         )}
       </div>
 
       {/* Name + desc */}
       <div>
-        <p className="font-bold text-gray-900 text-base leading-tight">{tool.name}</p>
-        <p className="text-xs text-gray-400 mt-1">{tool.desc}</p>
+        <p className="font-bold text-gray-900 text-lg leading-tight">{tool.name}</p>
+        <p className="text-sm text-gray-400 mt-1">{tool.desc}</p>
       </div>
 
       {/* Credentials */}
       {granted && (
-        <div className="bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-100">
-          <div className="flex items-center gap-1.5 mb-2">
-            <KeyRound size={11} className="text-gray-300" />
+        <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 border border-gray-100">
+          <div className="flex items-center gap-1.5 mb-1">
+            <KeyRound size={12} className="text-gray-300" />
             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Credenciais</span>
           </div>
           <CredentialRow label="Login" value={creds.login} isPassword={false}
@@ -164,8 +164,8 @@ function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave })
       {/* Open link */}
       {granted && (
         <a href={tool.url} target="_blank" rel="noreferrer"
-          className="mt-auto flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-lg py-2 transition-colors">
-          Abrir <ExternalLink size={12} />
+          className="mt-auto flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-xl py-3 transition-colors">
+          Abrir <ExternalLink size={14} />
         </a>
       )}
     </div>
@@ -546,7 +546,7 @@ export default function TeamDashboard({ user, onLogout }) {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTools.map((tool) => (
                   <DesktopToolCard key={tool.id}
                     tool={{ ...tool, credentials: credentials[tool.id] }}
