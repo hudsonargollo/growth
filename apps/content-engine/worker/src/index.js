@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
 import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
+import { generateNicheReport }                                from './services/nicheService.js'
 import { getDb }                                              from './lib/db.js'
 import { generateScript, listScripts }                        from './services/scriptService.js'
 import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
@@ -32,9 +33,16 @@ app.get('/api/mining/sessions', async (c) => {
   return c.json({ sessions })
 })
 app.post('/api/mining/run', async (c) => {
-  const { marketplace = 'amazon', category = 'electronics' } = await c.req.json()
-  const result = await runMiningSession(c.env, { marketplace, category })
+  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
+  const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
   return c.json(result)
+})
+
+// ── Niche intelligence ────────────────────────────────────────────────────────
+app.post('/api/mining/niches/generate', async (c) => {
+  const { format = 'longform' } = await c.req.json().catch(() => ({}))
+  const report = await generateNicheReport(c.env, { format })
+  return c.json(report)
 })
 
 // ── Scripts ───────────────────────────────────────────────────────────────────

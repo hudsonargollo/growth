@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Play, RefreshCw, ShoppingBag, AlertTriangle, CheckCircle2,
   ExternalLink, Link2, Check, X, Pencil, Search, ChevronDown, ChevronUp,
+  Sparkles, TrendingUp, Users, DollarSign, Target, Zap, Video, Clapperboard,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
@@ -140,6 +141,217 @@ function ProductRow({ product, onSaveAffiliateLink }) {
   )
 }
 
+// ── Saturation badge ──────────────────────────────────────────────────────────
+const satColors = {
+  baixa: 'bg-green-100 text-green-700',
+  média: 'bg-yellow-100 text-yellow-700',
+  alta:  'bg-red-100 text-red-700',
+}
+
+// ── Niche card ────────────────────────────────────────────────────────────────
+function NicheCard({ niche, onMine }) {
+  const [expanded, setExpanded] = useState(false)
+  const totalScore = Object.values(niche.scores ?? {}).reduce((a, b) => a + b, 0)
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+              {niche.rank}
+            </span>
+            <h4 className="font-semibold text-gray-800 text-sm leading-tight">{niche.category}</h4>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? 'bg-gray-100 text-gray-600'}`}>
+              {niche.saturation}
+            </span>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              {totalScore} pts
+            </span>
+          </div>
+        </div>
+
+        {/* Score bars */}
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          {[
+            { key: 'earningPotential', label: 'Comissão', icon: DollarSign },
+            { key: 'retention',        label: 'Retenção',  icon: TrendingUp },
+            { key: 'researchability',  label: 'Pesquisa',  icon: Target },
+            { key: 'evergreen',        label: 'Perenidade',icon: Zap },
+          ].map(({ key, label, icon: Icon }) => (
+            <div key={key} className="text-center">
+              <div className="flex items-center justify-center gap-0.5 mb-0.5">
+                <Icon size={9} className="text-gray-400" />
+                <span className="text-[9px] text-gray-400 uppercase tracking-wide">{label}</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full transition-all"
+                  style={{ width: `${(niche.scores?.[key] ?? 0) * 10}%` }} />
+              </div>
+              <span className="text-[10px] font-semibold text-gray-600">{niche.scores?.[key]}/10</span>
+            </div>
+          ))}
+        </div>
+
+        {/* SEO title */}
+        <p className="text-xs text-gray-500 italic mb-3 line-clamp-1">"{niche.seoTitle}"</p>
+
+        {/* Commission + type */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <span className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+            <DollarSign size={10} /> {niche.commissionRange}
+          </span>
+          <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">
+            {niche.salesType}
+          </span>
+        </div>
+
+        {/* Expandable details */}
+        <button onClick={() => setExpanded(e => !e)}
+          className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1 mb-3">
+          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {expanded ? 'Menos detalhes' : 'Ver análise completa'}
+        </button>
+
+        {expanded && (
+          <div className="space-y-3 mb-3 text-xs text-gray-600">
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Users size={11} /> Público-alvo</p>
+              <p>{niche.targetAudience}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Target size={11} /> Ângulo da review</p>
+              <p>{niche.reviewAngle}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que encaixa no canal</p>
+              <p>{niche.whyItFits}</p>
+            </div>
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+              <p className="font-semibold text-indigo-700 mb-1">🎣 Gancho de abertura</p>
+              <p className="italic text-indigo-800">"{niche.hook}"</p>
+            </div>
+          </div>
+        )}
+
+        <button onClick={() => onMine(niche)}
+          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+          <Play size={12} />
+          Minerar produtos desta categoria
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Short-form niche card ─────────────────────────────────────────────────────
+function ShortNicheCard({ niche, onMine }) {
+  const [expanded, setExpanded] = useState(false)
+  const totalScore = Object.values(niche.scores ?? {}).reduce((a, b) => a + b, 0)
+
+  const ticketColors = {
+    'baixo ticket impulso':     'bg-blue-100 text-blue-700',
+    'médio ticket considerado': 'bg-purple-100 text-purple-700',
+    'alto ticket considerado':  'bg-orange-100 text-orange-700',
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-pink-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+              {niche.rank}
+            </span>
+            <h4 className="font-semibold text-gray-800 text-sm leading-tight">{niche.category}</h4>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? 'bg-gray-100 text-gray-600'}`}>
+              {niche.saturation}
+            </span>
+            <span className="text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+              {totalScore} pts
+            </span>
+          </div>
+        </div>
+
+        {/* Score bars */}
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          {[
+            { key: 'earningPotential', label: 'Comissão',  icon: DollarSign },
+            { key: 'viralPotential',   label: 'Viral',     icon: TrendingUp },
+            { key: 'beginnerFriendly', label: 'Facilidade',icon: Zap },
+            { key: 'evergreen',        label: 'Perenidade',icon: Target },
+          ].map(({ key, label, icon: Icon }) => (
+            <div key={key} className="text-center">
+              <div className="flex items-center justify-center gap-0.5 mb-0.5">
+                <Icon size={9} className="text-gray-400" />
+                <span className="text-[9px] text-gray-400 uppercase tracking-wide">{label}</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-pink-500 rounded-full transition-all"
+                  style={{ width: `${(niche.scores?.[key] ?? 0) * 10}%` }} />
+              </div>
+              <span className="text-[10px] font-semibold text-gray-600">{niche.scores?.[key]}/10</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Ticket type + commission */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <span className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+            <DollarSign size={10} /> {niche.commissionRange}
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ticketColors[niche.ticketType] ?? 'bg-gray-100 text-gray-600'}`}>
+            {niche.ticketType}
+          </span>
+        </div>
+
+        {/* Hook — always visible for short-form since it's the core asset */}
+        <div className="bg-pink-50 border border-pink-100 rounded-lg p-3 mb-3">
+          <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider mb-1">⚡ Gancho — primeiros 3 segundos</p>
+          <p className="text-xs italic text-pink-900 font-medium">"{niche.hook}"</p>
+        </div>
+
+        <button onClick={() => setExpanded(e => !e)}
+          className="text-xs text-pink-500 hover:text-pink-700 flex items-center gap-1 mb-3">
+          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {expanded ? 'Menos detalhes' : 'Ver análise completa'}
+        </button>
+
+        {expanded && (
+          <div className="space-y-3 mb-3 text-xs text-gray-600">
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Clapperboard size={11} /> Melhor estilo de vídeo</p>
+              <p>{niche.bestVideoStyle}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Video size={11} /> Ângulo mais fácil</p>
+              <p>{niche.easiestContentAngle}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Users size={11} /> Público-alvo</p>
+              <p>{niche.targetAudience}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que funciona no short-form</p>
+              <p>{niche.whyItFitsShortForm}</p>
+            </div>
+          </div>
+        )}
+
+        <button onClick={() => onMine(niche)}
+          className="w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+          <Play size={12} />
+          Minerar produtos desta categoria
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Mining() {
   const { data: sessionsData, refetch: refetchSessions } = useApi('/mining/sessions')
@@ -150,10 +362,43 @@ export default function Mining() {
   const [mpFilter,           setMpFilter]          = useState('all')
   const [running,            setRunning]            = useState(false)
   const [marketplace,        setMarketplace]        = useState('google_shopping')
+  const [siteFilter,         setSiteFilter]         = useState('ml_amazon')
   const [category,           setCategory]           = useState('fone de ouvido')
   const [error,              setError]              = useState(null)
   const [lastResult,         setLastResult]         = useState(null)
   const [affiliateOverrides, setAffiliateOverrides] = useState({})
+
+  // Niche intelligence
+  const [nicheFormat,      setNicheFormat]      = useState('longform')
+  const [nicheReports,     setNicheReports]     = useState({})       // { longform: {...}, shortform: {...} }
+  const [nicheLoading,     setNicheLoading]     = useState(false)
+  const [nicheError,       setNicheError]       = useState(null)
+  const [nicheOpen,        setNicheOpen]        = useState(true)
+
+  const nicheReport = nicheReports[nicheFormat] ?? null
+
+  async function handleGenerateNiches() {
+    setNicheLoading(true); setNicheError(null)
+    try {
+      const res = await fetch('/api/mining/niches/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format: nicheFormat }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erro ao gerar recomendações')
+      setNicheReports(prev => ({ ...prev, [nicheFormat]: data }))
+      setNicheOpen(true)
+    } catch (e) { setNicheError(e.message) }
+    finally { setNicheLoading(false) }
+  }
+
+  function handleMineNiche(niche) {
+    setCategory(niche.category)
+    setMarketplace('google_shopping')
+    setSiteFilter('ml_amazon')
+    handleRun({ category: niche.category, marketplace: 'google_shopping', siteFilter: 'ml_amazon' })
+  }
 
   const catalogPath = selectedSessionId
     ? `/mining/catalog?sessionId=${selectedSessionId}`
@@ -178,14 +423,16 @@ export default function Mining() {
 
   const needsSetup = error?.includes('SERPAPI_KEY') || error?.includes('serpapi')
 
-  async function handleRun() {
+  async function handleRun(overrides = {}) {
     setRunning(true); setError(null); setLastResult(null)
     try {
-      const result = await apiPost('/mining/run', { marketplace, category })
+      const result = await apiPost('/mining/run', {
+        marketplace: overrides.marketplace ?? marketplace,
+        category:    overrides.category    ?? category,
+        siteFilter:  overrides.siteFilter  ?? siteFilter,
+      })
       setLastResult({ count: result.count, warnings: result.warnings })
       await Promise.all([refetchCatalog(), refetchSessions()])
-      // Auto-select the most recent session after running
-      await refetchSessions()
     } catch (e) { setError(e.message) }
     finally { setRunning(false) }
   }
@@ -212,9 +459,18 @@ export default function Mining() {
             <select value={marketplace} onChange={e => setMarketplace(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="google_shopping">Google Shopping</option>
-              <option value="amazon">Amazon</option>
+              <option value="amazon">Amazon (SerpAPI)</option>
               <option value="both">Ambos</option>
             </select>
+            {marketplace === 'google_shopping' && (
+              <select value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Todos os sites</option>
+                <option value="ml_amazon">ML + Amazon</option>
+                <option value="mercadolivre">Só Mercado Livre</option>
+                <option value="amazon">Só Amazon</option>
+              </select>
+            )}
             <input type="text" value={category} onChange={e => setCategory(e.target.value)}
               placeholder="Ex: fone de ouvido, tênis…"
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-52" />
@@ -226,6 +482,93 @@ export default function Mining() {
           </div>
         }
       />
+
+      {/* ── Niche Intelligence ─────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 mb-6">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setNicheOpen(o => !o)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+              <Sparkles size={16} className="text-indigo-500" />
+              <h3 className="font-semibold text-gray-800">Inteligência de Nicho</h3>
+            </button>
+            {/* Format toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setNicheFormat('longform')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${nicheFormat === 'longform' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Video size={11} /> Vídeos Longos
+              </button>
+              <button
+                onClick={() => setNicheFormat('shortform')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${nicheFormat === 'shortform' ? 'bg-white text-pink-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Clapperboard size={11} /> Vídeos Curtos
+              </button>
+            </div>
+            {nicheReport && (
+              <span className="text-xs text-gray-400">
+                gerado em {new Date(nicheReport.generatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGenerateNiches}
+              disabled={nicheLoading}
+              className={`flex items-center gap-1.5 disabled:opacity-60 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${nicheFormat === 'shortform' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+            >
+              {nicheLoading
+                ? <RefreshCw size={12} className="animate-spin" />
+                : <Sparkles size={12} />
+              }
+              {nicheLoading ? 'Analisando…' : nicheReport ? 'Atualizar' : 'Gerar Recomendações'}
+            </button>
+            <button onClick={() => setNicheOpen(o => !o)} className="text-gray-400 hover:text-gray-600">
+              {nicheOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          </div>
+        </div>
+
+        {nicheOpen && (
+          <div className="p-5">
+            {nicheError && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+                <AlertTriangle size={14} className="shrink-0" /> {nicheError}
+              </div>
+            )}
+            {!nicheReport && !nicheLoading && !nicheError && (
+              <div className="text-center py-8 text-gray-400">
+                {nicheFormat === 'shortform'
+                  ? <Clapperboard size={28} className="mx-auto mb-3 text-gray-300" />
+                  : <Video size={28} className="mx-auto mb-3 text-gray-300" />
+                }
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  {nicheFormat === 'shortform'
+                    ? 'Descubra nichos virais para TikTok, Reels e Shorts'
+                    : 'Descubra os melhores nichos para vídeos longos'}
+                </p>
+                <p className="text-xs">Clique em "Gerar Recomendações" para uma análise estratégica com IA</p>
+              </div>
+            )}
+            {nicheLoading && (
+              <div className="text-center py-8 text-gray-400">
+                <RefreshCw size={24} className="mx-auto mb-3 animate-spin text-indigo-400" />
+                <p className="text-sm">Analisando o mercado brasileiro…</p>
+              </div>
+            )}
+            {nicheReport && !nicheLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {(nicheReport.niches ?? []).map(niche =>
+                  nicheFormat === 'shortform'
+                    ? <ShortNicheCard key={niche.rank} niche={niche} onMine={handleMineNiche} />
+                    : <NicheCard      key={niche.rank} niche={niche} onMine={handleMineNiche} />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {lastResult && (
         <div className="mb-4 flex items-start gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg">

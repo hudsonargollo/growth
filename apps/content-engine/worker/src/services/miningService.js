@@ -9,8 +9,16 @@ function scoreProduct(p) {
   return Math.round(ratingScore + reviewScore + priceScore)
 }
 
+// ── Domain helpers ────────────────────────────────────────────────────────────
+function detectMarketplace(link = '') {
+  if (link.includes('mercadolivre') || link.includes('mercadolibre')) return 'mercadolivre'
+  if (link.includes('amazon.com'))                                     return 'amazon'
+  return 'google_shopping'
+}
+
 // ── SerpAPI — Google Shopping ─────────────────────────────────────────────────
-async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '' }) {
+// siteFilter: 'all' | 'mercadolivre' | 'amazon' | 'ml_amazon'
+async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all' }) {
   if (!env.SERPAPI_KEY) {
     throw new Error(
       'SERPAPI_KEY not configured — run: wrangler secret put SERPAPI_KEY\n' +
@@ -18,15 +26,17 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
     )
   }
 
+  // When filtering by specific sites, fetch more results so we have enough after filtering
+  const fetchLimit = siteFilter !== 'all' ? 100 : limit
+
   const params = new URLSearchParams({
     engine,
     api_key: env.SERPAPI_KEY,
     hl:      'pt',
     gl:      'br',
-    num:     String(limit),
+    num:     String(fetchLimit),
   })
 
-  // Amazon engine uses 'k' for keyword, not 'q', and a different domain param
   if (engine === 'amazon') {
     params.set('k', category)
     params.set('amazon_domain', 'amazon.com.br')
@@ -47,16 +57,37 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   // Google Shopping results
   if (engine === 'google_shopping') {
-    const results = json.shopping_results ?? []
+    let results = json.shopping_results ?? []
+
+    // Apply site filter before mapping
+    if (siteFilter === 'mercadolivre') {
+      results = results.filter(item => {
+        const link = item.link ?? item.product_link ?? ''
+        return link.includes('mercadolivre') || link.includes('mercadolibre')
+      })
+    } else if (siteFilter === 'amazon') {
+      results = results.filter(item => {
+        const link = item.link ?? item.product_link ?? ''
+        return link.includes('amazon.com')
+      })
+    } else if (siteFilter === 'ml_amazon') {
+      results = results.filter(item => {
+        const link = item.link ?? item.product_link ?? ''
+        return link.includes('mercadolivre') || link.includes('mercadolibre') || link.includes('amazon.com')
+      })
+    }
+
     return results.slice(0, limit).map((item) => {
-      const rawLink = item.link ?? item.product_link ?? ''
-      const isMl    = rawLink.includes('mercadolivre') || rawLink.includes('mercadolibre')
-      const affiliateLink = isMl
+      const rawLink    = item.link ?? item.product_link ?? ''
+      const mp         = detectMarketplace(rawLink)
+      const affiliateLink = mp === 'mercadolivre'
         ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
-        : rawLink
+        : mp === 'amazon'
+          ? buildAmazonAffiliateLink(rawLink, '', amazonTag)
+          : rawLink
       return {
         id:            uid(),
-        marketplace:   isMl ? 'mercadolibre' : 'google_shopping',
+        marketplace:   mp,
         title:         item.title ?? '',
         price:         parseFloat(String(item.price ?? '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
         rating:        item.rating ?? 0,
@@ -158,7 +189,7 @@ async function fetchAmazon(env, { category }) {
 }
 
 // ── Main session runner ───────────────────────────────────────────────────────
-export async function runMiningSession(env, { marketplace, category }) {
+export async function runMiningSession(env, { marketplace, category, siteFilter = 'all' }) {
   const db        = getDb(env)
   const sessionId = uid()
 
@@ -174,7 +205,7 @@ export async function runMiningSession(env, { marketplace, category }) {
 
   if (marketplace === 'google_shopping' || marketplace === 'both') {
     try {
-      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag })
+      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter })
       rawProducts.push(...items)
       console.log(`[mining] Google Shopping: ${items.length} products for "${category}"`)
     } catch (e) {
