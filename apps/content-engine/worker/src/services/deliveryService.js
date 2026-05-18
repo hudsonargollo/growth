@@ -1,4 +1,3 @@
-import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
 
 async function sendWhatsAppMessage(env, { to, body }) {
@@ -31,25 +30,19 @@ async function sendWhatsAppMessage(env, { to, body }) {
   return res.json()
 }
 
-export async function sendDelivery(env, { scriptId, voiceoverId, editorContact }) {
-  const db = getDb(env)
-
-  const { data: script, error: sErr } = await db
-    .from('scripts')
-    .select('id, blueprintId, language')
-    .eq('id', scriptId)
-    .single()
+export async function sendDelivery(env, tenantId, db, { scriptId, voiceoverId, editorContact }) {
+  let sq = db.from('scripts').select('id, blueprintId, language').eq('id', scriptId)
+  if (tenantId) sq = sq.eq('tenant_id', tenantId)
+  const { data: script, error: sErr } = await sq.single()
   if (sErr || !script) throw new Error(`Script ${scriptId} not found`)
 
   const scriptUrl = `${env.SUPABASE_URL}/storage/v1/object/public/scripts/${scriptId}.pdf`
 
   let voiceoverUrl = null
   if (voiceoverId) {
-    const { data: vo } = await db
-      .from('voiceovers')
-      .select('fileUrl')
-      .eq('id', voiceoverId)
-      .single()
+    let vq = db.from('voiceovers').select('fileUrl').eq('id', voiceoverId)
+    if (tenantId) vq = vq.eq('tenant_id', tenantId)
+    const { data: vo } = await vq.single()
     voiceoverUrl = vo?.fileUrl ?? null
   }
 
@@ -72,19 +65,21 @@ export async function sendDelivery(env, { scriptId, voiceoverId, editorContact }
     voiceoverUrl,
     status:        'completed',
     sentAt:        new Date().toISOString(),
+    tenant_id:     tenantId,
   }).select().single()
 
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function listDeliveries(env) {
-  const db = getDb(env)
-  const { data, error } = await db
+export async function listDeliveries(env, tenantId, db) {
+  let query = db
     .from('delivery_jobs')
     .select('*, scripts(blueprintId, language), voiceovers(voiceModel, duration)')
     .order('createdAt', { ascending: false })
     .limit(50)
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }

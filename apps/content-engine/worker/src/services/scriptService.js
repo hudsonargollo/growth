@@ -1,4 +1,3 @@
-import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
 
 const blueprints = {
@@ -7,31 +6,26 @@ const blueprints = {
   'comparison':       { name: 'Comparison (A vs B)',      sections: ['intro', 'product_a', 'product_b', 'verdict', 'cta'] },
 }
 
-export async function generateScript(env, { blueprintId, catalogIds, language }) {
+export async function generateScript(env, tenantId, db, { blueprintId, catalogIds, language }) {
   if (!env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY not configured — add it via: wrangler secret put OPENAI_API_KEY')
   }
 
-  const db        = getDb(env)
   const blueprint = blueprints[blueprintId] ?? blueprints['top-n-review']
 
   // Fetch real products from catalog
   let products = []
   if (catalogIds?.length) {
-    const { data: entries } = await db
-      .from('catalog_entries')
-      .select('*, products(*)')
-      .in('id', catalogIds)
+    let q = db.from('catalog_entries').select('*, products(*)').in('id', catalogIds)
+    if (tenantId) q = q.eq('tenant_id', tenantId)
+    const { data: entries } = await q
     products = (entries ?? []).map((e) => e.products).filter(Boolean)
   }
 
   if (!products.length) {
-    // Fall back to top-scored products from catalog
-    const { data: topProducts } = await db
-      .from('products')
-      .select('*')
-      .order('score', { ascending: false })
-      .limit(5)
+    let q = db.from('products').select('*').order('score', { ascending: false }).limit(5)
+    if (tenantId) q = q.eq('tenant_id', tenantId)
+    const { data: topProducts } = await q
     products = topProducts ?? []
   }
 
@@ -43,7 +37,7 @@ export async function generateScript(env, { blueprintId, catalogIds, language })
     .map((p, i) => `${i + 1}. ${p.title} — $${p.price}, ${p.rating}★, ${p.reviews.toLocaleString()} reviews, link: ${p.affiliateLink}`)
     .join('\n')
 
-  const systemPrompt = `You are a YouTube script writer for a product review channel. 
+  const systemPrompt = `You are a YouTube script writer for a product review channel.
 Write engaging, persuasive scripts that follow the given structure exactly.
 Always include affiliate disclosure. Keep tone energetic and informative.
 Language: ${language.toUpperCase()}`
@@ -94,19 +88,17 @@ Requirements:
     confidence:     Math.min(99, Math.round(85 + (tokenCount / 100))),
     version:        1,
     prompt:         userPrompt,
+    tenant_id:      tenantId,
   }).select().single()
 
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function listScripts(env) {
-  const db = getDb(env)
-  const { data, error } = await db
-    .from('scripts')
-    .select('*')
-    .order('createdAt', { ascending: false })
-    .limit(50)
+export async function listScripts(env, tenantId, db) {
+  let query = db.from('scripts').select('*').order('createdAt', { ascending: false }).limit(50)
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }

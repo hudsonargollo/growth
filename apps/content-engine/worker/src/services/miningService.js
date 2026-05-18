@@ -10,9 +10,6 @@ function scoreProduct(p) {
 }
 
 // ── MercadoLibre OAuth app token ──────────────────────────────────────────────
-// MercadoLibre requires an app token even for public search.
-// Get your APP_ID and CLIENT_SECRET from: https://developers.mercadolibre.com
-// Then: wrangler secret put ML_APP_ID && wrangler secret put ML_CLIENT_SECRET
 async function getMercadoLibreToken(env) {
   if (!env.ML_APP_ID || !env.ML_CLIENT_SECRET) {
     throw new Error(
@@ -89,8 +86,6 @@ async function fetchMercadoLibre(env, { category, limit = 20 }) {
 }
 
 // ── Amazon PA-API ─────────────────────────────────────────────────────────────
-// Requires approved Amazon Associates account + PA-API access.
-// Docs: https://webservices.amazon.com/paapi5/documentation/
 async function fetchAmazon(env, { category }) {
   if (!env.AMAZON_ACCESS_KEY || !env.AMAZON_SECRET_KEY || !env.AMAZON_PARTNER_TAG) {
     throw new Error(
@@ -99,17 +94,15 @@ async function fetchAmazon(env, { category }) {
       'Note: PA-API requires an approved Amazon Associates account.'
     )
   }
-  // PA-API v5 requires AWS Signature V4 — implement when keys are available
-  throw new Error('Amazon PA-API: AWS Signature V4 signing not yet implemented. Add AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_PARTNER_TAG to enable.')
+  throw new Error('Amazon PA-API: AWS Signature V4 signing not yet implemented.')
 }
 
 // ── Main session runner ───────────────────────────────────────────────────────
-export async function runMiningSession(env, { marketplace, category }) {
-  const db        = getDb(env)
+export async function runMiningSession(env, tenantId, db, { marketplace, category }) {
   const sessionId = uid()
 
   await db.from('mining_sessions').insert({
-    id: sessionId, marketplace, category, status: 'in_progress',
+    id: sessionId, marketplace, category, status: 'in_progress', tenant_id: tenantId,
   })
 
   const rawProducts = []
@@ -143,7 +136,7 @@ export async function runMiningSession(env, { marketplace, category }) {
     throw new Error(errors.join(' | '))
   }
 
-  const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p) }))
+  const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p), tenant_id: tenantId }))
 
   const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
   if (pErr) throw new Error(pErr.message)
@@ -154,6 +147,7 @@ export async function runMiningSession(env, { marketplace, category }) {
     market:         marketplace,
     freshnessScore: 1.0,
     provenance:     `session-${sessionId}`,
+    tenant_id:      tenantId,
   }))
   const { error: eErr } = await db.from('catalog_entries').insert(entries)
   if (eErr) throw new Error(eErr.message)
@@ -172,24 +166,18 @@ export async function runMiningSession(env, { marketplace, category }) {
   }
 }
 
-export async function getCatalog(env) {
-  const db = getDb(env)
-  const { data, error } = await db
-    .from('products')
-    .select('*')
-    .order('score', { ascending: false })
-    .limit(100)
+export async function getCatalog(env, tenantId, db) {
+  let query = db.from('products').select('*').order('score', { ascending: false }).limit(100)
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function getSessions(env) {
-  const db = getDb(env)
-  const { data, error } = await db
-    .from('mining_sessions')
-    .select('*')
-    .order('createdAt', { ascending: false })
-    .limit(20)
+export async function getSessions(env, tenantId, db) {
+  let query = db.from('mining_sessions').select('*').order('createdAt', { ascending: false }).limit(20)
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }
