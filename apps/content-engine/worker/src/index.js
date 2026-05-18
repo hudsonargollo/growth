@@ -162,6 +162,21 @@ app.put('/api/products/:id', async (c) => {
   if (error) return c.json({ error: error.message }, 500)
   return c.json(data)
 })
+// ── Products (delete) ─────────────────────────────────────────────────────────
+app.delete('/api/products/all', async (c) => {
+  const db = getDb(c.env)
+  await db.from('catalog_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await db.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  return c.json({ ok: true })
+})
+app.delete('/api/products/:id', async (c) => {
+  const db = getDb(c.env)
+  const id = c.req.param('id')
+  await db.from('catalog_entries').delete().eq('productId', id)
+  await db.from('products').delete().eq('id', id)
+  return c.json({ ok: true })
+})
+
 app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
 
