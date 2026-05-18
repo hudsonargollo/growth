@@ -18,8 +18,9 @@ const KEY_GROUPS = [
   {
     title: 'IA',
     keys: [
-      { key: 'OPENAI_API_KEY',      label: 'OpenAI API Key',          placeholder: 'sk-…',    required: true },
-      { key: 'ELEVENLABS_API_KEY',  label: 'ElevenLabs API Key',      placeholder: 'sk_…',    required: true },
+      { key: 'ANTHROPIC_API_KEY',   label: 'Anthropic API Key',       placeholder: 'sk-ant-…', required: false, hint: 'Claude — usado para geração de roteiros e análise de nichos' },
+      { key: 'OPENAI_API_KEY',      label: 'OpenAI API Key',          placeholder: 'sk-…',     required: false, hint: 'Fallback para IA + obrigatório para narração de voz' },
+      { key: 'ELEVENLABS_API_KEY',  label: 'ElevenLabs API Key',      placeholder: 'sk_…',     required: false },
     ],
   },
   {

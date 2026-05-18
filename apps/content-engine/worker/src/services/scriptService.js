@@ -26,11 +26,9 @@ const FALLBACK_BLUEPRINTS = {
   },
 }
 
-async function resolveOpenAIKey(env) {
-  const { resolveKey } = await import('../lib/resolveKey.js')
-  const key = await resolveKey(env, 'OPENAI_API_KEY')
-  if (!key) throw new Error('OPENAI_API_KEY não configurada — adicione em Configurações > Chaves de API')
-  return key
+async function llm(env, opts) {
+  const { callLLM } = await import('../lib/llm.js')
+  return callLLM(env, opts)
 }
 
 function buildProductList(products) {
@@ -61,34 +59,9 @@ FRASES ASSINATURA: ${profile.signaturePhrases || ''}
 `.trim()
 }
 
-async function callOpenAI(openaiKey, model, systemPrompt, userPrompt, maxTokens = 2000) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization:  `Bearer ${openaiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens:  maxTokens,
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`OpenAI API error ${res.status}: ${err.slice(0, 200)}`)
-  }
-  const json = await res.json()
-  return { text: json.choices?.[0]?.message?.content ?? '', tokens: json.usage?.total_tokens ?? 0 }
-}
 
 export async function generateScript(env, { blueprintId, blueprintData, catalogIds, productIds, language, channelProfileId }) {
-  const openaiKey = await resolveOpenAIKey(env)
-  const db        = getDb(env)
+  const db = getDb(env)
 
   // Resolve blueprint — prefer explicit blueprintData, then DB lookup, then fallback
   let blueprint = blueprintData
@@ -160,7 +133,7 @@ INSTRUÇÕES:
 - Tom conversacional e natural em ${language?.toUpperCase() ?? 'PT'}
 - Cada seção deve ter aproximadamente ${Math.round(totalSeconds / sections.length / 60 * 100)} palavras`
 
-  const { text, tokens } = await callOpenAI(openaiKey, env.LLM_MODEL ?? 'gpt-4o-mini', systemPrompt, userPrompt, 3000)
+  const text = await llm(env, { system: systemPrompt, prompt: userPrompt, maxTokens: 3000 })
 
   // Parse sections from the generated text
   const parsedSections = parseSections(text, sections)
@@ -175,7 +148,7 @@ INSTRUÇÕES:
     sections:         parsedSections,
     title:            scriptTitle,
     language:         language ?? 'pt',
-    confidence:       Math.min(99, Math.round(85 + (tokens / 100))),
+    confidence:       92,
     version:          1,
     prompt:           userPrompt,
     channelProfileId: profile?.id ?? null,
@@ -210,8 +183,7 @@ function parseSections(text, blueprintSections) {
 }
 
 export async function regenerateSection(env, { scriptId, sectionIndex, instructions }) {
-  const openaiKey = await resolveOpenAIKey(env)
-  const db        = getDb(env)
+  const db = getDb(env)
 
   const { data: script, error } = await db.from('scripts').select('*').eq('id', scriptId).single()
   if (error || !script) throw new Error('Roteiro não encontrado')
@@ -246,7 +218,7 @@ ${instructions || 'Melhore o engajamento e o apelo à ação. Mantenha o tom do 
 
 Duração alvo: ~${Math.round((section.duration ?? 60) / 60 * 130)} palavras.`
 
-  const { text } = await callOpenAI(openaiKey, env.LLM_MODEL ?? 'gpt-4o-mini', sysPrompt, userPrompt, 800)
+  const text = await llm(env, { system: sysPrompt, prompt: userPrompt, maxTokens: 800 })
 
   sections[sectionIndex] = { ...section, content: text.trim() }
 

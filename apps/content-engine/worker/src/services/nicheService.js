@@ -102,45 +102,19 @@ ticketType must be exactly one of: "baixo ticket impulso", "médio ticket consid
 scores are integers 1–10. rank the niches by total score descending (rank 1 = best overall).
 `.trim()
 
-async function callOpenAI(env, prompt) {
-  const { resolveKey } = await import('../lib/resolveKey.js')
-  const key = await resolveKey(env, 'OPENAI_API_KEY')
-  if (!key) {
-    throw new Error('OPENAI_API_KEY não configurada — adicione nas Configurações.')
-  }
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model:           env.LLM_MODEL ?? 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'You are a Brazilian affiliate marketing expert. Respond only with valid JSON, no markdown, no explanation.' },
-        { role: 'user',   content: prompt },
-      ],
-      temperature:     0.7,
-      response_format: { type: 'json_object' },
-    }),
+async function callLLMJson(env, prompt) {
+  const { callLLM } = await import('../lib/llm.js')
+  return callLLM(env, {
+    system:    'Você é um especialista em marketing de afiliados brasileiro. Responda apenas com JSON válido, sem markdown, sem explicações.',
+    prompt,
+    maxTokens: 2000,
+    json:      true,
   })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message ?? `OpenAI error ${res.status}`)
-  }
-
-  const data    = await res.json()
-  const content = data.choices?.[0]?.message?.content
-  if (!content) throw new Error('Resposta vazia da OpenAI')
-
-  return JSON.parse(content)
 }
 
 export async function generateNicheReport(env, { format = 'longform' } = {}) {
   const year   = new Date().getFullYear()
   const prompt = format === 'shortform' ? SHORTFORM_PROMPT(year) : LONGFORM_PROMPT(year)
-  const parsed = await callOpenAI(env, prompt)
+  const parsed = await callLLMJson(env, prompt)
   return { ...parsed, format, generatedAt: new Date().toISOString() }
 }

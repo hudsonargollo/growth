@@ -10,6 +10,7 @@ import { encrypt, decrypt } from '../lib/crypto.js'
 const router = new Hono()
 
 const ALLOWED_KEYS = new Set([
+  'ANTHROPIC_API_KEY',
   'OPENAI_API_KEY',
   'ELEVENLABS_API_KEY',
   'YOUTUBE_API_KEY',
