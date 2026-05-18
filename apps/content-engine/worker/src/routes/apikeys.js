@@ -20,7 +20,7 @@ const ALLOWED_KEYS = new Set([
   'WHATSAPP_PHONE_ID',
   'SERPAPI_KEY',
   'AMAZON_AFFILIATE_TAG',
-  'ML_AFFILIATE_ID',
+  'ML_AFFILIATE_TAG',
 ])
 
 // Normalise: accept both UPPER_CASE and lower_case variants

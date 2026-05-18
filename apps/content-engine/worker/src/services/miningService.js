@@ -134,34 +134,36 @@ function buildAmazonAffiliateLink(url, asin, tag) {
   } catch { return url }
 }
 
-function buildMercadoLibreAffiliateLink(permalink, mlAffiliateId) {
-  if (!mlAffiliateId || !permalink) return permalink ?? ''
+// Supports two formats:
+//   "matt:username:toolId"  → ?matt_word=username&matt_tool=toolId
+//   plain tag               → ?tag=value
+function buildMercadoLibreAffiliateLink(permalink, affiliateTag) {
+  if (!affiliateTag || !permalink) return permalink ?? ''
   try {
     const u = new URL(permalink)
-    u.searchParams.set('matt_tool', mlAffiliateId)
+    if (affiliateTag.startsWith('matt:')) {
+      const parts = affiliateTag.split(':')
+      if (parts.length >= 3) {
+        u.searchParams.set('matt_word', parts[1])
+        u.searchParams.set('matt_tool', parts[2])
+      }
+    } else {
+      u.searchParams.set('tag', affiliateTag)
+    }
     return u.toString()
   } catch { return permalink }
 }
 
-// ── Load affiliate IDs from Supabase credentials table ────────────────────────
+// ── Load affiliate tags from secrets / Settings-saved credentials ─────────────
 async function loadAffiliateIds(env) {
-  try {
-    const db = getDb(env)
-    const { data } = await db
-      .from('tool_credentials')
-      .select('toolId, login')
-      .in('toolId', ['affiliate_amazon', 'affiliate_ml'])
-    const map = {}
-    for (const row of data ?? []) map[row.toolId] = row.login
-    return {
-      amazonTag:     map['affiliate_amazon'] ?? env.AMAZON_ASSOCIATE_TAG ?? '',
-      mlAffiliateId: map['affiliate_ml']     ?? env.ML_AFFILIATE_ID      ?? '',
-    }
-  } catch {
-    return {
-      amazonTag:     env.AMAZON_ASSOCIATE_TAG ?? '',
-      mlAffiliateId: env.ML_AFFILIATE_ID      ?? '',
-    }
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const [amazonTag, mlAffiliateTag] = await Promise.all([
+    resolveKey(env, 'AMAZON_AFFILIATE_TAG'),
+    resolveKey(env, 'ML_AFFILIATE_TAG'),
+  ])
+  return {
+    amazonTag:     amazonTag     ?? '',
+    mlAffiliateId: mlAffiliateTag ?? '',
   }
 }
 

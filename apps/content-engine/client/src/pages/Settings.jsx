@@ -34,8 +34,8 @@ const KEY_GROUPS = [
     title: 'Mineração',
     keys: [
       { key: 'SERPAPI_KEY',          label: 'SerpAPI Key',               placeholder: '…',      required: false },
-      { key: 'AMAZON_AFFILIATE_TAG', label: 'Tag Amazon Associates',     placeholder: 'tag-20', required: false },
-      { key: 'ML_AFFILIATE_ID',      label: 'ID Afiliado MercadoLibre',  placeholder: '…',      required: false },
+      { key: 'AMAZON_AFFILIATE_TAG', label: 'Tag Amazon Associates',    placeholder: 'seusite-20',         required: false },
+      { key: 'ML_AFFILIATE_TAG',    label: 'Tag Afiliado MercadoLivre', placeholder: 'matt:usuario:toolId', required: false, hint: 'Formato matt: ex. matt:seunome:78793736 — ou tag simples' },
     ],
   },
 ]
