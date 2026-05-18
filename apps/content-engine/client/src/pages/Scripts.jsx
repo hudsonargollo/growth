@@ -57,13 +57,13 @@ export default function Scripts() {
   return (
     <div>
       <PageHeader
-        title="Script Generation"
-        description="Blueprint-driven scripts aligned with your video format"
+        title="Geração de Roteiros"
+        description="Roteiros baseados em blueprints alinhados ao seu formato de vídeo"
         action={
           <button onClick={handleGenerate} disabled={generating}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             <Wand2 size={15} />
-            {generating ? 'Generating…' : 'Generate Script'}
+            {generating ? 'Gerando…' : 'Gerar Roteiro'}
           </button>
         }
       />
@@ -71,30 +71,31 @@ export default function Scripts() {
       {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h3 className="font-semibold text-gray-800 mb-4">Blueprint Configuration</h3>
+        <h3 className="font-semibold text-gray-800 mb-4">Configuração do Blueprint</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Blueprint Template</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Template</label>
             <select value={blueprintId} onChange={(e) => setBlueprintId(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="top-n-review">Top-N Product Review</option>
-              <option value="single-deep-dive">Single Product Deep Dive</option>
-              <option value="comparison">Comparison (A vs B)</option>
+              <option value="top-n-review">Top-N Avaliação de Produtos</option>
+              <option value="single-deep-dive">Análise Aprofundada</option>
+              <option value="comparison">Comparação (A vs B)</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Language</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Idioma</label>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="en">English (EN)</option>
-              <option value="es">Spanish (ES)</option>
+              <option value="en">Inglês (EN)</option>
+              <option value="es">Espanhol (ES)</option>
+              <option value="pt">Português (PT)</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Product Source</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Fonte de Produtos</label>
             <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option>Top Scored – This Week</option>
-              <option>Manual Selection</option>
+              <option>Maior Score – Esta Semana</option>
+              <option>Seleção Manual</option>
             </select>
           </div>
         </div>
@@ -103,23 +104,23 @@ export default function Scripts() {
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
           <FileText size={16} className="text-gray-400" />
-          <h3 className="font-semibold text-gray-800">Scripts</h3>
+          <h3 className="font-semibold text-gray-800">Roteiros</h3>
           <span className="ml-auto text-xs text-gray-400">{scripts.length} total</span>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b border-gray-100">
               <th className="px-6 py-3 font-medium">Blueprint</th>
-              <th className="px-6 py-3 font-medium">Lang</th>
-              <th className="px-6 py-3 font-medium">Confidence</th>
+              <th className="px-6 py-3 font-medium">Idioma</th>
+              <th className="px-6 py-3 font-medium">Confiança</th>
               <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium">Created</th>
+              <th className="px-6 py-3 font-medium">Criado</th>
               <th className="px-6 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {scripts.length === 0
-              ? <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">No scripts yet — generate your first script above.</td></tr>
+              ? <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">Nenhum roteiro ainda — gere o primeiro acima.</td></tr>
               : scripts.map((s) => <ScriptRow key={s.id} script={s} />)
             }
           </tbody>

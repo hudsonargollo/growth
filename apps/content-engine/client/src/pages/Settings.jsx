@@ -82,7 +82,7 @@ function KeyField({ keyDef, savedState, onSaved, onDeleted }) {
         {isSet && (
           <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
             <CheckCircle size={11} />
-            Saved
+            Salvo
             {savedState?.updated_at && (
               <span className="text-gray-400 font-normal ml-1">
                 · {new Date(savedState.updated_at).toLocaleDateString()}
@@ -98,7 +98,7 @@ function KeyField({ keyDef, savedState, onSaved, onDeleted }) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            placeholder={isSet ? '••••••••  (leave blank to keep current)' : keyDef.placeholder}
+            placeholder={isSet ? '••••••••  (deixe em branco para manter)' : keyDef.placeholder}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-9 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono placeholder:font-sans placeholder:text-gray-400"
           />
           <button
@@ -115,7 +115,7 @@ function KeyField({ keyDef, savedState, onSaved, onDeleted }) {
           className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
         >
           {status === 'saving' ? <Loader2 size={12} className="animate-spin" /> : null}
-          Save
+          Salvar
         </button>
         {isSet && (
           <button
@@ -123,12 +123,12 @@ function KeyField({ keyDef, savedState, onSaved, onDeleted }) {
             disabled={status === 'saving'}
             className="px-3 py-2 border border-gray-200 hover:border-red-300 hover:text-red-500 text-gray-400 text-xs rounded-lg transition-colors"
           >
-            Remove
+            Remover
           </button>
         )}
       </div>
       {keyDef.hint && <p className="text-xs text-gray-400">{keyDef.hint}</p>}
-      {status === 'saved' && <p className="text-xs text-emerald-600">✓ Saved successfully</p>}
+      {status === 'saved' && <p className="text-xs text-emerald-600">✓ Salvo com sucesso</p>}
       {status === 'error' && (
         <p className="text-xs text-red-500 flex items-center gap-1">
           <AlertCircle size={11} /> {errMsg}
@@ -176,8 +176,8 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Settings"
-        description="Configure your API keys — stored encrypted, never exposed in plaintext"
+        title="Configurações"
+        description="Configure suas chaves de API — armazenadas com criptografia, nunca expostas em texto puro"
       />
 
       {loading ? (
@@ -189,13 +189,13 @@ export default function SettingsPage() {
           {requiredMissing > 0 && (
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              <span>{requiredMissing} required key{requiredMissing > 1 ? 's' : ''} not yet configured. Some features will be unavailable until they are set.</span>
+              <span>{requiredMissing} chave{requiredMissing > 1 ? 's' : ''} obrigatória{requiredMissing > 1 ? 's' : ''} ainda não configurada{requiredMissing > 1 ? 's' : ''}. Algumas funções ficarão indisponíveis até serem definidas.</span>
             </div>
           )}
           {requiredMissing === 0 && configuredCount > 0 && (
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl">
               <CheckCircle size={15} />
-              All required keys configured — platform fully operational
+              Todas as chaves obrigatórias configuradas — plataforma totalmente operacional
             </div>
           )}
 

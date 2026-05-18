@@ -6,10 +6,18 @@ const variants = {
   flagged:     'bg-orange-100 text-orange-800',
 }
 
+const labels = {
+  pending:     'pendente',
+  in_progress: 'em andamento',
+  completed:   'concluído',
+  failed:      'falhou',
+  flagged:     'sinalizado',
+}
+
 export default function StatusBadge({ status }) {
-  const label = status.replace('_', ' ')
+  const label = labels[status] ?? status.replace('_', ' ')
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${variants[status] ?? 'bg-gray-100 text-gray-700'}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[status] ?? 'bg-gray-100 text-gray-700'}`}>
       {label}
     </span>
   )

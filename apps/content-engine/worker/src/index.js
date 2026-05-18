@@ -1,10 +1,8 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { requireAuth }                                        from './lib/auth.js'
-import { getDb, createUserClient }                            from './lib/db.js'
-import { loadTenantKeys }                                     from './lib/keys.js'
 import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
+import { getDb }                                              from './lib/db.js'
 import { generateScript, listScripts }                        from './services/scriptService.js'
 import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
@@ -15,117 +13,101 @@ import apikeysRouter                                          from './routes/api
 const app = new Hono()
 
 app.use('*', cors({
-  origin: ['https://content-engine.hudsonargollo2.workers.dev', 'https://growth.clubemkt.digital', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:8787'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id'],
+  origin: ['https://growth-clube.hudsonargollo2.workers.dev', 'http://localhost:5173', 'http://localhost:5174'],
+  allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }))
 
-// ── Health (unauthenticated) ──────────────────────────────────────────────────
+// ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() }))
 
-// ── Auth middleware — all routes below require a valid Supabase JWT ────────────
-app.use('/api/*', requireAuth)
-
 // ── Mining ────────────────────────────────────────────────────────────────────
-app.get('/api/mining/catalog', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const products = await getCatalog(c.env, tenantId, db)
+app.get('/api/mining/catalog',  async (c) => {
+  const sessionId = c.req.query('sessionId') ?? null
+  const products = await getCatalog(c.env, { sessionId })
   return c.json({ products })
 })
 app.get('/api/mining/sessions', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const sessions = await getSessions(c.env, tenantId, db)
+  const sessions = await getSessions(c.env)
   return c.json({ sessions })
 })
 app.post('/api/mining/run', async (c) => {
   const { marketplace = 'amazon', category = 'electronics' } = await c.req.json()
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await runMiningSession(c.env, tenantId, db, { marketplace, category })
+  const result = await runMiningSession(c.env, { marketplace, category })
   return c.json(result)
 })
 
 // ── Scripts ───────────────────────────────────────────────────────────────────
 app.get('/api/scripts', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const scripts  = await listScripts(c.env, tenantId, db)
+  const scripts = await listScripts(c.env)
   return c.json({ scripts })
 })
 app.post('/api/scripts/generate', async (c) => {
   const { blueprintId, catalogIds, language = 'en' } = await c.req.json()
   if (!blueprintId) return c.json({ error: 'blueprintId is required' }, 400)
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const script   = await generateScript(c.env, tenantId, db, { blueprintId, catalogIds, language })
+  const script = await generateScript(c.env, { blueprintId, catalogIds, language })
   return c.json(script)
 })
 
 // ── Voiceover ─────────────────────────────────────────────────────────────────
 app.get('/api/voiceover', async (c) => {
-  const db         = createUserClient(c.env, c.get('token'))
-  const tenantId   = c.get('tenantId')
-  const voiceovers = await listVoiceovers(c.env, tenantId, db)
+  const voiceovers = await listVoiceovers(c.env)
   return c.json({ voiceovers })
 })
 app.post('/api/voiceover/generate', async (c) => {
   const { scriptId, voiceModel = 'Rachel', stability = 0.75, similarityBoost = 0.80 } = await c.req.json()
   if (!scriptId) return c.json({ error: 'scriptId is required' }, 400)
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await generateVoiceover(c.env, tenantId, db, { scriptId, voiceModel, stability, similarityBoost })
+  const result = await generateVoiceover(c.env, { scriptId, voiceModel, stability, similarityBoost })
   return c.json(result)
 })
 
 // ── Delivery ──────────────────────────────────────────────────────────────────
 app.get('/api/delivery', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const jobs     = await listDeliveries(c.env, tenantId, db)
+  const jobs = await listDeliveries(c.env)
   return c.json({ jobs })
 })
 app.post('/api/delivery/send', async (c) => {
   const { scriptId, voiceoverId, editorContact } = await c.req.json()
   if (!scriptId || !editorContact) return c.json({ error: 'scriptId and editorContact are required' }, 400)
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await sendDelivery(c.env, tenantId, db, { scriptId, voiceoverId, editorContact })
+  const result = await sendDelivery(c.env, { scriptId, voiceoverId, editorContact })
   return c.json(result)
 })
 
 // ── Comments ──────────────────────────────────────────────────────────────────
 app.get('/api/comments', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const jobs     = await listCommentJobs(c.env, tenantId, db)
+  const jobs = await listCommentJobs(c.env)
   return c.json({ jobs })
 })
 app.post('/api/comments/run', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await runCommentAgent(c.env, tenantId, db, null)
+  const result = await runCommentAgent(c.env)
   return c.json({ status: 'ok', ...result })
 })
 app.post('/api/comments/:id/approve', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await reviewComment(c.env, tenantId, db, c.req.param('id'), 'approved')
+  const result = await reviewComment(c.env, c.req.param('id'), 'approved')
   return c.json(result)
 })
 app.post('/api/comments/:id/reject', async (c) => {
-  const db       = createUserClient(c.env, c.get('token'))
-  const tenantId = c.get('tenantId')
-  const result   = await reviewComment(c.env, tenantId, db, c.req.param('id'), 'rejected')
+  const result = await reviewComment(c.env, c.req.param('id'), 'rejected')
   return c.json(result)
 })
 
-// ── API Keys (per-tenant encrypted credentials) ───────────────────────────────
-app.route('/api/apikeys', apikeysRouter)
-
-// ── Credentials (legacy encrypted tool credentials) ───────────────────────────
+// ── Products (affiliate link update) ─────────────────────────────────────────
+app.put('/api/products/:id', async (c) => {
+  const db = getDb(c.env)
+  const id = c.req.param('id')
+  const body = await c.req.json()
+  // Only allow updating affiliate links — nothing else
+  const { amazonAffiliateLink, mlAffiliateLink, affiliateLink } = body
+  const update = {}
+  if (affiliateLink    !== undefined) update.affiliateLink    = affiliateLink
+  if (amazonAffiliateLink !== undefined) update.amazonAffiliateLink = amazonAffiliateLink
+  if (mlAffiliateLink  !== undefined) update.mlAffiliateLink  = mlAffiliateLink
+  const { data, error } = await db.from('products').update(update).eq('id', id).select().single()
+  if (error) return c.json({ error: error.message }, 500)
+  return c.json(data)
+})
 app.route('/api/credentials', credentialsRouter)
+app.route('/api/apikeys',     apikeysRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.onError((err, c) => {
@@ -135,33 +117,11 @@ app.onError((err, c) => {
 
 // ── Worker export ─────────────────────────────────────────────────────────────
 export default {
+  // HTTP requests
   fetch: app.fetch,
 
-  // Cron trigger — iterates all active tenants (Phase 4 adds per-tenant keys)
-  // For now runs with env-level keys against the service role client
+  // Cron trigger (wrangler.toml: crons = ["0 */4 * * *"])
   async scheduled(_event, env, ctx) {
-    const adminDb = getDb(env)
-    const { data: activeTenants } = await adminDb
-      .from('tenants')
-      .select('id')
-      .eq('status', 'active')
-
-    if (!activeTenants?.length) {
-      console.log('[cron] No active tenants found')
-      return
-    }
-
-    for (const { id: tenantId } of activeTenants) {
-      const keys = await loadTenantKeys(env, tenantId)
-      if (!keys.YOUTUBE_API_KEY || !keys.YOUTUBE_CHANNEL_ID) {
-        console.log(`[cron] Tenant ${tenantId} skipped — YouTube keys not configured`)
-        continue
-      }
-      ctx.waitUntil(
-        runCommentAgent(env, tenantId, adminDb, keys).catch((e) =>
-          console.error(`[cron] Tenant ${tenantId} failed:`, e.message)
-        )
-      )
-    }
+    ctx.waitUntil(runCommentAgent(env))
   },
 }

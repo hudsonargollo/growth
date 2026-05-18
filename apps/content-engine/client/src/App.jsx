@@ -22,21 +22,24 @@ import Comments     from './pages/Comments.jsx'
 import SettingsPage from './pages/Settings.jsx'
 
 const navItems = [
-  { to: '/',          label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/mining',    label: 'Mining',     icon: ShoppingBag },
-  { to: '/scripts',   label: 'Scripts',    icon: FileText },
-  { to: '/voiceover', label: 'Voiceover',  icon: Mic },
-  { to: '/delivery',  label: 'Delivery',   icon: Send },
-  { to: '/comments',  label: 'Comments',   icon: MessageSquare },
-  { to: '/settings',  label: 'Settings',   icon: Settings },
+  { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
+  { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
+  { to: '/scripts',   label: 'Roteiros',    icon: FileText },
+  { to: '/voiceover', label: 'Narração',    icon: Mic },
+  { to: '/delivery',  label: 'Entrega',     icon: Send },
+  { to: '/comments',  label: 'Comentários', icon: MessageSquare },
+  { to: '/settings',  label: 'Configurações', icon: Settings },
 ]
 
 function Sidebar({ user, onSignOut }) {
   return (
     <aside className="w-60 min-h-screen bg-gray-900 text-white flex flex-col">
-      <div className="px-6 py-5 border-b border-gray-700">
-        <h1 className="text-lg font-bold tracking-tight">Content Engine</h1>
-        <p className="text-xs text-gray-400 mt-0.5">YouTube Growth Automation</p>
+      <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-3">
+        <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+        <div>
+          <h1 className="text-sm font-bold tracking-tight leading-tight">Fábrica de Conteúdo</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Automação de Conteúdo YouTube</p>
+        </div>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map(({ to, label, icon: Icon }) => (
@@ -64,7 +67,7 @@ function Sidebar({ user, onSignOut }) {
           className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors w-full"
         >
           <LogOut size={13} />
-          Sign out
+          Sair
         </button>
       </div>
       <div className="px-6 py-3 text-xs text-gray-600">v0.1.0 · MVP</div>
@@ -90,9 +93,12 @@ function LoginScreen() {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-white">Content Engine</h1>
-          <p className="text-gray-400 text-sm mt-1">Sign in to your account</p>
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-20 h-20 rounded-2xl object-cover" />
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white">Fábrica de Conteúdo</h1>
+            <p className="text-gray-400 text-sm mt-1">Acesse sua conta</p>
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -101,18 +107,18 @@ function LoginScreen() {
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">E-mail</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="voce@exemplo.com"
               className="w-full bg-gray-800 border border-gray-700 text-white text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-indigo-500 placeholder-gray-600"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Password</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Senha</label>
             <input
               type="password"
               required
@@ -128,7 +134,7 @@ function LoginScreen() {
             className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
           >
             {loading && <Loader2 size={14} className="animate-spin" />}
-            Sign in
+            Entrar
           </button>
         </form>
       </div>
