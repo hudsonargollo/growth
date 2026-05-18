@@ -9,6 +9,38 @@ function scoreProduct(p) {
   return Math.round(ratingScore + reviewScore + priceScore)
 }
 
+// ── Blog review fetcher ───────────────────────────────────────────────────────
+// Fetches top 5 organic blog review snippets for a product via SerpAPI Google search.
+// Returns [] on any error (non-critical — products are saved regardless).
+async function fetchBlogReviews(env, productTitle) {
+  if (!env.SERPAPI_KEY) return []
+  try {
+    const params = new URLSearchParams({
+      engine:  'google',
+      api_key: env.SERPAPI_KEY,
+      q:       `${productTitle} review melhor`,
+      hl:      'pt',
+      gl:      'br',
+      num:     '10',
+    })
+    const res = await fetch(`https://serpapi.com/search?${params}`)
+    if (!res.ok) return []
+    const json = await res.json()
+    const organic = json.organic_results ?? []
+    return organic
+      .filter(r => r.snippet && r.link && !r.link.includes('mercadolivre') && !r.link.includes('amazon'))
+      .slice(0, 5)
+      .map(r => ({
+        title:   r.title   ?? '',
+        snippet: r.snippet ?? '',
+        source:  r.source  ?? new URL(r.link).hostname,
+        link:    r.link,
+      }))
+  } catch {
+    return []
+  }
+}
+
 // ── Domain helpers ────────────────────────────────────────────────────────────
 function detectMarketplace(link = '') {
   if (link.includes('mercadolivre') || link.includes('mercadolibre')) return 'mercadolivre'
@@ -238,6 +270,15 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
 
   const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
   if (pErr) throw new Error(pErr.message)
+
+  // Fetch blog reviews for top 5 products (best scored) — fire-and-forget updates
+  const topProducts = [...saved].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5)
+  await Promise.allSettled(topProducts.map(async (p) => {
+    const blogReviews = await fetchBlogReviews(env, p.title)
+    if (blogReviews.length > 0) {
+      await db.from('products').update({ blogReviews }).eq('id', p.id)
+    }
+  }))
 
   const entries = saved.map((p) => ({
     id:             uid(),

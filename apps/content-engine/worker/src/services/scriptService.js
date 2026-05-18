@@ -42,8 +42,14 @@ function buildProductList(products) {
       amazonLink ? `Amazon: ${amazonLink}` : '',
       mlLink     ? `Mercado Livre: ${mlLink}` : '',
     ].filter(Boolean).join(' | ')
-    return `${i + 1}. ${p.title}\n   Preço: ${price} | Avaliação: ${p.rating || '—'}★ | Reviews: ${(p.reviews ?? 0).toLocaleString()} | Marketplace: ${p.marketplace}${links ? `\n   Links afiliado: ${links}` : ''}`
-  }).join('\n')
+
+    const reviews = (p.blogReviews ?? []).slice(0, 3)
+    const reviewBlock = reviews.length
+      ? `\n   Opiniões de blogs:\n${reviews.map(r => `   • [${r.source}] ${r.snippet}`).join('\n')}`
+      : ''
+
+    return `${i + 1}. ${p.title}\n   Preço: ${price} | Avaliação: ${p.rating || '—'}★ | Reviews: ${(p.reviews ?? 0).toLocaleString()} | Marketplace: ${p.marketplace}${links ? `\n   Links afiliado: ${links}` : ''}${reviewBlock}`
+  }).join('\n\n')
 }
 
 function buildChannelContext(profile) {
@@ -114,6 +120,7 @@ export async function generateScript(env, { blueprintId, blueprintData, catalogI
 Escreva roteiros envolventes e persuasivos que seguem exatamente a estrutura fornecida.
 Sempre inclua aviso de afiliado. Mantenha um tom ${profile?.tone || 'energético e informativo'}.
 Quando links de afiliados estiverem disponíveis, inclua-os nas chamadas de descrição e no CTA.
+Quando "Opiniões de blogs" estiverem disponíveis para um produto, use os snippets como base factual para pontos técnicos, prós/contras e argumentos de venda — mas reescreva com a voz do canal, nunca copie literalmente.
 Idioma: ${language?.toUpperCase() ?? 'PT'}`
 
   const userPrompt = `Escreva um roteiro de YouTube "${blueprint.name}" com duração aproximada de ${Math.round(totalSeconds / 60)} minutos.
