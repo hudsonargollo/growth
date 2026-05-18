@@ -50,26 +50,24 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
         </button>
       </div>
 
-      <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white space-y-2">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white space-y-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <select
             value={section.type}
             onChange={(e) => onChange(index, { ...section, type: e.target.value })}
-            className="text-xs font-medium border-0 bg-transparent focus:outline-none text-gray-600 cursor-pointer"
+            className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full border cursor-pointer focus:outline-none ${typeColor(section.type)}`}
+            style={{ background: 'transparent' }}
           >
             {SECTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <span className={`px-2 py-0.5 rounded-full text-xs border ${typeColor(section.type)}`}>
-            {typeLabel(section.type)}
-          </span>
           <input
             type="text"
             value={section.label}
             onChange={(e) => onChange(index, { ...section, label: e.target.value })}
-            className="flex-1 text-sm font-medium text-gray-800 border-0 focus:outline-none bg-transparent"
+            className="flex-1 min-w-0 text-sm font-medium text-gray-800 border-0 focus:outline-none bg-transparent truncate"
             placeholder="Nome da seção"
           />
-          <div className="flex items-center gap-1 text-xs text-gray-400">
+          <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
             <Clock size={11} />
             <input
               type="number"
@@ -79,7 +77,7 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
               min={10}
               max={600}
             />
-            <span>seg</span>
+            <span>s</span>
           </div>
         </div>
         <input
