@@ -13,11 +13,13 @@ function scoreProduct(p) {
 // Fetches top 5 organic blog review snippets for a product via SerpAPI Google search.
 // Returns [] on any error (non-critical — products are saved regardless).
 async function fetchBlogReviews(env, productTitle) {
-  if (!env.SERPAPI_KEY) return []
   try {
+    const { resolveKey } = await import('../lib/resolveKey.js')
+    const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+    if (!serpKey) return []
     const params = new URLSearchParams({
       engine:  'google',
-      api_key: env.SERPAPI_KEY,
+      api_key: serpKey,
       q:       `${productTitle} review melhor`,
       hl:      'pt',
       gl:      'br',
@@ -51,9 +53,11 @@ function detectMarketplace(link = '') {
 // ── SerpAPI — Google Shopping ─────────────────────────────────────────────────
 // siteFilter: 'all' | 'mercadolivre' | 'amazon' | 'ml_amazon'
 async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all' }) {
-  if (!env.SERPAPI_KEY) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+  if (!serpKey) {
     throw new Error(
-      'SERPAPI_KEY not configured — run: wrangler secret put SERPAPI_KEY\n' +
+      'SERPAPI_KEY not configured — adicione em Configurações ou run: wrangler secret put SERPAPI_KEY\n' +
       'Get a free key (100 searches/month) at https://serpapi.com'
     )
   }
@@ -63,7 +67,7 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   const params = new URLSearchParams({
     engine,
-    api_key: env.SERPAPI_KEY,
+    api_key: serpKey,
     hl:      'pt',
     gl:      'br',
     num:     String(fetchLimit),

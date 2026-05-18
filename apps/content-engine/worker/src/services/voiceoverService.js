@@ -191,7 +191,7 @@ export async function listVoiceovers(env) {
   const db = getDb(env)
   const { data, error } = await db
     .from('voiceovers')
-    .select('*, scripts(title, blueprintId, language)')
+    .select('id, scriptId, provider, voiceModel, voiceId, fileUrl, duration, status, createdAt, scripts(title, blueprintId, language)')
     .order('createdAt', { ascending: false })
     .limit(50)
   if (error) throw new Error(error.message)

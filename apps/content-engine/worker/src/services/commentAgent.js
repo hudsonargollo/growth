@@ -184,21 +184,25 @@ export async function runCommentAgent(env, tenantId, db, keys) {
   return { processed, flagged: flaggedCount }
 }
 
-export async function listCommentJobs(env, tenantId, db) {
-  let query = db.from('comment_reply_jobs').select('*').order('createdAt', { ascending: false }).limit(100)
-  if (tenantId) query = query.eq('tenant_id', tenantId)
-  const { data, error } = await query
+export async function listCommentJobs(env) {
+  const db = getDb(env)
+  const { data, error } = await db
+    .from('comment_reply_jobs')
+    .select('*')
+    .order('createdAt', { ascending: false })
+    .limit(100)
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function reviewComment(env, tenantId, db, jobId, decision) {
-  let query = db
+export async function reviewComment(env, jobId, decision) {
+  const db = getDb(env)
+  const { data, error } = await db
     .from('comment_reply_jobs')
     .update({ status: decision === 'approved' ? 'completed' : 'rejected', reviewedAt: new Date().toISOString() })
     .eq('id', jobId)
-  if (tenantId) query = query.eq('tenant_id', tenantId)
-  const { data, error } = await query.select().single()
+    .select()
+    .single()
   if (error) throw new Error(error.message)
   return data
 }
