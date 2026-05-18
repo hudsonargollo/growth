@@ -10,6 +10,7 @@ import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from '
 import { generateVoiceover, listVoiceovers, OPENAI_VOICES, ELEVENLABS_VOICES } from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
+import { resolveAndTrack, listShortLinks }                   from './services/shortLinkService.js'
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
 
@@ -23,6 +24,19 @@ app.use('*', cors({
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() }))
+
+// ── Short link redirect ───────────────────────────────────────────────────────
+app.get('/r/:code', async (c) => {
+  const url = await resolveAndTrack(c.env, c.req.param('code'))
+  if (!url) return c.text('Link não encontrado', 404)
+  return c.redirect(url, 302)
+})
+
+// ── Short link analytics ──────────────────────────────────────────────────────
+app.get('/api/short-links', async (c) => {
+  const links = await listShortLinks(c.env)
+  return c.json({ links })
+})
 
 // ── Mining ────────────────────────────────────────────────────────────────────
 app.get('/api/mining/catalog',  async (c) => {

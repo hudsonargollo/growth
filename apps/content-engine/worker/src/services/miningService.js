@@ -271,9 +271,16 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     throw new Error(msg)
   }
 
-  const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p) }))
+  // Shorten affiliate links before saving
+  const { shortenUrl } = await import('./shortLinkService.js')
+  const withShortLinks = await Promise.all(rawProducts.map(async (p) => {
+    const shortLink = p.affiliateLink
+      ? await shortenUrl(env, { url: p.affiliateLink, productId: p.id, marketplace: p.marketplace }).catch(() => p.affiliateLink)
+      : p.affiliateLink
+    return { ...p, affiliateLink: shortLink, score: scoreProduct(p) }
+  }))
 
-  const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
+  const { data: saved, error: pErr } = await db.from('products').insert(withShortLinks).select()
   if (pErr) throw new Error(pErr.message)
 
   // Fetch blog reviews for top 5 products (best scored) — fire-and-forget updates
