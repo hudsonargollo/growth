@@ -95,27 +95,29 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
   if (engine === 'google_shopping') {
     let results = json.shopping_results ?? []
 
-    // Apply site filter before mapping
+    // Apply site filter — check both link URL and source store name
+    function isML(item) {
+      const link   = (item.link ?? item.product_link ?? '').toLowerCase()
+      const source = (item.source ?? '').toLowerCase()
+      return link.includes('mercadolivre') || link.includes('mercadolibre') ||
+             source.includes('mercado livre') || source.includes('mercadolivre') || source.includes('mercado livre')
+    }
+    function isAmazon(item) {
+      const link   = (item.link ?? item.product_link ?? '').toLowerCase()
+      const source = (item.source ?? '').toLowerCase()
+      return link.includes('amazon.com') || source.includes('amazon')
+    }
     if (siteFilter === 'mercadolivre') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('mercadolivre') || link.includes('mercadolibre')
-      })
+      results = results.filter(isML)
     } else if (siteFilter === 'amazon') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('amazon.com')
-      })
+      results = results.filter(isAmazon)
     } else if (siteFilter === 'ml_amazon') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('mercadolivre') || link.includes('mercadolibre') || link.includes('amazon.com')
-      })
+      results = results.filter(item => isML(item) || isAmazon(item))
     }
 
     return results.slice(0, limit).map((item) => {
       const rawLink    = item.link ?? item.product_link ?? ''
-      const mp         = detectMarketplace(rawLink)
+      const mp         = isML(item) ? 'mercadolivre' : isAmazon(item) ? 'amazon' : detectMarketplace(rawLink)
       const affiliateLink = mp === 'mercadolivre'
         ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
         : mp === 'amazon'
@@ -231,7 +233,6 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const db        = getDb(env)
   const sessionId = uid()
 
-  // Load affiliate IDs from Supabase (set via Settings page)
   const { amazonTag, mlAffiliateId } = await loadAffiliateIds(env)
 
   await db.from('mining_sessions').insert({
@@ -245,10 +246,8 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     try {
       const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter })
       rawProducts.push(...items)
-      console.log(`[mining] Google Shopping: ${items.length} products for "${category}"`)
     } catch (e) {
-      errors.push(`Google Shopping: ${e.message}`)
-      console.error('[mining] Google Shopping error:', e.message)
+      errors.push(`Google Shopping: ${e.message || e.toString()}`)
     }
   }
 
@@ -267,7 +266,10 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     await db.from('mining_sessions').update({
       status: 'failed', completedAt: new Date().toISOString(),
     }).eq('id', sessionId)
-    throw new Error(errors.join(' | '))
+    const msg = errors.length
+      ? errors.join(' | ')
+      : `Nenhum produto encontrado para "${category}" com o filtro "${siteFilter}". Tente filtro "all" ou outra categoria.`
+    throw new Error(msg)
   }
 
   const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p) }))

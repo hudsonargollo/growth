@@ -36,8 +36,14 @@ app.get('/api/mining/sessions', async (c) => {
 })
 app.post('/api/mining/run', async (c) => {
   const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
-  const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
-  return c.json(result)
+  try {
+    const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
+    return c.json(result)
+  } catch (e) {
+    const msg = e?.message || e?.toString() || 'Unknown error'
+    console.error('[mining/run]', msg, e?.stack)
+    return c.json({ error: msg }, 500)
+  }
 })
 
 // ── Niche intelligence ────────────────────────────────────────────────────────
