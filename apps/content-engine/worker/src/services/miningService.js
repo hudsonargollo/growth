@@ -93,48 +93,47 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   // Google Shopping results
   if (engine === 'google_shopping') {
-    let results = json.shopping_results ?? []
+    const results = json.shopping_results ?? []
 
-    // Apply site filter — check both link URL and source store name
     function isML(item) {
       const link   = (item.link ?? item.product_link ?? '').toLowerCase()
       const source = (item.source ?? '').toLowerCase()
       return link.includes('mercadolivre') || link.includes('mercadolibre') ||
-             source.includes('mercado livre') || source.includes('mercadolivre') || source.includes('mercado livre')
+             source.includes('mercado livre') || source.includes('mercadolivre')
     }
     function isAmazon(item) {
       const link   = (item.link ?? item.product_link ?? '').toLowerCase()
       const source = (item.source ?? '').toLowerCase()
       return link.includes('amazon.com') || source.includes('amazon')
     }
-    if (siteFilter === 'mercadolivre') {
-      results = results.filter(isML)
-    } else if (siteFilter === 'amazon') {
-      results = results.filter(isAmazon)
-    } else if (siteFilter === 'ml_amazon') {
-      results = results.filter(item => isML(item) || isAmazon(item))
-    }
 
-    return results.slice(0, limit).map((item) => {
-      const rawLink    = item.link ?? item.product_link ?? ''
-      const mp         = isML(item) ? 'mercadolivre' : isAmazon(item) ? 'amazon' : detectMarketplace(rawLink)
+    // Always restrict to ML/Amazon — Google Shopping is just the search engine, not a marketplace
+    const mlOnly      = siteFilter === 'mercadolivre'
+    const amazonOnly  = siteFilter === 'amazon'
+    const filtered = results.filter(item => {
+      if (mlOnly)     return isML(item)
+      if (amazonOnly) return isAmazon(item)
+      return isML(item) || isAmazon(item)  // 'all' and 'ml_amazon' both restrict to known marketplaces
+    })
+
+    return filtered.slice(0, limit).map((item) => {
+      const rawLink   = item.link ?? item.product_link ?? ''
+      const mp        = isML(item) ? 'mercadolivre' : 'amazon'
       const affiliateLink = mp === 'mercadolivre'
         ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
-        : mp === 'amazon'
-          ? buildAmazonAffiliateLink(rawLink, '', amazonTag)
-          : rawLink
+        : buildAmazonAffiliateLink(rawLink, '', amazonTag)
       return {
-        id:            uid(),
-        marketplace:   mp,
-        title:         item.title ?? '',
-        price:         parseFloat(String(item.price ?? '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
-        rating:        item.rating ?? 0,
-        reviews:       item.reviews ?? 0,
+        id:          uid(),
+        marketplace: mp,
+        title:       item.title ?? '',
+        price:       parseFloat(String(item.price ?? '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
+        rating:      item.rating ?? 0,
+        reviews:     item.reviews ?? 0,
         affiliateLink,
-        imageUrl:      item.thumbnail ?? '',
-        currency:      'BRL',
-        sourceApi:     'serpapi_google',
-        lastSeen:      new Date().toISOString(),
+        imageUrl:    item.thumbnail ?? '',
+        currency:    'BRL',
+        sourceApi:   'serpapi_google',
+        lastSeen:    new Date().toISOString(),
       }
     })
   }
