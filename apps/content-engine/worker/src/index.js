@@ -7,7 +7,7 @@ import { getDb }                                              from './lib/db.js'
 import { generateScript, listScripts, regenerateSection }     from './services/scriptService.js'
 import { getChannelProfile, upsertChannelProfile }            from './services/channelProfileService.js'
 import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from './services/blueprintService.js'
-import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
+import { generateVoiceover, listVoiceovers, OPENAI_VOICES, ELEVENLABS_VOICES } from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
 import credentialsRouter                                      from './routes/credentials.js'
@@ -106,10 +106,14 @@ app.get('/api/voiceover', async (c) => {
   const voiceovers = await listVoiceovers(c.env)
   return c.json({ voiceovers })
 })
+app.get('/api/voiceover/voices', (c) => {
+  return c.json({ openai: OPENAI_VOICES, elevenlabs: ELEVENLABS_VOICES })
+})
 app.post('/api/voiceover/generate', async (c) => {
-  const { scriptId, voiceModel = 'Rachel', stability = 0.75, similarityBoost = 0.80 } = await c.req.json()
-  if (!scriptId) return c.json({ error: 'scriptId is required' }, 400)
-  const result = await generateVoiceover(c.env, { scriptId, voiceModel, stability, similarityBoost })
+  const body = await c.req.json()
+  const { scriptId, provider = 'openai', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80 } = body
+  if (!scriptId) return c.json({ error: 'scriptId é obrigatório' }, 400)
+  const result = await generateVoiceover(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost })
   return c.json(result)
 })
 
