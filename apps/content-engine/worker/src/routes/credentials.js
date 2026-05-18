@@ -73,7 +73,8 @@ router.put('/:toolId', requireAuth, async (c) => {
     login,
     passwordEncrypted,
     iv,
-    updatedBy: c.get('user').id,
+    updatedBy:  c.get('user').id,
+    updatedAt:  new Date().toISOString(),
   }
 
   let result, err

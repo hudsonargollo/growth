@@ -2,11 +2,16 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
 import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
-import { generateScript, listScripts }                        from './services/scriptService.js'
+import { generateNicheReport }                                from './services/nicheService.js'
+import { getDb }                                              from './lib/db.js'
+import { generateScript, listScripts, regenerateSection }     from './services/scriptService.js'
+import { getChannelProfile, upsertChannelProfile }            from './services/channelProfileService.js'
+import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from './services/blueprintService.js'
 import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
 import credentialsRouter                                      from './routes/credentials.js'
+import apikeysRouter                                          from './routes/apikeys.js'
 
 const app = new Hono()
 
@@ -21,7 +26,8 @@ app.get('/api/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString(
 
 // ── Mining ────────────────────────────────────────────────────────────────────
 app.get('/api/mining/catalog',  async (c) => {
-  const products = await getCatalog(c.env)
+  const sessionId = c.req.query('sessionId') ?? null
+  const products = await getCatalog(c.env, { sessionId })
   return c.json({ products })
 })
 app.get('/api/mining/sessions', async (c) => {
@@ -29,9 +35,16 @@ app.get('/api/mining/sessions', async (c) => {
   return c.json({ sessions })
 })
 app.post('/api/mining/run', async (c) => {
-  const { marketplace = 'amazon', category = 'electronics' } = await c.req.json()
-  const result = await runMiningSession(c.env, { marketplace, category })
+  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
+  const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
   return c.json(result)
+})
+
+// ── Niche intelligence ────────────────────────────────────────────────────────
+app.post('/api/mining/niches/generate', async (c) => {
+  const { format = 'longform' } = await c.req.json().catch(() => ({}))
+  const report = await generateNicheReport(c.env, { format })
+  return c.json(report)
 })
 
 // ── Scripts ───────────────────────────────────────────────────────────────────
@@ -40,10 +53,52 @@ app.get('/api/scripts', async (c) => {
   return c.json({ scripts })
 })
 app.post('/api/scripts/generate', async (c) => {
-  const { blueprintId, catalogIds, language = 'en' } = await c.req.json()
-  if (!blueprintId) return c.json({ error: 'blueprintId is required' }, 400)
-  const script = await generateScript(c.env, { blueprintId, catalogIds, language })
+  const body = await c.req.json()
+  const { blueprintId, blueprintData, catalogIds, productIds, language = 'pt', channelProfileId } = body
+  const script = await generateScript(c.env, { blueprintId, blueprintData, catalogIds, productIds, language, channelProfileId })
   return c.json(script)
+})
+app.post('/api/scripts/:id/sections/:index/regenerate', async (c) => {
+  const scriptId      = c.req.param('id')
+  const sectionIndex  = parseInt(c.req.param('index'), 10)
+  const { instructions } = await c.req.json().catch(() => ({}))
+  const script = await regenerateSection(c.env, { scriptId, sectionIndex, instructions })
+  return c.json(script)
+})
+
+// ── Channel Profile ───────────────────────────────────────────────────────────
+app.get('/api/channel-profile', async (c) => {
+  const profile = await getChannelProfile(c.env)
+  return c.json({ profile })
+})
+app.put('/api/channel-profile', async (c) => {
+  const body = await c.req.json()
+  const profile = await upsertChannelProfile(c.env, body)
+  return c.json(profile)
+})
+
+// ── Blueprints ────────────────────────────────────────────────────────────────
+app.get('/api/blueprints', async (c) => {
+  const blueprints = await listBlueprints(c.env)
+  return c.json({ blueprints })
+})
+app.get('/api/blueprints/:id', async (c) => {
+  const blueprint = await getBlueprint(c.env, c.req.param('id'))
+  return c.json(blueprint)
+})
+app.post('/api/blueprints', async (c) => {
+  const body = await c.req.json()
+  const blueprint = await upsertBlueprint(c.env, body)
+  return c.json(blueprint)
+})
+app.put('/api/blueprints/:id', async (c) => {
+  const body = await c.req.json()
+  const blueprint = await upsertBlueprint(c.env, { ...body, id: c.req.param('id') })
+  return c.json(blueprint)
+})
+app.delete('/api/blueprints/:id', async (c) => {
+  const result = await deleteBlueprint(c.env, c.req.param('id'))
+  return c.json(result)
 })
 
 // ── Voiceover ─────────────────────────────────────────────────────────────────
@@ -88,8 +143,23 @@ app.post('/api/comments/:id/reject', async (c) => {
   return c.json(result)
 })
 
-// ── Credentials (encrypted) ───────────────────────────────────────────────────
+// ── Products (affiliate link update) ─────────────────────────────────────────
+app.put('/api/products/:id', async (c) => {
+  const db = getDb(c.env)
+  const id = c.req.param('id')
+  const body = await c.req.json()
+  // Only allow updating affiliate links — nothing else
+  const { amazonAffiliateLink, mlAffiliateLink, affiliateLink } = body
+  const update = {}
+  if (affiliateLink    !== undefined) update.affiliateLink    = affiliateLink
+  if (amazonAffiliateLink !== undefined) update.amazonAffiliateLink = amazonAffiliateLink
+  if (mlAffiliateLink  !== undefined) update.mlAffiliateLink  = mlAffiliateLink
+  const { data, error } = await db.from('products').update(update).eq('id', id).select().single()
+  if (error) return c.json({ error: error.message }, 500)
+  return c.json(data)
+})
 app.route('/api/credentials', credentialsRouter)
+app.route('/api/apikeys',     apikeysRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.onError((err, c) => {

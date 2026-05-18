@@ -42,13 +42,13 @@ export default function Comments() {
   return (
     <div>
       <PageHeader
-        title="Comment Automation"
-        description="LLM-powered replies with safety guardrails and human-in-the-loop escalation"
+        title="Automação de Comentários"
+        description="Respostas via LLM com guardrails de segurança e revisão humana"
         action={
           <button onClick={handleRunAgent} disabled={running}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             {running ? <RefreshCw size={15} className="animate-spin" /> : <MessageSquare size={15} />}
-            {running ? 'Running…' : 'Run Agent Now'}
+            {running ? 'Executando…' : 'Executar Agente'}
           </button>
         }
       />
@@ -56,22 +56,22 @@ export default function Comments() {
       {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
 
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Processed"  value={jobs.length.toLocaleString()}        sub="All time"                    icon={MessageSquare} color="indigo" />
-        <StatCard label="AI Replies"       value={aiReplies.toLocaleString()}           sub={`${aiPct}% of total`}        icon={ShieldCheck}   color="green"  />
-        <StatCard label="Human Reviewed"   value={humanReviewed.toLocaleString()}       sub={`${100 - aiPct}% of total`}  icon={MessageSquare} color="blue"   />
-        <StatCard label="Flagged"          value={flagged.toLocaleString()}             sub="Needs review"                icon={AlertTriangle} color="yellow" />
+        <StatCard label="Total Processados"    value={jobs.length.toLocaleString()}        sub="Desde sempre"                 icon={MessageSquare} color="indigo" />
+        <StatCard label="Respostas por IA"    value={aiReplies.toLocaleString()}           sub={`${aiPct}% do total`}         icon={ShieldCheck}   color="green"  />
+        <StatCard label="Revisão Humana"      value={humanReviewed.toLocaleString()}       sub={`${100 - aiPct}% do total`}   icon={MessageSquare} color="blue"   />
+        <StatCard label="Sinalizados"         value={flagged.toLocaleString()}             sub="Aguardam revisão"             icon={AlertTriangle} color="yellow" />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h3 className="font-semibold text-gray-800 mb-4">Guardrails & Safety</h3>
+        <h3 className="font-semibold text-gray-800 mb-4">Guardrails & Segurança</h3>
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: 'Block harassment / hate speech',    defaultChecked: true },
-            { label: 'Block misinformation claims',       defaultChecked: true },
-            { label: 'Enforce affiliate disclosure',      defaultChecked: true },
-            { label: 'Human review for flagged comments', defaultChecked: true },
-            { label: 'Brand tone enforcement',            defaultChecked: true },
-            { label: 'Skip replies on negative reviews',  defaultChecked: false },
+            { label: 'Bloquear assédio / discurso de ódio',      defaultChecked: true },
+            { label: 'Bloquear desinformação',                    defaultChecked: true },
+            { label: 'Exigir divulgação de afiliados',            defaultChecked: true },
+            { label: 'Revisão humana para comentários sinalizados', defaultChecked: true },
+            { label: 'Aplicar tom da marca',                      defaultChecked: true },
+            { label: 'Ignorar respostas em avaliações negativas', defaultChecked: false },
           ].map((g) => (
             <label key={g.label} className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
               <input type="checkbox" defaultChecked={g.defaultChecked} className="accent-indigo-600 w-4 h-4" />
@@ -83,11 +83,11 @@ export default function Comments() {
 
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-800">Comment Jobs</h3>
+          <h3 className="font-semibold text-gray-800">Jobs de Comentários</h3>
         </div>
-        {loading && <div className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</div>}
+        {loading && <div className="px-6 py-8 text-center text-gray-400 text-sm">Carregando…</div>}
         {!loading && jobs.length === 0 && (
-          <div className="px-6 py-8 text-center text-gray-400 text-sm">No comment jobs yet — click "Run Agent Now" to process comments.</div>
+          <div className="px-6 py-8 text-center text-gray-400 text-sm">Nenhum job ainda — clique em "Executar Agente" para processar comentários.</div>
         )}
         <div className="divide-y divide-gray-50">
           {jobs.map((c) => (
@@ -101,7 +101,7 @@ export default function Comments() {
                   )}
                   {c.flagged && (
                     <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
-                      <AlertTriangle size={12} /> Flagged for human review
+                      <AlertTriangle size={12} /> Sinalizado para revisão humana
                     </p>
                   )}
                 </div>
@@ -111,9 +111,9 @@ export default function Comments() {
                   {c.status === 'flagged' && (
                     <div className="flex gap-2">
                       <button onClick={() => handleReview(c.id, 'approve')}
-                        className="text-xs text-green-600 hover:underline font-medium">Approve</button>
+                        className="text-xs text-green-600 hover:underline font-medium">Aprovar</button>
                       <button onClick={() => handleReview(c.id, 'reject')}
-                        className="text-xs text-red-500 hover:underline font-medium">Reject</button>
+                        className="text-xs text-red-500 hover:underline font-medium">Rejeitar</button>
                     </div>
                   )}
                 </div>

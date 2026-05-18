@@ -36,6 +36,24 @@ export async function apiPost(path, body) {
   return json
 }
 
+export async function apiPut(path, body) {
+  const res = await fetch(`/api${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? res.statusText)
+  return json
+}
+
+export async function apiDelete(path) {
+  const res = await fetch(`/api${path}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? res.statusText)
+  return json
+}
+
 export function timeAgo(iso) {
   if (!iso) return '—'
   const diff = Date.now() - new Date(iso).getTime()

@@ -48,28 +48,28 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Overview of your content pipeline" />
+      <PageHeader title="Dashboard" description="Visão geral do seu pipeline de conteúdo" />
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-        <StatCard label="Products Cataloged"  value={products.length.toLocaleString()}   sub="All marketplaces"                          icon={ShoppingBag}   color="indigo" />
-        <StatCard label="Scripts Generated"   value={scripts.length.toLocaleString()}    sub={`${scripts.length} total`}                 icon={FileText}      color="blue"   />
-        <StatCard label="Voiceovers Ready"    value={voiceovers.length.toLocaleString()} sub={`${voiceovers.filter(v=>v.status==='completed').length} completed`} icon={Mic} color="green" />
-        <StatCard label="Deliveries Sent"     value={deliveries.length.toLocaleString()} sub={`${deliveries.filter(d=>d.status==='completed').length} completed`} icon={Send} color="yellow" />
-        <StatCard label="Comments Replied"    value={comments.length.toLocaleString()}   sub={`AI: ${aiPct}% · Human: ${100 - aiPct}%`} icon={MessageSquare} color="indigo" />
-        <StatCard label="Mining Sessions"     value={sessions.length.toLocaleString()}   sub={`${sessions.filter(s=>s.status==='completed').length} completed`}  icon={TrendingUp} color="green" />
+        <StatCard label="Produtos Catalogados" value={products.length.toLocaleString()}   sub="Todos os marketplaces"                          icon={ShoppingBag}   color="indigo" />
+        <StatCard label="Roteiros Gerados"     value={scripts.length.toLocaleString()}    sub={`${scripts.length} total`}                      icon={FileText}      color="blue"   />
+        <StatCard label="Narrações Prontas"    value={voiceovers.length.toLocaleString()} sub={`${voiceovers.filter(v=>v.status==='completed').length} concluídas`} icon={Mic} color="green" />
+        <StatCard label="Entregas Enviadas"    value={deliveries.length.toLocaleString()} sub={`${deliveries.filter(d=>d.status==='completed').length} concluídas`} icon={Send} color="yellow" />
+        <StatCard label="Comentários Respondidos" value={comments.length.toLocaleString()} sub={`IA: ${aiPct}% · Humano: ${100 - aiPct}%`}    icon={MessageSquare} color="indigo" />
+        <StatCard label="Sessões de Mineração" value={sessions.length.toLocaleString()}   sub={`${sessions.filter(s=>s.status==='completed').length} concluídas`}  icon={TrendingUp} color="green" />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-800">Recent Activity</h3>
+          <h3 className="font-semibold text-gray-800">Atividade Recente</h3>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b border-gray-100">
-              <th className="px-6 py-3 font-medium">Type</th>
-              <th className="px-6 py-3 font-medium">Job</th>
+              <th className="px-6 py-3 font-medium">Tipo</th>
+              <th className="px-6 py-3 font-medium">Tarefa</th>
               <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium">Time</th>
+              <th className="px-6 py-3 font-medium">Tempo</th>
             </tr>
           </thead>
           <tbody>
