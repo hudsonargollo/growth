@@ -120,14 +120,15 @@ async function postYouTubeReply(keys, { commentId, reply }) {
 // keys: API keys object { YOUTUBE_API_KEY, YOUTUBE_CHANNEL_ID, OPENAI_API_KEY, ... }
 //       For API-triggered runs, keys are sourced from env (Phase 3 will load per-tenant keys)
 export async function runCommentAgent(env, tenantId, db, keys) {
-  // Fall back to env keys if none provided (cron before Phase 3 or direct API call)
+  // Load keys from env secrets first, fall back to DB-stored credentials (Settings UI)
+  const { resolveKey } = await import('../lib/resolveKey.js')
   const resolvedKeys = keys ?? {
-    YOUTUBE_API_KEY:    env.YOUTUBE_API_KEY,
-    YOUTUBE_CHANNEL_ID: env.YOUTUBE_CHANNEL_ID,
-    YOUTUBE_VIDEO_IDS:  env.YOUTUBE_VIDEO_IDS,
-    YOUTUBE_OAUTH_TOKEN: env.YOUTUBE_OAUTH_TOKEN,
-    OPENAI_API_KEY:     env.OPENAI_API_KEY,
-    LLM_MODEL:          env.LLM_MODEL,
+    YOUTUBE_API_KEY:     await resolveKey(env, 'YOUTUBE_API_KEY'),
+    YOUTUBE_CHANNEL_ID:  await resolveKey(env, 'YOUTUBE_CHANNEL_ID'),
+    YOUTUBE_VIDEO_IDS:   env.YOUTUBE_VIDEO_IDS ?? null,
+    YOUTUBE_OAUTH_TOKEN: await resolveKey(env, 'YOUTUBE_OAUTH_TOKEN'),
+    OPENAI_API_KEY:      await resolveKey(env, 'OPENAI_API_KEY'),
+    LLM_MODEL:           env.LLM_MODEL,
   }
 
   let comments
