@@ -19,6 +19,9 @@ EVOLUTION_INSTANCE = "FABRICADECONTEUDO"
 crons = ["0 */4 * * *"]
 
 # ── Secrets (set via: wrangler secret put KEY_NAME) ───────────────────────────
+# Auth middleware (Phase 2 — required):
+#   SUPABASE_ANON_KEY             (Settings → API → anon/public key — used for user JWT client)
+#
 # Required for mining:
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY

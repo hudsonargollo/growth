@@ -11,21 +11,21 @@ const FLAG_PATTERNS = [
 const isFlagged = (text) => FLAG_PATTERNS.some((p) => p.test(text))
 
 // ── YouTube Data API ──────────────────────────────────────────────────────────
-async function fetchYouTubeComments(env) {
-  if (!env.YOUTUBE_API_KEY) {
-    throw new Error('YOUTUBE_API_KEY not configured — add it via: wrangler secret put YOUTUBE_API_KEY')
+async function fetchYouTubeComments(keys) {
+  if (!keys.YOUTUBE_API_KEY) {
+    throw new Error('YOUTUBE_API_KEY not configured')
   }
-  if (!env.YOUTUBE_CHANNEL_ID && !env.YOUTUBE_VIDEO_IDS) {
-    throw new Error('Set YOUTUBE_CHANNEL_ID or YOUTUBE_VIDEO_IDS (comma-separated) to specify which videos to monitor')
+  if (!keys.YOUTUBE_CHANNEL_ID && !keys.YOUTUBE_VIDEO_IDS) {
+    throw new Error('Set YOUTUBE_CHANNEL_ID or YOUTUBE_VIDEO_IDS to specify which videos to monitor')
   }
 
-  const videoIds = env.YOUTUBE_VIDEO_IDS
-    ? env.YOUTUBE_VIDEO_IDS.split(',').map((v) => v.trim())
-    : await fetchChannelVideoIds(env)
+  const videoIds = keys.YOUTUBE_VIDEO_IDS
+    ? keys.YOUTUBE_VIDEO_IDS.split(',').map((v) => v.trim())
+    : await fetchChannelVideoIds(keys)
 
   const comments = []
-  for (const videoId of videoIds.slice(0, 5)) { // max 5 videos per run
-    const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&order=time&key=${env.YOUTUBE_API_KEY}`
+  for (const videoId of videoIds.slice(0, 5)) {
+    const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&order=time&key=${keys.YOUTUBE_API_KEY}`
     const res = await fetch(url)
     if (!res.ok) {
       console.error(`[comments] YouTube API error for video ${videoId}: ${res.status}`)
@@ -47,8 +47,8 @@ async function fetchYouTubeComments(env) {
   return comments
 }
 
-async function fetchChannelVideoIds(env) {
-  const url = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${env.YOUTUBE_CHANNEL_ID}&maxResults=5&order=date&type=video&key=${env.YOUTUBE_API_KEY}`
+async function fetchChannelVideoIds(keys) {
+  const url = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${keys.YOUTUBE_CHANNEL_ID}&maxResults=5&order=date&type=video&key=${keys.YOUTUBE_API_KEY}`
   const res  = await fetch(url)
   if (!res.ok) throw new Error(`YouTube search API error: ${res.status}`)
   const json = await res.json()
@@ -61,19 +61,17 @@ Reply to comments in a helpful, enthusiastic tone. Keep replies under 3 sentence
 Always mention checking the description for affiliate links when relevant.
 Never make false claims. Include affiliate disclosure when recommending products.`
 
-async function generateReply(env, comment) {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured')
-  }
+async function generateReply(keys, comment) {
+  if (!keys.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      Authorization:  `Bearer ${env.OPENAI_API_KEY}`,
+      Authorization:  `Bearer ${keys.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model:       env.LLM_MODEL ?? 'gpt-4o-mini',
+      model:       keys.LLM_MODEL ?? 'gpt-4o-mini',
       messages:    [
         { role: 'system', content: BRAND_TONE },
         { role: 'user',   content: `Reply to this YouTube comment from "${comment.author ?? 'viewer'}": "${comment.text}"` },
@@ -93,9 +91,8 @@ async function generateReply(env, comment) {
 }
 
 // ── YouTube reply posting ─────────────────────────────────────────────────────
-async function postYouTubeReply(env, { commentId, reply }) {
-  if (!env.YOUTUBE_OAUTH_TOKEN) {
-    // Log only — posting requires OAuth, which is optional
+async function postYouTubeReply(keys, { commentId, reply }) {
+  if (!keys.YOUTUBE_OAUTH_TOKEN) {
     console.log(`[comments] No YOUTUBE_OAUTH_TOKEN — reply not posted to YouTube: ${reply.slice(0, 60)}`)
     return
   }
@@ -103,14 +100,11 @@ async function postYouTubeReply(env, { commentId, reply }) {
   const res = await fetch('https://www.googleapis.com/youtube/v3/comments?part=snippet', {
     method: 'POST',
     headers: {
-      Authorization:  `Bearer ${env.YOUTUBE_OAUTH_TOKEN}`,
+      Authorization:  `Bearer ${keys.YOUTUBE_OAUTH_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      snippet: {
-        parentId:    commentId,
-        textOriginal: reply,
-      },
+      snippet: { parentId: commentId, textOriginal: reply },
     }),
   })
 
@@ -121,12 +115,24 @@ async function postYouTubeReply(env, { commentId, reply }) {
 }
 
 // ── Main agent ────────────────────────────────────────────────────────────────
-export async function runCommentAgent(env) {
-  const db = getDb(env)
+// tenantId: uuid of the tenant being processed
+// db: Supabase client to use (user-scoped for API calls, service role for cron)
+// keys: API keys object { YOUTUBE_API_KEY, YOUTUBE_CHANNEL_ID, OPENAI_API_KEY, ... }
+//       For API-triggered runs, keys are sourced from env (Phase 3 will load per-tenant keys)
+export async function runCommentAgent(env, tenantId, db, keys) {
+  // Fall back to env keys if none provided (cron before Phase 3 or direct API call)
+  const resolvedKeys = keys ?? {
+    YOUTUBE_API_KEY:    env.YOUTUBE_API_KEY,
+    YOUTUBE_CHANNEL_ID: env.YOUTUBE_CHANNEL_ID,
+    YOUTUBE_VIDEO_IDS:  env.YOUTUBE_VIDEO_IDS,
+    YOUTUBE_OAUTH_TOKEN: env.YOUTUBE_OAUTH_TOKEN,
+    OPENAI_API_KEY:     env.OPENAI_API_KEY,
+    LLM_MODEL:          env.LLM_MODEL,
+  }
 
   let comments
   try {
-    comments = await fetchYouTubeComments(env)
+    comments = await fetchYouTubeComments(resolvedKeys)
   } catch (e) {
     console.error('[comments] Fetch failed:', e.message)
     throw e
@@ -136,12 +142,9 @@ export async function runCommentAgent(env) {
   let flaggedCount = 0
 
   for (const comment of comments) {
-    // Skip if already processed
-    const { data: existing } = await db
-      .from('comment_reply_jobs')
-      .select('id')
-      .eq('commentId', comment.id)
-      .single()
+    let q = db.from('comment_reply_jobs').select('id').eq('commentId', comment.id)
+    if (tenantId) q = q.eq('tenant_id', tenantId)
+    const { data: existing } = await q.single()
     if (existing) continue
 
     const flagged = isFlagged(comment.text)
@@ -150,9 +153,9 @@ export async function runCommentAgent(env) {
 
     if (!flagged) {
       try {
-        reply  = await generateReply(env, comment)
+        reply  = await generateReply(resolvedKeys, comment)
         status = 'completed'
-        await postYouTubeReply(env, { commentId: comment.id, reply })
+        await postYouTubeReply(resolvedKeys, { commentId: comment.id, reply })
       } catch (e) {
         console.error(`[comments] Reply generation failed for ${comment.id}:`, e.message)
         status = 'failed'
@@ -171,6 +174,7 @@ export async function runCommentAgent(env) {
       status,
       source:    flagged ? 'human' : 'AI',
       flagged,
+      tenant_id: tenantId,
     })
     if (error) console.error('[comments] DB insert error:', error.message)
     processed++
@@ -179,28 +183,21 @@ export async function runCommentAgent(env) {
   return { processed, flagged: flaggedCount }
 }
 
-export async function listCommentJobs(env) {
-  const db = getDb(env)
-  const { data, error } = await db
-    .from('comment_reply_jobs')
-    .select('*')
-    .order('createdAt', { ascending: false })
-    .limit(100)
+export async function listCommentJobs(env, tenantId, db) {
+  let query = db.from('comment_reply_jobs').select('*').order('createdAt', { ascending: false }).limit(100)
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function reviewComment(env, jobId, decision) {
-  const db = getDb(env)
-  const { data, error } = await db
+export async function reviewComment(env, tenantId, db, jobId, decision) {
+  let query = db
     .from('comment_reply_jobs')
-    .update({
-      status:     decision === 'approved' ? 'completed' : 'rejected',
-      reviewedAt: new Date().toISOString(),
-    })
+    .update({ status: decision === 'approved' ? 'completed' : 'rejected', reviewedAt: new Date().toISOString() })
     .eq('id', jobId)
-    .select()
-    .single()
+  if (tenantId) query = query.eq('tenant_id', tenantId)
+  const { data, error } = await query.select().single()
   if (error) throw new Error(error.message)
   return data
 }

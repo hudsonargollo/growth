@@ -5,24 +5,11 @@ import { encrypt, decrypt } from '../lib/crypto.js'
 
 const router = new Hono()
 
-// Verify the request carries a valid Supabase JWT before touching credentials
-async function requireAuth(c, next) {
-  const auth = c.req.header('Authorization') ?? ''
-  const token = auth.replace('Bearer ', '').trim()
-  if (!token) return c.json({ error: 'Unauthorized' }, 401)
-
-  // Validate token against Supabase
-  const db = getDb(c.env)
-  const { data: { user }, error } = await db.auth.getUser(token)
-  if (error || !user) return c.json({ error: 'Unauthorized' }, 401)
-
-  c.set('user', user)
-  await next()
-}
+// requireAuth is applied globally in index.js — no local middleware needed here
 
 // GET /api/credentials — return all tool credentials (passwords decrypted server-side)
-router.get('/', requireAuth, async (c) => {
-  const db = getDb(c.env)
+router.get('/', async (c) => {
+  const db     = getDb(c.env)
   const secret = c.env.CREDENTIALS_SECRET
   if (!secret) return c.json({ error: 'CREDENTIALS_SECRET not configured' }, 500)
 
@@ -32,7 +19,6 @@ router.get('/', requireAuth, async (c) => {
 
   if (error) return c.json({ error: error.message }, 500)
 
-  // Decrypt passwords before sending — still over HTTPS, never stored in plain text
   const result = await Promise.all((data ?? []).map(async (row) => {
     let password = ''
     if (row.passwordEncrypted && row.iv) {
@@ -45,8 +31,8 @@ router.get('/', requireAuth, async (c) => {
 })
 
 // PUT /api/credentials/:toolId — upsert credentials (encrypts password server-side)
-router.put('/:toolId', requireAuth, async (c) => {
-  const db = getDb(c.env)
+router.put('/:toolId', async (c) => {
+  const db     = getDb(c.env)
   const secret = c.env.CREDENTIALS_SECRET
   if (!secret) return c.json({ error: 'CREDENTIALS_SECRET not configured' }, 500)
 
@@ -61,7 +47,6 @@ router.put('/:toolId', requireAuth, async (c) => {
     iv = enc.iv
   }
 
-  // Check if row exists
   const { data: existing } = await db
     .from('tool_credentials')
     .select('id')
