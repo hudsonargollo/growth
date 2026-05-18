@@ -1,26 +1,30 @@
 /**
  * growth-clube Worker
- * Serves the static React app + provides a KV-backed REST API for Kanban data.
+ * Serves the static React app + KV-backed REST API for Kanban data and tool credentials.
  *
- * KV keys:
+ * KV keys (KANBAN namespace):
  *   kanban:clients          → JSON array of client objects { id, name, color }
  *   kanban:cards            → JSON array of all card objects
  *   kanban:members          → JSON array of member objects { id, name, email, role, tools[] }
+ *   creds:{toolId}          → { login, password, updatedAt }
  *
  * API routes (all JSON):
+ *   GET  /api/credentials               list all saved credentials (passwords included)
+ *   PUT  /api/credentials/:toolId       upsert { login, password }
+ *
  *   GET  /api/kanban/clients
- *   POST /api/kanban/clients          body: { name, color? }
- *   PUT  /api/kanban/clients/:id      body: { name?, color? }
+ *   POST /api/kanban/clients            body: { name, color? }
+ *   PUT  /api/kanban/clients/:id        body: { name?, color? }
  *   DELETE /api/kanban/clients/:id
  *
  *   GET  /api/kanban/cards
- *   POST /api/kanban/cards            body: card object
- *   PUT  /api/kanban/cards/:id        body: partial card
+ *   POST /api/kanban/cards              body: card object
+ *   PUT  /api/kanban/cards/:id          body: partial card
  *   DELETE /api/kanban/cards/:id
  *
  *   GET  /api/kanban/members
- *   POST /api/kanban/members          body: { name, email, role, tools? }
- *   PUT  /api/kanban/members/:id      body: partial member
+ *   POST /api/kanban/members            body: { name, email, role, tools? }
+ *   PUT  /api/kanban/members/:id        body: partial member
  *   DELETE /api/kanban/members/:id
  */
 
@@ -81,6 +85,39 @@ export default {
     }
 
     // ── API routes ────────────────────────────────────────────────────────────
+
+    // ── CREDENTIALS ───────────────────────────────────────────────────────────
+    if (path === '/api/credentials') {
+      const kv = env.KANBAN
+      if (method === 'GET') {
+        // List all stored tool credentials (scan creds: prefix)
+        const list = await kv.list({ prefix: 'creds:' })
+        const rows = await Promise.all(
+          list.keys.map(async ({ name }) => {
+            const row = await kvGet(kv, name, null)
+            if (!row) return null
+            return { toolId: name.slice(6), login: row.login, password: row.password }
+          })
+        )
+        return json({ credentials: rows.filter(Boolean) })
+      }
+    }
+
+    const credsMatch = path.match(/^\/api\/credentials\/([^/]+)$/)
+    if (credsMatch) {
+      const kv     = env.KANBAN
+      const toolId = credsMatch[1]
+      if (method === 'PUT') {
+        const { login = '', password = '' } = await request.json()
+        await kvSet(kv, `creds:${toolId}`, { login, password, updatedAt: new Date().toISOString() })
+        return json({ ok: true, toolId })
+      }
+      if (method === 'DELETE') {
+        await kv.delete(`creds:${toolId}`)
+        return json({ ok: true })
+      }
+    }
+
     if (path.startsWith('/api/kanban/')) {
       const kv = env.KANBAN
 

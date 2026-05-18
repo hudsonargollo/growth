@@ -391,9 +391,7 @@ export default function TeamDashboard({ user, onLogout }) {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
         // Load credentials
-        const res = await fetch('https://content-engine.hudsonargollo2.workers.dev/api/credentials', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
+        const res = await fetch('/api/credentials')
         if (res.ok) {
           const { credentials: rows } = await res.json()
           setCredentials((prev) => {
@@ -475,12 +473,10 @@ export default function TeamDashboard({ user, onLogout }) {
   async function handleCredentialSave(toolId, field, value) {
     setCredentials((prev) => ({ ...prev, [toolId]: { ...prev[toolId], [field]: value } }))
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
       const current = credentials[toolId] ?? { login: '', password: '' }
-      await fetch(`https://content-engine.hudsonargollo2.workers.dev/api/credentials/${toolId}`, {
+      await fetch(`/api/credentials/${toolId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           login:    field === 'login'    ? value : current.login,
           password: field === 'password' ? value : current.password,
