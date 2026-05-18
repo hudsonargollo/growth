@@ -107,7 +107,7 @@ async function callLLMJson(env, prompt) {
   return callLLM(env, {
     system:    'Você é um especialista em marketing de afiliados brasileiro. Responda apenas com JSON válido, sem markdown, sem explicações.',
     prompt,
-    maxTokens: 2000,
+    maxTokens: 4096,
     json:      true,
   })
 }
