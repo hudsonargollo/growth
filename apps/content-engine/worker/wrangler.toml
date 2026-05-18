@@ -8,9 +8,11 @@ directory = "../client/dist"
 binding = "ASSETS"
 
 [vars]
-NODE_ENV    = "production"
-LLM_MODEL   = "gpt-4o-mini"
-ML_SITE     = "brazil"   # MercadoLibre site: brazil | argentina | mexico | chile | colombia
+NODE_ENV           = "production"
+LLM_MODEL          = "gpt-4o-mini"
+ML_SITE            = "brazil"
+EVOLUTION_API_URL  = "https://auto.clubemkt.digital"
+EVOLUTION_INSTANCE = "FABRICADECONTEUDO"
 
 # Cron trigger — runs comment agent every 4 hours
 [triggers]
