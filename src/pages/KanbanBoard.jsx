@@ -113,7 +113,7 @@ function CardModal({ card, clients, members, onSave, onDelete, onClose }) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Cliente</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Parceiro</label>
               <select value={d.clientId ?? ''} onChange={e => set('clientId', e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#A31621]">
                 <option value="">— Nenhum —</option>
@@ -312,7 +312,7 @@ function BoardView({ cards, clients, members, activeClientId, onCardsChange, onA
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: activeClient.color }} />
             )}
             <h1 className="text-2xl font-extrabold text-[#A31621] tracking-tight">
-              {activeClient ? activeClient.name : 'Todos os Clientes'}
+              {activeClient ? activeClient.name : 'Todos os Parceiros'}
             </h1>
             {saving && <Loader2 size={14} className="text-gray-400 animate-spin" />}
           </div>
@@ -377,9 +377,9 @@ function ClientSidebar({ clients, activeClientId, onSelect, onAdd, onDelete, onR
 
   return (
     <aside className="w-56 shrink-0 flex flex-col gap-1 pr-4 border-r border-gray-200">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2">Clientes</p>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-2">Parceiros</p>
 
-      {/* All clients */}
+      {/* All */}
       <button onClick={() => onSelect(null)}
         className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
           !activeClientId ? 'bg-[#A31621] text-white' : 'text-gray-600 hover:bg-gray-100'
@@ -388,9 +388,9 @@ function ClientSidebar({ clients, activeClientId, onSelect, onAdd, onDelete, onR
         Todos
       </button>
 
-      {/* Per-client */}
+      {/* Per-parceiro */}
       {clients.map(client => (
-        <div key={client.id} className="group relative">
+        <div key={client.id}>
           {renamingId === client.id ? (
             <div className="flex items-center gap-1 px-2 py-1">
               <input autoFocus value={renameVal} onChange={e => setRenameVal(e.target.value)}
@@ -400,35 +400,39 @@ function ClientSidebar({ clients, activeClientId, onSelect, onAdd, onDelete, onR
               <button onClick={() => setRenamingId(null)} className="p-1 text-gray-400"><X size={11} /></button>
             </div>
           ) : (
-            <button onClick={() => onSelect(client.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                activeClientId === client.id ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              style={activeClientId === client.id ? { backgroundColor: client.color } : {}}>
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: client.color }} />
-              <span className="flex-1 text-left truncate">{client.name}</span>
-              {/* Actions on hover */}
-              <span className="hidden group-hover:flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+            <div className={`flex items-center gap-1 rounded-xl transition-colors ${
+              activeClientId === client.id ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            style={activeClientId === client.id ? { backgroundColor: client.color } : {}}>
+              <button onClick={() => onSelect(client.id)}
+                className="flex items-center gap-2 flex-1 min-w-0 px-3 py-2 text-sm font-semibold text-left">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: client.color }} />
+                <span className="flex-1 truncate">{client.name}</span>
+              </button>
+              {/* Always-visible edit / delete */}
+              <div className="flex items-center gap-0.5 pr-2 shrink-0" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { setRenamingId(client.id); setRenameVal(client.name) }}
-                  className={`p-0.5 rounded hover:bg-black/10 ${activeClientId === client.id ? 'text-white/70' : 'text-gray-400'}`}>
-                  <Pencil size={10} />
+                  className={`p-1 rounded hover:bg-black/10 ${activeClientId === client.id ? 'text-white/70' : 'text-gray-400 hover:text-gray-700'}`}
+                  title="Renomear">
+                  <Pencil size={11} />
                 </button>
                 <button onClick={() => { if (window.confirm(`Excluir "${client.name}" e todos os seus cards?`)) onDelete(client.id) }}
-                  className={`p-0.5 rounded hover:bg-black/10 ${activeClientId === client.id ? 'text-white/70' : 'text-gray-400'}`}>
-                  <Trash2 size={10} />
+                  className={`p-1 rounded hover:bg-black/10 ${activeClientId === client.id ? 'text-white/70 hover:text-red-200' : 'text-gray-400 hover:text-red-500'}`}
+                  title="Excluir">
+                  <Trash2 size={11} />
                 </button>
-              </span>
-            </button>
+              </div>
+            </div>
           )}
         </div>
       ))}
 
-      {/* Add client */}
+      {/* Add parceiro */}
       {adding ? (
         <div className="mt-2 px-2 space-y-2">
           <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') submitAdd(); if (e.key === 'Escape') setAdding(false) }}
-            placeholder="Nome do cliente"
+            placeholder="Nome do parceiro"
             className="w-full text-xs border border-[#A31621]/40 rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#A31621]" />
           <div className="flex gap-1.5 flex-wrap">
             {COLORS.map(c => (
@@ -445,7 +449,7 @@ function ClientSidebar({ clients, activeClientId, onSelect, onAdd, onDelete, onR
       ) : (
         <button onClick={() => setAdding(true)}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-[#A31621] hover:bg-gray-100 transition-colors mt-1">
-          <Plus size={13} /> Novo Cliente
+          <Plus size={13} /> Novo Parceiro
         </button>
       )}
     </aside>
@@ -489,7 +493,7 @@ export default function KanbanBoard({ members: teamMembers = [] }) {
       const { client } = await apiFetch('/api/kanban/clients', { method: 'POST', body: { name, color } })
       setClients(prev => [...prev, client])
       setActiveClientId(client.id)
-    } catch (e) { alert('Erro ao criar cliente: ' + e.message) }
+    } catch (e) { alert('Erro ao criar parceiro: ' + e.message) }
   }
 
   async function deleteClient(id) {
@@ -498,7 +502,7 @@ export default function KanbanBoard({ members: teamMembers = [] }) {
       setClients(prev => prev.filter(c => c.id !== id))
       setCards(prev => prev.filter(c => c.clientId !== id))
       if (activeClientId === id) setActiveClientId(null)
-    } catch (e) { alert('Erro ao excluir cliente: ' + e.message) }
+    } catch (e) { alert('Erro ao excluir parceiro: ' + e.message) }
   }
 
   async function renameClient(id, name) {
