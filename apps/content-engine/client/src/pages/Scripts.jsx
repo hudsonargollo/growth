@@ -487,19 +487,58 @@ function ScriptListRow({ script, onSelect, isSelected }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
+const STANDARD_TYPES = [
+  {
+    id:    'top-5-custo-beneficio',
+    name:  'Top 5 Custo-Benefício',
+    icon:  '🏆',
+    desc:  '5 produtos ranqueados do pior ao melhor custo-benefício',
+    sections: [
+      { id: uid(), type: 'intro',   label: 'Abertura',                    duration: 60,  instructions: 'Hook forte com a promessa de revelar os 5 melhores produtos custo-benefício. Inclua aviso de afiliado.' },
+      { id: uid(), type: 'product', label: 'Critérios de Seleção',        duration: 45,  instructions: 'Explique brevemente os critérios usados para ranquear os produtos.' },
+      { id: uid(), type: 'product', label: 'Produto #5',                  duration: 90,  instructions: 'Apresente o produto, preço, pontos positivos e para quem vale.' },
+      { id: uid(), type: 'product', label: 'Produto #4',                  duration: 90,  instructions: 'Apresente o produto, destaque o diferencial em relação ao #5.' },
+      { id: uid(), type: 'product', label: 'Produto #3',                  duration: 120, instructions: 'Análise mais detalhada, prós e contras principais.' },
+      { id: uid(), type: 'product', label: 'Produto #2',                  duration: 120, instructions: 'Análise detalhada, por que quase chegou ao topo.' },
+      { id: uid(), type: 'product', label: 'Produto #1 — Melhor Escolha', duration: 150, instructions: 'O campeão: análise completa, por que é o melhor custo-benefício, link afiliado com destaque.' },
+      { id: uid(), type: 'cta',     label: 'CTA Final',                   duration: 45,  instructions: 'Convite para se inscrever, ativar notificações e acessar os links na descrição.' },
+    ],
+  },
+  {
+    id:    'comparacao-1x1',
+    name:  'Comparação 1x1',
+    icon:  '⚔️',
+    desc:  'Dois produtos frente a frente com veredicto final',
+    sections: [
+      { id: uid(), type: 'intro',      label: 'Abertura',               duration: 60,  instructions: 'Hook: qual dos dois você escolheria? Crie suspense. Aviso de afiliado.' },
+      { id: uid(), type: 'product',    label: 'Apresentação dos Dois',  duration: 90,  instructions: 'Apresente ambos os produtos, preços e posicionamento de mercado.' },
+      { id: uid(), type: 'comparison', label: 'Design e Construção',    duration: 90,  instructions: 'Compare qualidade de materiais, ergonomia e acabamento.' },
+      { id: uid(), type: 'comparison', label: 'Performance e Recursos', duration: 120, instructions: 'Compare funcionalidades, testes práticos e resultados.' },
+      { id: uid(), type: 'pros_cons',  label: 'Custo-Benefício',        duration: 90,  instructions: 'Compare preço vs valor entregue por cada um.' },
+      { id: uid(), type: 'verdict',    label: 'Veredicto Final',        duration: 75,  instructions: 'Declare o vencedor, para quem cada um é indicado e os links afiliados.' },
+      { id: uid(), type: 'cta',        label: 'CTA Final',              duration: 45,  instructions: 'Inscrição, notificações e links na descrição.' },
+    ],
+  },
+  {
+    id:    'review-detalhado',
+    name:  'Review Detalhado',
+    icon:  '🔍',
+    desc:  'Análise aprofundada de um único produto',
+    sections: [
+      { id: uid(), type: 'intro',    label: 'Abertura',                 duration: 60,  instructions: 'Hook com a principal dor que o produto resolve. Aviso de afiliado.' },
+      { id: uid(), type: 'product',  label: 'Visão Geral',              duration: 90,  instructions: 'O que é, para quem é, posicionamento de preço no mercado.' },
+      { id: uid(), type: 'product',  label: 'Unboxing e Design',        duration: 90,  instructions: 'Materiais, acabamento, o que vem na caixa, primeiras impressões.' },
+      { id: uid(), type: 'demo',     label: 'Funcionalidades e Testes', duration: 150, instructions: 'Teste prático de cada função principal, resultados reais.' },
+      { id: uid(), type: 'pros_cons', label: 'Prós e Contras',          duration: 90,  instructions: 'Lista honesta de pontos positivos e negativos.' },
+      { id: uid(), type: 'verdict',  label: 'Para Quem Vale a Pena?',   duration: 60,  instructions: 'Perfil do comprador ideal, alternativas e faixa de preço justa.' },
+      { id: uid(), type: 'cta',      label: 'CTA Final',                duration: 45,  instructions: 'Link afiliado com urgência, inscrição e notificações.' },
+    ],
+  },
+]
+
 const DEFAULT_BLUEPRINT = {
-  id:       null,
-  name:     'Novo Blueprint',
-  description: '',
-  sections: [
-    { id: uid(), type: 'intro',   label: 'Abertura',    duration: 60,  instructions: '' },
-    { id: uid(), type: 'product', label: 'Produto #5',  duration: 90,  instructions: '' },
-    { id: uid(), type: 'product', label: 'Produto #4',  duration: 90,  instructions: '' },
-    { id: uid(), type: 'product', label: 'Produto #3',  duration: 120, instructions: '' },
-    { id: uid(), type: 'product', label: 'Produto #2',  duration: 120, instructions: '' },
-    { id: uid(), type: 'product', label: 'Produto #1',  duration: 150, instructions: '' },
-    { id: uid(), type: 'cta',     label: 'CTA Final',   duration: 45,  instructions: '' },
-  ],
+  id: null,
+  ...STANDARD_TYPES[0],
 }
 
 export default function Scripts() {
@@ -512,6 +551,7 @@ export default function Scripts() {
 
   const [view, setView]               = useState('generate')   // 'generate' | 'blueprints'
   const [selectedScript, setSelected] = useState(null)
+  const [activeTypeId, setActiveTypeId] = useState(STANDARD_TYPES[0].id)
   const [blueprint, setBlueprint]     = useState(DEFAULT_BLUEPRINT)
   const [selectedProducts, setSelectedProducts] = useState([])
   const [language, setLanguage]       = useState('pt')
@@ -520,14 +560,14 @@ export default function Scripts() {
   const [error, setError]             = useState(null)
   const [activeDbBp, setActiveDbBp]   = useState(null)
 
-  // Load first DB blueprint if available
-  useEffect(() => {
-    if (dbBlueprints.length > 0 && !activeDbBp) {
-      const first = dbBlueprints[0]
-      setActiveDbBp(first.id)
-      setBlueprint(first)
-    }
-  }, [dbBlueprints])
+  function selectType(typeId) {
+    const t = STANDARD_TYPES.find(t => t.id === typeId)
+    if (!t) return
+    setActiveTypeId(typeId)
+    setActiveDbBp(null)
+    // refresh section ids so they're unique
+    setBlueprint({ id: null, name: t.name, desc: t.desc, sections: t.sections.map(s => ({ ...s, id: uid() })) })
+  }
 
   function toggleProduct(id) {
     setSelectedProducts((prev) =>
@@ -637,6 +677,22 @@ export default function Scripts() {
         {/* Left: Config panel */}
         <div className="col-span-2 space-y-4">
 
+          {/* Type selector */}
+          <div className="grid grid-cols-3 gap-2">
+            {STANDARD_TYPES.map(t => (
+              <button key={t.id} onClick={() => selectType(t.id)}
+                className={`text-left p-3 rounded-xl border-2 transition-all ${
+                  activeTypeId === t.id && !activeDbBp
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                }`}>
+                <div className="text-lg mb-1">{t.icon}</div>
+                <div className="text-xs font-semibold text-gray-800 leading-tight">{t.name}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">{t.desc}</div>
+              </button>
+            ))}
+          </div>
+
           {/* Blueprint panel */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -650,12 +706,12 @@ export default function Scripts() {
                     value={activeDbBp ?? ''}
                     onChange={(e) => {
                       const bp = dbBlueprints.find((b) => b.id === e.target.value)
-                      if (bp) { setBlueprint(bp); setActiveDbBp(bp.id) }
-                      else { setBlueprint(DEFAULT_BLUEPRINT); setActiveDbBp(null) }
+                      if (bp) { setBlueprint(bp); setActiveDbBp(bp.id); setActiveTypeId(null) }
+                      else { selectType(STANDARD_TYPES[0].id) }
                     }}
                     className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-600"
                   >
-                    <option value="">Novo blueprint</option>
+                    <option value="">Padrão</option>
                     {dbBlueprints.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 )}

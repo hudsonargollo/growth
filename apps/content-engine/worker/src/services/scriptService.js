@@ -2,28 +2,52 @@ import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
 
 const FALLBACK_BLUEPRINTS = {
-  'top-n-review': {
-    name: 'Top-N Avaliação de Produtos',
+  'top-5-custo-beneficio': {
+    name: 'Top 5 Custo-Benefício',
     sections: [
-      { id: 's1', type: 'intro',   label: 'Abertura',      duration: 60,  instructions: '' },
-      { id: 's2', type: 'product', label: 'Produto #5',    duration: 90,  instructions: '' },
-      { id: 's3', type: 'product', label: 'Produto #4',    duration: 90,  instructions: '' },
-      { id: 's4', type: 'product', label: 'Produto #3',    duration: 120, instructions: '' },
-      { id: 's5', type: 'product', label: 'Produto #2',    duration: 120, instructions: '' },
-      { id: 's6', type: 'product', label: 'Produto #1',    duration: 150, instructions: '' },
-      { id: 's7', type: 'cta',     label: 'CTA Final',     duration: 45,  instructions: '' },
+      { id: 's1', type: 'intro',   label: 'Abertura',                    duration: 60,  instructions: 'Hook forte com a promessa de revelar os 5 melhores produtos custo-benefício. Inclua aviso de afiliado.' },
+      { id: 's2', type: 'product', label: 'Critérios de Seleção',        duration: 45,  instructions: 'Explique brevemente os critérios usados para ranquear os produtos.' },
+      { id: 's3', type: 'product', label: 'Produto #5',                  duration: 90,  instructions: 'Apresente o produto, preço, pontos positivos e para quem vale.' },
+      { id: 's4', type: 'product', label: 'Produto #4',                  duration: 90,  instructions: 'Apresente o produto, destaque o diferencial em relação ao #5.' },
+      { id: 's5', type: 'product', label: 'Produto #3',                  duration: 120, instructions: 'Análise mais detalhada, prós e contras principais.' },
+      { id: 's6', type: 'product', label: 'Produto #2',                  duration: 120, instructions: 'Análise detalhada, por que quase chegou ao topo.' },
+      { id: 's7', type: 'product', label: 'Produto #1 — Melhor Escolha', duration: 150, instructions: 'O campeão: análise completa, por que é o melhor custo-benefício, link afiliado com destaque.' },
+      { id: 's8', type: 'cta',     label: 'CTA Final',                   duration: 45,  instructions: 'Convite para se inscrever, ativar notificações e acessar os links na descrição.' },
     ],
   },
-  'single-deep-dive': {
-    name: 'Análise Aprofundada',
+  'comparacao-1x1': {
+    name: 'Comparação 1x1',
     sections: [
-      { id: 's1', type: 'intro',   label: 'Abertura',        duration: 60,  instructions: '' },
-      { id: 's2', type: 'product', label: 'Visão Geral',     duration: 120, instructions: '' },
-      { id: 's3', type: 'product', label: 'Prós e Contras',  duration: 120, instructions: '' },
-      { id: 's4', type: 'product', label: 'Demonstração',    duration: 150, instructions: '' },
-      { id: 's5', type: 'cta',     label: 'CTA Final',       duration: 45,  instructions: '' },
+      { id: 's1', type: 'intro',   label: 'Abertura',              duration: 60,  instructions: 'Hook: qual dos dois você escolheria? Crie suspense. Aviso de afiliado.' },
+      { id: 's2', type: 'product', label: 'Apresentação dos Dois', duration: 90,  instructions: 'Apresente ambos os produtos, preços e posicionamento de mercado.' },
+      { id: 's3', type: 'product', label: 'Design e Construção',   duration: 90,  instructions: 'Compare qualidade de materiais, ergonomia e acabamento.' },
+      { id: 's4', type: 'product', label: 'Performance e Recursos', duration: 120, instructions: 'Compare funcionalidades, testes práticos e resultados.' },
+      { id: 's5', type: 'product', label: 'Custo-Benefício',        duration: 90,  instructions: 'Compare preço vs valor entregue por cada um.' },
+      { id: 's6', type: 'product', label: 'Veredicto Final',        duration: 75,  instructions: 'Declare o vencedor, para quem cada um é indicado e os links afiliados.' },
+      { id: 's7', type: 'cta',     label: 'CTA Final',              duration: 45,  instructions: 'Inscrição, notificações e links na descrição.' },
     ],
   },
+  'review-detalhado': {
+    name: 'Review Detalhado',
+    sections: [
+      { id: 's1', type: 'intro',   label: 'Abertura',                  duration: 60,  instructions: 'Hook com a principal dor que o produto resolve. Aviso de afiliado.' },
+      { id: 's2', type: 'product', label: 'Visão Geral',               duration: 90,  instructions: 'O que é, para quem é, posicionamento de preço no mercado.' },
+      { id: 's3', type: 'product', label: 'Unboxing e Design',         duration: 90,  instructions: 'Materiais, acabamento, o que vem na caixa, primeiras impressões.' },
+      { id: 's4', type: 'product', label: 'Funcionalidades e Testes',  duration: 150, instructions: 'Teste prático de cada função principal, resultados reais.' },
+      { id: 's5', type: 'product', label: 'Prós e Contras',            duration: 90,  instructions: 'Lista honesta de pontos positivos e negativos.' },
+      { id: 's6', type: 'product', label: 'Para Quem Vale a Pena?',    duration: 60,  instructions: 'Perfil do comprador ideal, alternativas e faixa de preço justa.' },
+      { id: 's7', type: 'cta',     label: 'CTA Final',                 duration: 45,  instructions: 'Link afiliado com urgência, inscrição e notificações.' },
+    ],
+  },
+  'top-n-review': { name: 'Top-N Avaliação de Produtos', sections: [
+    { id: 's1', type: 'intro',   label: 'Abertura',   duration: 60,  instructions: '' },
+    { id: 's2', type: 'product', label: 'Produto #5', duration: 90,  instructions: '' },
+    { id: 's3', type: 'product', label: 'Produto #4', duration: 90,  instructions: '' },
+    { id: 's4', type: 'product', label: 'Produto #3', duration: 120, instructions: '' },
+    { id: 's5', type: 'product', label: 'Produto #2', duration: 120, instructions: '' },
+    { id: 's6', type: 'product', label: 'Produto #1', duration: 150, instructions: '' },
+    { id: 's7', type: 'cta',     label: 'CTA Final',  duration: 45,  instructions: '' },
+  ]},
 }
 
 async function llm(env, opts) {
