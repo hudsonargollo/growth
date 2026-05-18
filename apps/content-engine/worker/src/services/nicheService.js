@@ -103,7 +103,9 @@ scores are integers 1–10. rank the niches by total score descending (rank 1 = 
 `.trim()
 
 async function callOpenAI(env, prompt) {
-  if (!env.OPENAI_API_KEY) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'OPENAI_API_KEY')
+  if (!key) {
     throw new Error('OPENAI_API_KEY não configurada — adicione nas Configurações.')
   }
 
@@ -111,7 +113,7 @@ async function callOpenAI(env, prompt) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+      'Authorization': `Bearer ${key}`,
     },
     body: JSON.stringify({
       model:           env.LLM_MODEL ?? 'gpt-4o-mini',

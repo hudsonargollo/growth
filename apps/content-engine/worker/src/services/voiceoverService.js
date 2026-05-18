@@ -45,8 +45,9 @@ function estimateDuration(byteLength, format = 'mp3') {
 // ── OpenAI TTS ────────────────────────────────────────────────────────────────
 
 async function generateOpenAI(env, { text, voiceId, model = 'tts-1' }) {
-  const key = env.OPENAI_API_KEY
-  if (!key) throw new Error('OPENAI_API_KEY não configurada')
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'OPENAI_API_KEY')
+  if (!key) throw new Error('OPENAI_API_KEY não configurada — adicione em Configurações')
 
   const res = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
@@ -73,15 +74,8 @@ async function generateOpenAI(env, { text, voiceId, model = 'tts-1' }) {
 // ── ElevenLabs TTS ────────────────────────────────────────────────────────────
 
 async function generateElevenLabs(env, { text, voiceId, stability, similarityBoost }) {
-  let key = env.ELEVENLABS_API_KEY
-  if (!key) {
-    // Fall back to DB-stored key
-    try {
-      const db = getDb(env)
-      const { data } = await db.from('api_keys').select('value').eq('key_name', 'ELEVENLABS_API_KEY').single()
-      key = data?.value
-    } catch {}
-  }
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'ELEVENLABS_API_KEY')
   if (!key) throw new Error('ELEVENLABS_API_KEY não configurada — adicione em Configurações')
 
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {

@@ -27,17 +27,10 @@ const FALLBACK_BLUEPRINTS = {
 }
 
 async function resolveOpenAIKey(env) {
-  if (env.OPENAI_API_KEY) return env.OPENAI_API_KEY
-  try {
-    const db = getDb(env)
-    const secret = env.CREDENTIALS_SECRET
-    const { data } = await db.from('tool_credentials').select('passwordEncrypted, iv').eq('toolId', 'openai_api_key').single()
-    if (data?.passwordEncrypted && data?.iv && secret) {
-      const { decrypt } = await import('../lib/crypto.js')
-      return await decrypt(data.passwordEncrypted, data.iv, secret)
-    }
-  } catch {}
-  throw new Error('OPENAI_API_KEY não configurada — adicione em Configurações > Chaves de API')
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'OPENAI_API_KEY')
+  if (!key) throw new Error('OPENAI_API_KEY não configurada — adicione em Configurações > Chaves de API')
+  return key
 }
 
 function buildProductList(products) {
