@@ -24,13 +24,6 @@ const KEY_GROUPS = [
     ],
   },
   {
-    title: 'Entrega',
-    keys: [
-      { key: 'WHATSAPP_TOKEN',      label: 'WhatsApp Business Token', placeholder: 'EAAx…',   required: true },
-      { key: 'WHATSAPP_PHONE_ID',   label: 'WhatsApp Phone Number ID',placeholder: '123456…', required: true },
-    ],
-  },
-  {
     title: 'Mineração',
     keys: [
       { key: 'SERPAPI_KEY',          label: 'SerpAPI Key',               placeholder: '…',      required: false },
