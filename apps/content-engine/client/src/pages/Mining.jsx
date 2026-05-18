@@ -443,6 +443,13 @@ export default function Mining() {
     finally { setRunning(false) }
   }
 
+  async function handleClearSessions() {
+    if (!window.confirm('Apagar todo o histórico de sessões?')) return
+    await fetch('/api/mining/sessions', { method: 'DELETE' })
+    setSelectedSessionId(null)
+    refetchSessions()
+  }
+
   async function handleDeleteProduct(productId) {
     await fetch(`/api/products/${productId}`, { method: 'DELETE' })
     refetchCatalog()
@@ -752,8 +759,14 @@ export default function Mining() {
 
       {/* Sessions history */}
       <div className="bg-white rounded-xl border border-gray-200 mt-6">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <h3 className="font-semibold text-gray-800">Histórico de Sessões</h3>
+          {sessions.length > 0 && (
+            <button onClick={handleClearSessions}
+              className="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+              <Trash2 size={11} /> Limpar histórico
+            </button>
+          )}
         </div>
         <table className="w-full text-sm">
           <thead>

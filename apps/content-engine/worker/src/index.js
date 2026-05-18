@@ -34,6 +34,11 @@ app.get('/api/mining/sessions', async (c) => {
   const sessions = await getSessions(c.env)
   return c.json({ sessions })
 })
+app.delete('/api/mining/sessions', async (c) => {
+  const db = getDb(c.env)
+  await db.from('mining_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  return c.json({ ok: true })
+})
 app.post('/api/mining/run', async (c) => {
   const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
   try {
