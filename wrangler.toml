@@ -1,5 +1,11 @@
 name = "growth-clube"
+main = "worker/index.js"
 compatibility_date = "2024-11-01"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "KANBAN"
+id = "f313ccf2abb1441595a197d471da56ff"

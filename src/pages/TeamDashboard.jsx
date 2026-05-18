@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LogOut, Grid3x3, Users, Kanban, UserCircle2,
   ExternalLink, Search, ChevronDown, Plus, Check,
@@ -7,6 +7,7 @@ import {
   Copy, Eye, EyeOff, KeyRound, Pencil, X, Menu,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
+import KanbanBoard from './KanbanBoard.jsx'
 
 const ALL_TOOLS = [
   { id: 'gmail',          name: 'Gmail',               category: 'Produtividade', url: 'https://mail.google.com',                                  icon: Mail,          color: '#EA4335', desc: 'E-mail corporativo',      credentials: { login: 'equipe@growthclube.com', password: '' } },
@@ -65,8 +66,16 @@ function CredentialRow({ label, value, isPassword, isAdmin, onSave }) {
   const [showPass, setShowPass] = useState(false)
   const [editing, setEditing]   = useState(false)
   const [draft, setDraft]       = useState(value)
+  const inputRef                = useRef(null)
 
   useEffect(() => { setDraft(value) }, [value])
+
+  // After editing becomes true, focus the input on the next frame
+  useEffect(() => {
+    if (editing) {
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [editing])
 
   const display = isPassword
     ? (showPass ? (value || '—') : (value ? '••••••••' : '—'))
@@ -78,30 +87,52 @@ function CredentialRow({ label, value, isPassword, isAdmin, onSave }) {
     setEditing(false)
   }
 
+  function startEdit(e) {
+    e.stopPropagation()
+    e.preventDefault()   // prevent any parent click handlers
+    setDraft(value)
+    setEditing(true)
+  }
+
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider w-10 shrink-0">{label}</span>
       {editing ? (
-        <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-          <input autoFocus type={isPassword ? 'password' : 'text'} value={draft}
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          <input
+            ref={inputRef}
+            type={isPassword ? 'password' : 'text'}
+            value={draft}
+            autoComplete={isPassword ? 'new-password' : 'off'}
             onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(e); if (e.key === 'Escape') setEditing(false) }}
-            className="flex-1 min-w-0 text-xs border border-[#A31621]/30 rounded px-2 py-1 focus:outline-none focus:border-[#A31621]" />
-          <button onClick={handleSave} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={11} /></button>
-          <button onClick={(e) => { e.stopPropagation(); setEditing(false) }} className="p-1 text-gray-400 hover:bg-gray-100 rounded"><X size={11} /></button>
+            onKeyDown={(e) => {
+              e.stopPropagation()
+              if (e.key === 'Enter') handleSave(e)
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            className="flex-1 min-w-0 text-xs border border-[#A31621]/30 rounded px-2 py-1 focus:outline-none focus:border-[#A31621]"
+          />
+          <button onMouseDown={(e) => e.preventDefault()} onClick={handleSave}
+            className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={11} /></button>
+          <button onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); setEditing(false) }}
+            className="p-1 text-gray-400 hover:bg-gray-100 rounded"><X size={11} /></button>
         </div>
       ) : (
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <span className="text-sm text-gray-700 truncate flex-1 font-mono">{display}</span>
           {isPassword && value && (
-            <button onClick={(e) => { e.stopPropagation(); setShowPass((s) => !s) }}
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); setShowPass((s) => !s) }}
               className="p-1 rounded hover:bg-gray-100 text-gray-400 shrink-0">
               {showPass ? <EyeOff size={11} /> : <Eye size={11} />}
             </button>
           )}
           <CopyButton value={value} label={label} />
           {isAdmin && (
-            <button onClick={(e) => { e.stopPropagation(); setDraft(value); setEditing(true) }}
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={startEdit}
               className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 shrink-0">
               <Pencil size={11} />
             </button>
@@ -280,7 +311,7 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
 }
 
 // ── Member Row ────────────────────────────────────────────────────────────────
-function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, allTools }) {
+function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, allTools }) {
   const [expanded, setExpanded] = useState(false)
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -305,6 +336,14 @@ function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, allTools }) {
             className="text-xs border border-gray-200 rounded px-2 py-1 text-gray-600 focus:outline-none focus:border-[#A31621] hidden sm:block">
             {ROLES.map((r) => <option key={r}>{r}</option>)}
           </select>
+        )}
+        {isAdmin && (
+          <button
+            onClick={(e) => { e.stopPropagation(); if (window.confirm(`Remover ${member.name} da equipe?`)) onDelete(member.id) }}
+            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+            title="Remover membro">
+            <X size={14} />
+          </button>
         )}
         <ChevronDown size={15} className={`text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
       </div>
@@ -351,17 +390,45 @@ export default function TeamDashboard({ user, onLogout }) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
+        // Load credentials
         const res = await fetch('https://content-engine.hudsonargollo2.workers.dev/api/credentials', {
           headers: { Authorization: `Bearer ${session.access_token}` },
         })
-        if (!res.ok) return
-        const { credentials: rows } = await res.json()
-        setCredentials((prev) => {
-          const next = { ...prev }
-          for (const row of rows) next[row.toolId] = { login: row.login, password: row.password }
-          return next
-        })
-      } catch (e) { console.error('[credentials] load failed', e) }
+        if (res.ok) {
+          const { credentials: rows } = await res.json()
+          setCredentials((prev) => {
+            const next = { ...prev }
+            for (const row of rows) next[row.toolId] = { login: row.login, password: row.password }
+            return next
+          })
+        }
+        // Load members from KV — merge with local defaults to preserve tool lists
+        const mRes = await fetch('https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members')
+        if (mRes.ok) {
+          const { members: kvMembers } = await mRes.json()
+          if (kvMembers?.length) {
+            setMembers((prev) => {
+              const merged = kvMembers.map((kvm) => {
+                const local = prev.find((m) => m.email === kvm.email || m.id === kvm.id)
+                // KV tools take priority only if they have entries; otherwise keep local defaults
+                const tools = kvm.tools?.length ? kvm.tools : (local?.tools ?? ALL_TOOLS.map(t => t.id))
+                return { ...kvm, tools }
+              })
+              // If KV members had no tools, push the correct tools back to KV
+              merged.forEach((m, i) => {
+                if (!kvMembers[i]?.tools?.length) {
+                  fetch(`https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members/${m.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(m),
+                  }).catch(() => {})
+                }
+              })
+              return merged
+            })
+          }
+        }
+      } catch (e) { console.error('[dashboard] load failed', e) }
     }
     loadCreds()
   }, [])
@@ -381,10 +448,28 @@ export default function TeamDashboard({ user, onLogout }) {
       t.name.toLowerCase().includes(search.toLowerCase())),
   })).filter((g) => g.tools.length > 0)
 
+  const KV = 'https://growth-clube.hudsonargollo2.workers.dev'
+
+  async function saveMemberToKV(member) {
+    try {
+      await fetch(`${KV}/api/kanban/members/${member.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member),
+      })
+    } catch (e) { console.error('[members] KV save failed', e) }
+  }
+
   function toggleMyTool(toolId) {
-    setMembers((prev) => prev.map((m, i) =>
-      i === 0 ? { ...m, tools: m.tools.includes(toolId) ? m.tools.filter((id) => id !== toolId) : [...m.tools, toolId] } : m
-    ))
+    setMembers((prev) => {
+      const updated = prev.map((m, i) => {
+        if (i !== 0) return m
+        const tools = m.tools.includes(toolId) ? m.tools.filter((id) => id !== toolId) : [...m.tools, toolId]
+        return { ...m, tools }
+      })
+      saveMemberToKV(updated[0])
+      return updated
+    })
   }
 
   async function handleCredentialSave(toolId, field, value) {
@@ -405,32 +490,61 @@ export default function TeamDashboard({ user, onLogout }) {
   }
 
   function handleRoleChange(memberId, role) {
-    setMembers((prev) => prev.map((m) => m.id === memberId ? { ...m, role } : m))
+    setMembers((prev) => {
+      const updated = prev.map((m) => m.id === memberId ? { ...m, role } : m)
+      const changed = updated.find((m) => m.id === memberId)
+      if (changed) saveMemberToKV(changed)
+      return updated
+    })
   }
+
   function handleToolsChange(memberId, toolId) {
-    setMembers((prev) => prev.map((m) => {
-      if (m.id !== memberId) return m
-      const tools = m.tools.includes(toolId) ? m.tools.filter((id) => id !== toolId) : [...m.tools, toolId]
-      return { ...m, tools }
-    }))
+    setMembers((prev) => {
+      const updated = prev.map((m) => {
+        if (m.id !== memberId) return m
+        const tools = m.tools.includes(toolId) ? m.tools.filter((id) => id !== toolId) : [...m.tools, toolId]
+        return { ...m, tools }
+      })
+      const changed = updated.find((m) => m.id === memberId)
+      if (changed) saveMemberToKV(changed)
+      return updated
+    })
   }
   async function handleInvite(e) {
     e.preventDefault()
     if (!inviteEmail) return
     setInviting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    setMembers((prev) => [...prev, { id: String(Date.now()), email: inviteEmail, name: inviteEmail.split('@')[0], role: 'Viewer', tools: ['gmail'] }])
-    setInviteEmail('')
-    setInviting(false)
+    try {
+      const body = { name: inviteEmail.split('@')[0], email: inviteEmail, role: 'Viewer', tools: ['gmail'] }
+      const res  = await fetch('https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      })
+      const { member } = await res.json()
+      setMembers((prev) => [...prev, member])
+    } catch {
+      setMembers((prev) => [...prev, { id: String(Date.now()), email: inviteEmail, name: inviteEmail.split('@')[0], role: 'Viewer', tools: ['gmail'] }])
+    } finally {
+      setInviteEmail('')
+      setInviting(false)
+    }
   }
+
+  async function handleDeleteMember(id) {
+    try {
+      await fetch(`https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members/${id}`, { method: 'DELETE' })
+    } catch {}
+    setMembers((prev) => prev.filter((m) => m.id !== id))
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     onLogout()
   }
 
   const tabs = [
-    { id: 'tools', label: 'Ferramentas', icon: Grid3x3 },
-    { id: 'team',  label: 'Equipe',      icon: Users },
+    { id: 'tools',  label: 'Ferramentas', icon: Grid3x3 },
+    { id: 'kanban', label: 'Kanban',       icon: Kanban  },
+    { id: 'team',   label: 'Equipe',       icon: Users   },
   ]
 
   return (
@@ -460,9 +574,6 @@ export default function TeamDashboard({ user, onLogout }) {
                 <Icon size={13} />{label}
               </button>
             ))}
-            <button disabled className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg text-gray-300 cursor-not-allowed" title="Em breve">
-              <Kanban size={13} />Kanban
-            </button>
             <button disabled className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg text-gray-300 cursor-not-allowed" title="Em breve">
               <BarChart3 size={13} />CRM
             </button>
@@ -530,6 +641,7 @@ export default function TeamDashboard({ user, onLogout }) {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="text" placeholder="Buscar ferramenta…" value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  autoComplete="off"
                   className="pl-9 pr-4 py-2 text-sm border border-gray-200 bg-white focus:outline-none focus:border-[#A31621] rounded-xl w-full sm:w-56" />
               </div>
             </div>
@@ -582,6 +694,11 @@ export default function TeamDashboard({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── KANBAN TAB ── */}
+        {activeTab === 'kanban' && (
+          <KanbanBoard members={members} />
+        )}
+
         {/* ── TEAM TAB ── */}
         {activeTab === 'team' && (
           <div>
@@ -606,23 +723,8 @@ export default function TeamDashboard({ user, onLogout }) {
             <div className="space-y-3">
               {members.map((member) => (
                 <MemberRow key={member.id} member={member} isAdmin={isAdmin}
-                  onRoleChange={handleRoleChange} onToolsChange={handleToolsChange} allTools={ALL_TOOLS} />
-              ))}
-            </div>
-            <div className="mt-12 grid sm:grid-cols-2 gap-4">
-              {[
-                { icon: Kanban,    label: 'Kanban', desc: 'Gestão de projetos com quadros e sprints' },
-                { icon: BarChart3, label: 'CRM',    desc: 'Pipeline de vendas e gestão de clientes' },
-              ].map(({ icon: Icon, label, desc }) => (
-                <div key={label} className="flex items-center gap-4 p-5 border border-dashed border-gray-200 rounded-xl bg-white/50 opacity-60">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <Icon size={18} className="text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-500 text-sm">{label} <span className="text-xs font-normal text-gray-400 ml-1">— Em breve</span></p>
-                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                  </div>
-                </div>
+                  onRoleChange={handleRoleChange} onToolsChange={handleToolsChange}
+                  onDelete={handleDeleteMember} allTools={ALL_TOOLS} />
               ))}
             </div>
           </div>
