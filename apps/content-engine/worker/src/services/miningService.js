@@ -1,5 +1,6 @@
 import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
+import { loadTenantKeys } from '../lib/keys.js'
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 function scoreProduct(p) {
@@ -99,6 +100,7 @@ async function fetchAmazon(env, { category }) {
 
 // ── Main session runner ───────────────────────────────────────────────────────
 export async function runMiningSession(env, tenantId, db, { marketplace, category }) {
+  const keys      = await loadTenantKeys(env, tenantId)
   const sessionId = uid()
 
   await db.from('mining_sessions').insert({
@@ -108,9 +110,12 @@ export async function runMiningSession(env, tenantId, db, { marketplace, categor
   const rawProducts = []
   const errors      = []
 
+  // Merge tenant keys over env so per-tenant values take precedence
+  const mergedEnv = { ...env, ...keys }
+
   if (marketplace === 'mercadolibre' || marketplace === 'both') {
     try {
-      const items = await fetchMercadoLibre(env, { category })
+      const items = await fetchMercadoLibre(mergedEnv, { category })
       rawProducts.push(...items)
       console.log(`[mining] MercadoLibre: ${items.length} products for "${category}"`)
     } catch (e) {
@@ -121,7 +126,7 @@ export async function runMiningSession(env, tenantId, db, { marketplace, categor
 
   if (marketplace === 'amazon' || marketplace === 'both') {
     try {
-      const items = await fetchAmazon(env, { category })
+      const items = await fetchAmazon(mergedEnv, { category })
       rawProducts.push(...items)
     } catch (e) {
       errors.push(`Amazon: ${e.message}`)

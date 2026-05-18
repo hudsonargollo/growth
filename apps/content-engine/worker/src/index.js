@@ -3,12 +3,14 @@ import { cors } from 'hono/cors'
 
 import { requireAuth }                                        from './lib/auth.js'
 import { getDb, createUserClient }                            from './lib/db.js'
+import { loadTenantKeys }                                     from './lib/keys.js'
 import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
 import { generateScript, listScripts }                        from './services/scriptService.js'
 import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
 import credentialsRouter                                      from './routes/credentials.js'
+import apikeysRouter                                          from './routes/apikeys.js'
 
 const app = new Hono()
 
@@ -119,7 +121,10 @@ app.post('/api/comments/:id/reject', async (c) => {
   return c.json(result)
 })
 
-// ── Credentials (encrypted) ───────────────────────────────────────────────────
+// ── API Keys (per-tenant encrypted credentials) ───────────────────────────────
+app.route('/api/apikeys', apikeysRouter)
+
+// ── Credentials (legacy encrypted tool credentials) ───────────────────────────
 app.route('/api/credentials', credentialsRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
@@ -147,8 +152,13 @@ export default {
     }
 
     for (const { id: tenantId } of activeTenants) {
+      const keys = await loadTenantKeys(env, tenantId)
+      if (!keys.YOUTUBE_API_KEY || !keys.YOUTUBE_CHANNEL_ID) {
+        console.log(`[cron] Tenant ${tenantId} skipped — YouTube keys not configured`)
+        continue
+      }
       ctx.waitUntil(
-        runCommentAgent(env, tenantId, adminDb, null).catch((e) =>
+        runCommentAgent(env, tenantId, adminDb, keys).catch((e) =>
           console.error(`[cron] Tenant ${tenantId} failed:`, e.message)
         )
       )

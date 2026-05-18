@@ -1,4 +1,5 @@
 import { uid } from '../lib/uid.js'
+import { loadTenantKeys } from '../lib/keys.js'
 
 async function sendWhatsAppMessage(env, { to, body }) {
   if (!env.WHATSAPP_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID) {
@@ -31,6 +32,9 @@ async function sendWhatsAppMessage(env, { to, body }) {
 }
 
 export async function sendDelivery(env, tenantId, db, { scriptId, voiceoverId, editorContact }) {
+  const keys = await loadTenantKeys(env, tenantId)
+  // Merge tenant keys over env so per-tenant values take precedence
+  const mergedEnv = { ...env, ...keys, WHATSAPP_PHONE_NUMBER_ID: keys.WHATSAPP_PHONE_ID ?? env.WHATSAPP_PHONE_NUMBER_ID }
   let sq = db.from('scripts').select('id, blueprintId, language').eq('id', scriptId)
   if (tenantId) sq = sq.eq('tenant_id', tenantId)
   const { data: script, error: sErr } = await sq.single()
@@ -54,7 +58,7 @@ export async function sendDelivery(env, tenantId, db, { scriptId, voiceoverId, e
     `\nConfirme o recebimento. — Fábrica de Conteúdo`,
   ].filter(Boolean).join('\n')
 
-  await sendWhatsAppMessage(env, { to: editorContact, body: msg })
+  await sendWhatsAppMessage(mergedEnv, { to: editorContact, body: msg })
 
   const { data, error } = await db.from('delivery_jobs').insert({
     id:            uid(),

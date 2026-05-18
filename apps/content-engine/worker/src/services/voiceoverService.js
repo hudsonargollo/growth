@@ -1,4 +1,5 @@
 import { uid } from '../lib/uid.js'
+import { loadTenantKeys } from '../lib/keys.js'
 
 // ElevenLabs voice IDs — update these if you clone your own voice
 const VOICE_IDS = {
@@ -8,8 +9,10 @@ const VOICE_IDS = {
 }
 
 export async function generateVoiceover(env, tenantId, db, { scriptId, voiceModel, stability, similarityBoost }) {
-  if (!env.ELEVENLABS_API_KEY) {
-    throw new Error('ELEVENLABS_API_KEY not configured — add it via: wrangler secret put ELEVENLABS_API_KEY')
+  const keys          = await loadTenantKeys(env, tenantId)
+  const elevenLabsKey = keys.ELEVENLABS_API_KEY ?? env.ELEVENLABS_API_KEY
+  if (!elevenLabsKey) {
+    throw new Error('ELEVENLABS_API_KEY not configured — add it in Settings or via: wrangler secret put ELEVENLABS_API_KEY')
   }
 
   let q = db.from('scripts').select('id, text').eq('id', scriptId)
@@ -23,7 +26,7 @@ export async function generateVoiceover(env, tenantId, db, { scriptId, voiceMode
   const ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: 'POST',
     headers: {
-      'xi-api-key':   env.ELEVENLABS_API_KEY,
+      'xi-api-key':   elevenLabsKey,
       'Content-Type': 'application/json',
       Accept:         'audio/mpeg',
     },

@@ -1,4 +1,5 @@
 import { uid } from '../lib/uid.js'
+import { loadTenantKeys } from '../lib/keys.js'
 
 const blueprints = {
   'top-n-review':     { name: 'Top-N Product Review',    sections: ['intro', 'product_highlights', 'value_proposition', 'cta'] },
@@ -7,8 +8,10 @@ const blueprints = {
 }
 
 export async function generateScript(env, tenantId, db, { blueprintId, catalogIds, language }) {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured — add it via: wrangler secret put OPENAI_API_KEY')
+  const keys      = await loadTenantKeys(env, tenantId)
+  const openaiKey = keys.OPENAI_API_KEY ?? env.OPENAI_API_KEY
+  if (!openaiKey) {
+    throw new Error('OPENAI_API_KEY not configured — add it in Settings or via: wrangler secret put OPENAI_API_KEY')
   }
 
   const blueprint = blueprints[blueprintId] ?? blueprints['top-n-review']
@@ -56,15 +59,12 @@ Requirements:
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      Authorization:  `Bearer ${env.OPENAI_API_KEY}`,
+      Authorization:  `Bearer ${openaiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model:       env.LLM_MODEL ?? 'gpt-4o-mini',
-      messages:    [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt },
-      ],
+      messages:    [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
       temperature: 0.7,
       max_tokens:  2000,
     }),
