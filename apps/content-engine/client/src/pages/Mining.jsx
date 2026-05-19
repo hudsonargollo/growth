@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Play, RefreshCw, ShoppingBag, AlertTriangle, CheckCircle2,
   ExternalLink, Link2, Check, X, Pencil, Search, ChevronDown, ChevronUp,
-  Sparkles, TrendingUp, Users, DollarSign, Target, Zap, Video, Clapperboard,
+  Sparkles, TrendingUp, Users, DollarSign, Target, Zap, Video, Clapperboard, Trash2,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
@@ -73,7 +73,7 @@ function AffiliateLinkEditor({ productId, label, placeholder, initialValue, colo
 }
 
 // ── Product row ───────────────────────────────────────────────────────────────
-function ProductRow({ product, onSaveAffiliateLink }) {
+function ProductRow({ product, onSaveAffiliateLink, onDelete }) {
   const [open, setOpen] = useState(false)
   const hasAffiliate = product.amazonAffiliateLink || product.mlAffiliateLink || product.affiliateLink
 
@@ -112,8 +112,14 @@ function ProductRow({ product, onSaveAffiliateLink }) {
         <td className="px-4 py-3 whitespace-nowrap">
           <span className="font-bold text-indigo-600">{product.score}</span>
         </td>
-        <td className="px-4 py-3 text-gray-400">
-          {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
+            <button onClick={() => onDelete(product.id)}
+              className="p-1.5 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors">
+              <Trash2 size={13} />
+            </button>
+            <span className="text-gray-300">{open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
+          </div>
         </td>
       </tr>
       {open && (
@@ -437,6 +443,24 @@ export default function Mining() {
     finally { setRunning(false) }
   }
 
+  async function handleClearSessions() {
+    if (!window.confirm('Apagar todo o histórico de sessões?')) return
+    await fetch('/api/mining/sessions', { method: 'DELETE' })
+    setSelectedSessionId(null)
+    refetchSessions()
+  }
+
+  async function handleDeleteProduct(productId) {
+    await fetch(`/api/products/${productId}`, { method: 'DELETE' })
+    refetchCatalog()
+  }
+
+  async function handleClearAll() {
+    if (!window.confirm('Apagar todos os produtos do catálogo? Esta ação não pode ser desfeita.')) return
+    await fetch('/api/products/all', { method: 'DELETE' })
+    refetchCatalog()
+  }
+
   async function handleSaveAffiliateLink(productId, field, value) {
     setAffiliateOverrides(prev => ({ ...prev, [productId]: { ...(prev[productId] ?? {}), [field]: value } }))
     try {
@@ -687,9 +711,17 @@ export default function Mining() {
             {selectedSession ? `"${selectedSession.category}"` : 'Catálogo de Produtos'}
           </h3>
           <span className="text-xs text-gray-400">Clique para adicionar links de afiliado</span>
-          <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> com afiliado
-          </span>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> com afiliado
+            </span>
+            {rawProducts.length > 0 && (
+              <button onClick={handleClearAll}
+                className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+                <Trash2 size={11} /> Limpar tudo
+              </button>
+            )}
+          </div>
         </div>
         {catalogLoading ? (
           <div className="px-6 py-12 text-center text-gray-400 text-sm">Carregando produtos…</div>
@@ -717,7 +749,7 @@ export default function Mining() {
                 </tr>
               ) : (
                 products.map(p => (
-                  <ProductRow key={p.id} product={p} onSaveAffiliateLink={handleSaveAffiliateLink} />
+                  <ProductRow key={p.id} product={p} onSaveAffiliateLink={handleSaveAffiliateLink} onDelete={handleDeleteProduct} />
                 ))
               )}
             </tbody>
@@ -727,8 +759,14 @@ export default function Mining() {
 
       {/* Sessions history */}
       <div className="bg-white rounded-xl border border-gray-200 mt-6">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
           <h3 className="font-semibold text-gray-800">Histórico de Sessões</h3>
+          {sessions.length > 0 && (
+            <button onClick={handleClearSessions}
+              className="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+              <Trash2 size={11} /> Limpar histórico
+            </button>
+          )}
         </div>
         <table className="w-full text-sm">
           <thead>

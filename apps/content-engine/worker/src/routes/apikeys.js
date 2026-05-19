@@ -1,115 +1,106 @@
+/**
+ * /api/apikeys — store and retrieve API keys (OpenAI, ElevenLabs, etc.)
+ * Keys are AES-GCM encrypted at rest using CREDENTIALS_SECRET.
+ */
 import { Hono } from 'hono'
 import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
-import { encrypt } from '../lib/crypto.js'
+import { encrypt, decrypt } from '../lib/crypto.js'
 
 const router = new Hono()
 
-// Human-readable labels shown in the Settings UI
-const KEY_LABELS = {
-  YOUTUBE_API_KEY:    'YouTube Data API Key',
-  YOUTUBE_CHANNEL_ID: 'YouTube Channel ID',
-  YOUTUBE_OAUTH_TOKEN:'YouTube OAuth Token (for posting replies)',
-  OPENAI_API_KEY:     'OpenAI API Key',
-  ELEVENLABS_API_KEY: 'ElevenLabs API Key',
-  WHATSAPP_TOKEN:     'WhatsApp Business API Token',
-  WHATSAPP_PHONE_ID:  'WhatsApp Phone Number ID',
-  SERPAPI_KEY:        'SerpAPI Key',
-  AMAZON_AFFILIATE_TAG: 'Amazon Associates Tracking ID',
-  ML_AFFILIATE_ID:    'MercadoLibre Affiliate ID',
+const ALLOWED_KEYS = new Set([
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'ELEVENLABS_API_KEY',
+  'YOUTUBE_API_KEY',
+  'YOUTUBE_CHANNEL_ID',
+  'YOUTUBE_OAUTH_TOKEN',
+  'SERPAPI_KEY',
+  'AMAZON_AFFILIATE_TAG',
+  'ML_AFFILIATE_TAG',
+])
+
+// Normalise: accept both UPPER_CASE and lower_case variants
+function normalise(keyId) {
+  const upper = keyId.toUpperCase()
+  if (ALLOWED_KEYS.has(upper)) return upper
+  if (ALLOWED_KEYS.has(keyId))  return keyId
+  return null
 }
 
-// GET /api/apikeys — list all configured keys (values masked, just isSet + metadata)
+// GET /api/apikeys — returns saved keys (metadata only, no raw values)
 router.get('/', async (c) => {
-  const tenantId = c.get('tenantId')
-  if (!tenantId) return c.json({ error: 'Tenant context required' }, 400)
+  const db     = getDb(c.env)
+  const secret = c.env.CREDENTIALS_SECRET
+  if (!secret) return c.json({ error: 'CREDENTIALS_SECRET not configured' }, 500)
 
-  const db = getDb(c.env)
   const { data, error } = await db
-    .from('tenant_api_keys')
-    .select('key_name, label, updated_at')
-    .eq('tenant_id', tenantId)
+    .from('tool_credentials')
+    .select('toolId, updatedAt')
+    .in('toolId', [...ALLOWED_KEYS])
 
   if (error) return c.json({ error: error.message }, 500)
 
-  // Return all known key slots, marking which ones are configured
-  const configured = new Set((data ?? []).map((r) => r.key_name))
-  const keys = Object.entries(KEY_LABELS).map(([key_name, defaultLabel]) => {
-    const row = (data ?? []).find((r) => r.key_name === key_name)
-    return {
-      key_name,
-      label:      row?.label ?? defaultLabel,
-      isSet:      configured.has(key_name),
-      updated_at: row?.updated_at ?? null,
-    }
-  })
+  const keys = (data ?? []).map((row) => ({
+    key_name:   row.toolId,
+    isSet:      true,
+    updated_at: row.updatedAt,
+  }))
 
   return c.json({ keys })
 })
 
-// PUT /api/apikeys/:keyName — upsert a single API key (encrypts value before storage)
-router.put('/:keyName', async (c) => {
-  const tenantId = c.get('tenantId')
-  const keyName  = c.req.param('keyName')
-  if (!tenantId) return c.json({ error: 'Tenant context required' }, 400)
-  if (!KEY_LABELS[keyName]) return c.json({ error: `Unknown key: ${keyName}` }, 400)
+// PUT /api/apikeys/:keyId — store an API key (encrypted)
+router.put('/:keyId', async (c) => {
+  const raw   = c.req.param('keyId')
+  const keyId = normalise(raw)
+  if (!keyId) return c.json({ error: `Chave desconhecida: ${raw}` }, 400)
 
+  const db     = getDb(c.env)
   const secret = c.env.CREDENTIALS_SECRET
   if (!secret) return c.json({ error: 'CREDENTIALS_SECRET not configured' }, 500)
 
-  const { value = '', label } = await c.req.json()
-  if (!value) return c.json({ error: 'value is required' }, 400)
+  const body = await c.req.json().catch(() => ({}))
+  const value = body.value ?? ''
+  if (!value.trim()) return c.json({ error: 'value é obrigatório' }, 400)
 
-  const { ciphertext, iv } = await encrypt(value, secret)
+  const { ciphertext, iv } = await encrypt(value.trim(), secret)
 
-  const db = getDb(c.env)
   const { data: existing } = await db
-    .from('tenant_api_keys')
+    .from('tool_credentials')
     .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('key_name', keyName)
-    .single()
+    .eq('toolId', keyId)
+    .maybeSingle()
 
   const payload = {
-    tenant_id:       tenantId,
-    key_name:        keyName,
-    value_encrypted: ciphertext,
+    toolId:            keyId,
+    login:             '',
+    passwordEncrypted: ciphertext,
     iv,
-    label:           label ?? KEY_LABELS[keyName],
-    updated_at:      new Date().toISOString(),
-    updated_by:      c.get('user').id,
+    updatedBy:         'system',
+    updatedAt:         new Date().toISOString(),
   }
 
   let err
   if (existing) {
-    ;({ error: err } = await db
-      .from('tenant_api_keys')
-      .update(payload)
-      .eq('tenant_id', tenantId)
-      .eq('key_name', keyName))
+    ;({ error: err } = await db.from('tool_credentials').update(payload).eq('toolId', keyId))
   } else {
-    ;({ error: err } = await db
-      .from('tenant_api_keys')
-      .insert({ id: uid(), ...payload }))
+    ;({ error: err } = await db.from('tool_credentials').insert({ id: uid(), ...payload }))
   }
 
   if (err) return c.json({ error: err.message }, 500)
-  return c.json({ ok: true, key_name: keyName })
+  return c.json({ ok: true, key_name: keyId })
 })
 
-// DELETE /api/apikeys/:keyName — remove a key
-router.delete('/:keyName', async (c) => {
-  const tenantId = c.get('tenantId')
-  const keyName  = c.req.param('keyName')
-  if (!tenantId) return c.json({ error: 'Tenant context required' }, 400)
+// DELETE /api/apikeys/:keyId
+router.delete('/:keyId', async (c) => {
+  const raw   = c.req.param('keyId')
+  const keyId = normalise(raw)
+  if (!keyId) return c.json({ error: `Chave desconhecida: ${raw}` }, 400)
 
   const db = getDb(c.env)
-  const { error } = await db
-    .from('tenant_api_keys')
-    .delete()
-    .eq('tenant_id', tenantId)
-    .eq('key_name', keyName)
-
+  const { error } = await db.from('tool_credentials').delete().eq('toolId', keyId)
   if (error) return c.json({ error: error.message }, 500)
   return c.json({ ok: true })
 })

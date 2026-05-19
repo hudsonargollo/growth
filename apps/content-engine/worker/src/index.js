@@ -4,10 +4,13 @@ import { cors } from 'hono/cors'
 import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
 import { generateNicheReport }                                from './services/nicheService.js'
 import { getDb }                                              from './lib/db.js'
-import { generateScript, listScripts }                        from './services/scriptService.js'
-import { generateVoiceover, listVoiceovers }                  from './services/voiceoverService.js'
+import { generateScript, listScripts, regenerateSection }     from './services/scriptService.js'
+import { getChannelProfile, upsertChannelProfile }            from './services/channelProfileService.js'
+import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from './services/blueprintService.js'
+import { generateVoiceover, listVoiceovers, OPENAI_VOICES, ELEVENLABS_VOICES } from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
 import { runCommentAgent, listCommentJobs, reviewComment }    from './services/commentAgent.js'
+import { resolveAndTrack, listShortLinks }                   from './services/shortLinkService.js'
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
 
@@ -22,6 +25,19 @@ app.use('*', cors({
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (c) => c.json({ status: 'ok', ts: new Date().toISOString() }))
 
+// ── Short link redirect ───────────────────────────────────────────────────────
+app.get('/r/:code', async (c) => {
+  const url = await resolveAndTrack(c.env, c.req.param('code'))
+  if (!url) return c.text('Link não encontrado', 404)
+  return c.redirect(url, 302)
+})
+
+// ── Short link analytics ──────────────────────────────────────────────────────
+app.get('/api/short-links', async (c) => {
+  const links = await listShortLinks(c.env)
+  return c.json({ links })
+})
+
 // ── Mining ────────────────────────────────────────────────────────────────────
 app.get('/api/mining/catalog',  async (c) => {
   const sessionId = c.req.query('sessionId') ?? null
@@ -32,10 +48,21 @@ app.get('/api/mining/sessions', async (c) => {
   const sessions = await getSessions(c.env)
   return c.json({ sessions })
 })
+app.delete('/api/mining/sessions', async (c) => {
+  const db = getDb(c.env)
+  await db.from('mining_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  return c.json({ ok: true })
+})
 app.post('/api/mining/run', async (c) => {
   const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
-  const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
-  return c.json(result)
+  try {
+    const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
+    return c.json(result)
+  } catch (e) {
+    const msg = e?.message || e?.toString() || 'Unknown error'
+    console.error('[mining/run]', msg, e?.stack)
+    return c.json({ error: msg }, 500)
+  }
 })
 
 // ── Niche intelligence ────────────────────────────────────────────────────────
@@ -51,10 +78,52 @@ app.get('/api/scripts', async (c) => {
   return c.json({ scripts })
 })
 app.post('/api/scripts/generate', async (c) => {
-  const { blueprintId, catalogIds, language = 'en' } = await c.req.json()
-  if (!blueprintId) return c.json({ error: 'blueprintId is required' }, 400)
-  const script = await generateScript(c.env, { blueprintId, catalogIds, language })
+  const body = await c.req.json()
+  const { blueprintId, blueprintData, catalogIds, productIds, language = 'pt', channelProfileId } = body
+  const script = await generateScript(c.env, { blueprintId, blueprintData, catalogIds, productIds, language, channelProfileId })
   return c.json(script)
+})
+app.post('/api/scripts/:id/sections/:index/regenerate', async (c) => {
+  const scriptId      = c.req.param('id')
+  const sectionIndex  = parseInt(c.req.param('index'), 10)
+  const { instructions } = await c.req.json().catch(() => ({}))
+  const script = await regenerateSection(c.env, { scriptId, sectionIndex, instructions })
+  return c.json(script)
+})
+
+// ── Channel Profile ───────────────────────────────────────────────────────────
+app.get('/api/channel-profile', async (c) => {
+  const profile = await getChannelProfile(c.env)
+  return c.json({ profile })
+})
+app.put('/api/channel-profile', async (c) => {
+  const body = await c.req.json()
+  const profile = await upsertChannelProfile(c.env, body)
+  return c.json(profile)
+})
+
+// ── Blueprints ────────────────────────────────────────────────────────────────
+app.get('/api/blueprints', async (c) => {
+  const blueprints = await listBlueprints(c.env)
+  return c.json({ blueprints })
+})
+app.get('/api/blueprints/:id', async (c) => {
+  const blueprint = await getBlueprint(c.env, c.req.param('id'))
+  return c.json(blueprint)
+})
+app.post('/api/blueprints', async (c) => {
+  const body = await c.req.json()
+  const blueprint = await upsertBlueprint(c.env, body)
+  return c.json(blueprint)
+})
+app.put('/api/blueprints/:id', async (c) => {
+  const body = await c.req.json()
+  const blueprint = await upsertBlueprint(c.env, { ...body, id: c.req.param('id') })
+  return c.json(blueprint)
+})
+app.delete('/api/blueprints/:id', async (c) => {
+  const result = await deleteBlueprint(c.env, c.req.param('id'))
+  return c.json(result)
 })
 
 // ── Voiceover ─────────────────────────────────────────────────────────────────
@@ -62,10 +131,14 @@ app.get('/api/voiceover', async (c) => {
   const voiceovers = await listVoiceovers(c.env)
   return c.json({ voiceovers })
 })
+app.get('/api/voiceover/voices', (c) => {
+  return c.json({ openai: OPENAI_VOICES, elevenlabs: ELEVENLABS_VOICES })
+})
 app.post('/api/voiceover/generate', async (c) => {
-  const { scriptId, voiceModel = 'Rachel', stability = 0.75, similarityBoost = 0.80 } = await c.req.json()
-  if (!scriptId) return c.json({ error: 'scriptId is required' }, 400)
-  const result = await generateVoiceover(c.env, { scriptId, voiceModel, stability, similarityBoost })
+  const body = await c.req.json()
+  const { scriptId, provider = 'openai', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80 } = body
+  if (!scriptId) return c.json({ error: 'scriptId é obrigatório' }, 400)
+  const result = await generateVoiceover(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost })
   return c.json(result)
 })
 
@@ -114,6 +187,21 @@ app.put('/api/products/:id', async (c) => {
   if (error) return c.json({ error: error.message }, 500)
   return c.json(data)
 })
+// ── Products (delete) ─────────────────────────────────────────────────────────
+app.delete('/api/products/all', async (c) => {
+  const db = getDb(c.env)
+  await db.from('catalog_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await db.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  return c.json({ ok: true })
+})
+app.delete('/api/products/:id', async (c) => {
+  const db = getDb(c.env)
+  const id = c.req.param('id')
+  await db.from('catalog_entries').delete().eq('productId', id)
+  await db.from('products').delete().eq('id', id)
+  return c.json({ ok: true })
+})
+
 app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
 

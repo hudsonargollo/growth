@@ -9,6 +9,40 @@ function scoreProduct(p) {
   return Math.round(ratingScore + reviewScore + priceScore)
 }
 
+// ── Blog review fetcher ───────────────────────────────────────────────────────
+// Fetches top 5 organic blog review snippets for a product via SerpAPI Google search.
+// Returns [] on any error (non-critical — products are saved regardless).
+async function fetchBlogReviews(env, productTitle) {
+  try {
+    const { resolveKey } = await import('../lib/resolveKey.js')
+    const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+    if (!serpKey) return []
+    const params = new URLSearchParams({
+      engine:  'google',
+      api_key: serpKey,
+      q:       `${productTitle} review melhor`,
+      hl:      'pt',
+      gl:      'br',
+      num:     '10',
+    })
+    const res = await fetch(`https://serpapi.com/search?${params}`)
+    if (!res.ok) return []
+    const json = await res.json()
+    const organic = json.organic_results ?? []
+    return organic
+      .filter(r => r.snippet && r.link && !r.link.includes('mercadolivre') && !r.link.includes('amazon'))
+      .slice(0, 5)
+      .map(r => ({
+        title:   r.title   ?? '',
+        snippet: r.snippet ?? '',
+        source:  r.source  ?? new URL(r.link).hostname,
+        link:    r.link,
+      }))
+  } catch {
+    return []
+  }
+}
+
 // ── Domain helpers ────────────────────────────────────────────────────────────
 function detectMarketplace(link = '') {
   if (link.includes('mercadolivre') || link.includes('mercadolibre')) return 'mercadolivre'
@@ -19,9 +53,11 @@ function detectMarketplace(link = '') {
 // ── SerpAPI — Google Shopping ─────────────────────────────────────────────────
 // siteFilter: 'all' | 'mercadolivre' | 'amazon' | 'ml_amazon'
 async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all' }) {
-  if (!env.SERPAPI_KEY) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+  if (!serpKey) {
     throw new Error(
-      'SERPAPI_KEY not configured — run: wrangler secret put SERPAPI_KEY\n' +
+      'SERPAPI_KEY not configured — adicione em Configurações ou run: wrangler secret put SERPAPI_KEY\n' +
       'Get a free key (100 searches/month) at https://serpapi.com'
     )
   }
@@ -31,7 +67,7 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   const params = new URLSearchParams({
     engine,
-    api_key: env.SERPAPI_KEY,
+    api_key: serpKey,
     hl:      'pt',
     gl:      'br',
     num:     String(fetchLimit),
@@ -57,46 +93,47 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   // Google Shopping results
   if (engine === 'google_shopping') {
-    let results = json.shopping_results ?? []
+    const results = json.shopping_results ?? []
 
-    // Apply site filter before mapping
-    if (siteFilter === 'mercadolivre') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('mercadolivre') || link.includes('mercadolibre')
-      })
-    } else if (siteFilter === 'amazon') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('amazon.com')
-      })
-    } else if (siteFilter === 'ml_amazon') {
-      results = results.filter(item => {
-        const link = item.link ?? item.product_link ?? ''
-        return link.includes('mercadolivre') || link.includes('mercadolibre') || link.includes('amazon.com')
-      })
+    function isML(item) {
+      const link   = (item.link ?? item.product_link ?? '').toLowerCase()
+      const source = (item.source ?? '').toLowerCase()
+      return link.includes('mercadolivre') || link.includes('mercadolibre') ||
+             source.includes('mercado livre') || source.includes('mercadolivre')
+    }
+    function isAmazon(item) {
+      const link   = (item.link ?? item.product_link ?? '').toLowerCase()
+      const source = (item.source ?? '').toLowerCase()
+      return link.includes('amazon.com') || source.includes('amazon')
     }
 
-    return results.slice(0, limit).map((item) => {
-      const rawLink    = item.link ?? item.product_link ?? ''
-      const mp         = detectMarketplace(rawLink)
+    // Always restrict to ML/Amazon — Google Shopping is just the search engine, not a marketplace
+    const mlOnly      = siteFilter === 'mercadolivre'
+    const amazonOnly  = siteFilter === 'amazon'
+    const filtered = results.filter(item => {
+      if (mlOnly)     return isML(item)
+      if (amazonOnly) return isAmazon(item)
+      return isML(item) || isAmazon(item)  // 'all' and 'ml_amazon' both restrict to known marketplaces
+    })
+
+    return filtered.slice(0, limit).map((item) => {
+      const rawLink   = item.link ?? item.product_link ?? ''
+      const mp        = isML(item) ? 'mercadolivre' : 'amazon'
       const affiliateLink = mp === 'mercadolivre'
         ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
-        : mp === 'amazon'
-          ? buildAmazonAffiliateLink(rawLink, '', amazonTag)
-          : rawLink
+        : buildAmazonAffiliateLink(rawLink, '', amazonTag)
       return {
-        id:            uid(),
-        marketplace:   mp,
-        title:         item.title ?? '',
-        price:         parseFloat(String(item.price ?? '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
-        rating:        item.rating ?? 0,
-        reviews:       item.reviews ?? 0,
+        id:          uid(),
+        marketplace: mp,
+        title:       item.title ?? '',
+        price:       parseFloat(String(item.price ?? '0').replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
+        rating:      item.rating ?? 0,
+        reviews:     item.reviews ?? 0,
         affiliateLink,
-        imageUrl:      item.thumbnail ?? '',
-        currency:      'BRL',
-        sourceApi:     'serpapi_google',
-        lastSeen:      new Date().toISOString(),
+        imageUrl:    item.thumbnail ?? '',
+        currency:    'BRL',
+        sourceApi:   'serpapi_google',
+        lastSeen:    new Date().toISOString(),
       }
     })
   }
@@ -134,34 +171,36 @@ function buildAmazonAffiliateLink(url, asin, tag) {
   } catch { return url }
 }
 
-function buildMercadoLibreAffiliateLink(permalink, mlAffiliateId) {
-  if (!mlAffiliateId || !permalink) return permalink ?? ''
+// Supports two formats:
+//   "matt:username:toolId"  → ?matt_word=username&matt_tool=toolId
+//   plain tag               → ?tag=value
+function buildMercadoLibreAffiliateLink(permalink, affiliateTag) {
+  if (!affiliateTag || !permalink) return permalink ?? ''
   try {
     const u = new URL(permalink)
-    u.searchParams.set('matt_tool', mlAffiliateId)
+    if (affiliateTag.startsWith('matt:')) {
+      const parts = affiliateTag.split(':')
+      if (parts.length >= 3) {
+        u.searchParams.set('matt_word', parts[1])
+        u.searchParams.set('matt_tool', parts[2])
+      }
+    } else {
+      u.searchParams.set('tag', affiliateTag)
+    }
     return u.toString()
   } catch { return permalink }
 }
 
-// ── Load affiliate IDs from Supabase credentials table ────────────────────────
+// ── Load affiliate tags from secrets / Settings-saved credentials ─────────────
 async function loadAffiliateIds(env) {
-  try {
-    const db = getDb(env)
-    const { data } = await db
-      .from('tool_credentials')
-      .select('toolId, login')
-      .in('toolId', ['affiliate_amazon', 'affiliate_ml'])
-    const map = {}
-    for (const row of data ?? []) map[row.toolId] = row.login
-    return {
-      amazonTag:     map['affiliate_amazon'] ?? env.AMAZON_ASSOCIATE_TAG ?? '',
-      mlAffiliateId: map['affiliate_ml']     ?? env.ML_AFFILIATE_ID      ?? '',
-    }
-  } catch {
-    return {
-      amazonTag:     env.AMAZON_ASSOCIATE_TAG ?? '',
-      mlAffiliateId: env.ML_AFFILIATE_ID      ?? '',
-    }
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const [amazonTag, mlAffiliateTag] = await Promise.all([
+    resolveKey(env, 'AMAZON_AFFILIATE_TAG'),
+    resolveKey(env, 'ML_AFFILIATE_TAG'),
+  ])
+  return {
+    amazonTag:     amazonTag     ?? '',
+    mlAffiliateId: mlAffiliateTag ?? '',
   }
 }
 
@@ -193,7 +232,6 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const db        = getDb(env)
   const sessionId = uid()
 
-  // Load affiliate IDs from Supabase (set via Settings page)
   const { amazonTag, mlAffiliateId } = await loadAffiliateIds(env)
 
   await db.from('mining_sessions').insert({
@@ -207,10 +245,8 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     try {
       const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter })
       rawProducts.push(...items)
-      console.log(`[mining] Google Shopping: ${items.length} products for "${category}"`)
     } catch (e) {
-      errors.push(`Google Shopping: ${e.message}`)
-      console.error('[mining] Google Shopping error:', e.message)
+      errors.push(`Google Shopping: ${e.message || e.toString()}`)
     }
   }
 
@@ -229,13 +265,32 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     await db.from('mining_sessions').update({
       status: 'failed', completedAt: new Date().toISOString(),
     }).eq('id', sessionId)
-    throw new Error(errors.join(' | '))
+    const msg = errors.length
+      ? errors.join(' | ')
+      : `Nenhum produto encontrado para "${category}" com o filtro "${siteFilter}". Tente filtro "all" ou outra categoria.`
+    throw new Error(msg)
   }
 
-  const scored = rawProducts.map((p) => ({ ...p, score: scoreProduct(p) }))
+  // Shorten affiliate links before saving
+  const { shortenUrl } = await import('./shortLinkService.js')
+  const withShortLinks = await Promise.all(rawProducts.map(async (p) => {
+    const shortLink = p.affiliateLink
+      ? await shortenUrl(env, { url: p.affiliateLink, productId: p.id, marketplace: p.marketplace }).catch(() => p.affiliateLink)
+      : p.affiliateLink
+    return { ...p, affiliateLink: shortLink, score: scoreProduct(p) }
+  }))
 
-  const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
+  const { data: saved, error: pErr } = await db.from('products').insert(withShortLinks).select()
   if (pErr) throw new Error(pErr.message)
+
+  // Fetch blog reviews for top 5 products (best scored) — fire-and-forget updates
+  const topProducts = [...saved].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5)
+  await Promise.allSettled(topProducts.map(async (p) => {
+    const blogReviews = await fetchBlogReviews(env, p.title)
+    if (blogReviews.length > 0) {
+      await db.from('products').update({ blogReviews }).eq('id', p.id)
+    }
+  }))
 
   const entries = saved.map((p) => ({
     id:             uid(),
