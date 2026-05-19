@@ -4,10 +4,11 @@ import {
   ExternalLink, Search, ChevronDown, Plus, Check,
   Mail, Bot, Code2, Video, Layout, BarChart3,
   MessageSquare, FileText, Zap, Globe, Lock, Unlock,
-  Copy, Eye, EyeOff, KeyRound, Pencil, X, Menu,
+  Copy, Eye, EyeOff, KeyRound, Pencil, X, Menu, Wallet, Trash2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase.js'
 import KanbanBoard from './KanbanBoard.jsx'
+import Finance from './Finance.jsx'
 
 const ALL_TOOLS = [
   { id: 'gmail',          name: 'Gmail',               category: 'Produtividade', url: 'https://mail.google.com',                                  icon: Mail,          color: '#EA4335', desc: 'E-mail corporativo',      credentials: { login: 'equipe@growthclube.com', password: '' } },
@@ -143,22 +144,33 @@ function CredentialRow({ label, value, isPassword, isAdmin, onSave }) {
   )
 }
 
-// ── Desktop Tool Card (large, full email visible) ─────────────────────────────
-function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave }) {
+// ── Tool icon: lucide component OR emoji fallback ─────────────────────────────
+function ToolIcon({ tool, size = 22 }) {
   const Icon = tool.icon
+  if (Icon) return <Icon size={size} style={{ color: tool.color }} />
+  return <span style={{ fontSize: size * 0.9, lineHeight: 1 }}>{tool.emoji || '🔧'}</span>
+}
+
+// ── Desktop Tool Card (large, full email visible) ─────────────────────────────
+function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave, onDelete }) {
   const creds = tool.credentials ?? { login: '', password: '' }
+  const isCustom = !tool.icon
 
   return (
-    <div className={`group flex flex-col gap-5 p-6 border rounded-2xl transition-all duration-200 ${
+    <div className={`group flex flex-col gap-4 p-5 border rounded-2xl transition-all duration-200 ${
       granted
         ? 'bg-white border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
         : 'bg-gray-50/60 border-gray-100 opacity-50'
     }`}>
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+      {/* Header: icon + title/desc inline, toggle on far right */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
           style={{ backgroundColor: tool.color + '18' }}>
-          <Icon size={26} style={{ color: tool.color }} />
+          <ToolIcon tool={tool} size={22} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-gray-900 text-base leading-tight truncate">{tool.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">{tool.desc}</p>
         </div>
         {isAdmin ? (
           <button onClick={() => onToggle(tool.id)}
@@ -168,14 +180,8 @@ function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave })
             {granted && <Check size={13} className="text-white" />}
           </button>
         ) : (
-          granted ? <Unlock size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-300" />
+          granted ? <Unlock size={16} className="text-green-500 shrink-0" /> : <Lock size={16} className="text-gray-300 shrink-0" />
         )}
-      </div>
-
-      {/* Name + desc */}
-      <div>
-        <p className="font-bold text-gray-900 text-lg leading-tight">{tool.name}</p>
-        <p className="text-sm text-gray-400 mt-1">{tool.desc}</p>
       </div>
 
       {/* Credentials */}
@@ -192,12 +198,21 @@ function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave })
         </div>
       )}
 
-      {/* Open link */}
+      {/* Open link + custom delete */}
       {granted && (
-        <a href={tool.url} target="_blank" rel="noreferrer"
-          className="mt-auto flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-xl py-3 transition-colors">
-          Abrir <ExternalLink size={14} />
-        </a>
+        <div className="mt-auto flex gap-2">
+          <a href={tool.url} target="_blank" rel="noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-xl py-3 transition-colors">
+            Abrir <ExternalLink size={14} />
+          </a>
+          {isAdmin && isCustom && (
+            <button onClick={() => onDelete && onDelete(tool.id)}
+              title="Remover serviço"
+              className="flex items-center justify-center w-11 rounded-xl border border-red-100 text-red-300 hover:bg-red-50 hover:text-red-500 transition-colors">
+              <Trash2 size={15} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -222,7 +237,6 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
         <div className="relative h-28 cursor-pointer" onClick={() => setExpanded(true)}
           style={{ perspective: '600px' }}>
           {preview.map((tool, i) => {
-            const Icon = tool.icon
             const offset = (preview.length - 1 - i) * 8
             const rotate = (preview.length - 1 - i) * -2
             return (
@@ -236,7 +250,7 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
                 }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: tool.color + '18' }}>
-                  <Icon size={18} style={{ color: tool.color }} />
+                  <ToolIcon tool={tool} size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-gray-800 text-sm truncate">{tool.name}</p>
@@ -261,7 +275,6 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
       ) : (
         <div className="space-y-3">
           {tools.map((tool) => {
-            const Icon = tool.icon
             const isGranted = grantedIds.includes(tool.id)
             const creds = credentials[tool.id] ?? tool.credentials ?? { login: '', password: '' }
             return (
@@ -270,7 +283,7 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
                 <div className="flex items-center gap-3 px-4 py-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                     style={{ backgroundColor: tool.color + '18' }}>
-                    <Icon size={18} style={{ color: tool.color }} />
+                    <ToolIcon tool={tool} size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-800 text-sm">{tool.name}</p>
@@ -311,16 +324,74 @@ function MobileStackedRow({ category, tools, grantedIds, credentials, isAdmin, o
 }
 
 // ── Member Row ────────────────────────────────────────────────────────────────
-function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, allTools }) {
-  const [expanded, setExpanded] = useState(false)
+function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, onEdit, allTools }) {
+  const [expanded,  setExpanded]  = useState(false)
+  const [editing,   setEditing]   = useState(false)
+  const [draftName, setDraftName] = useState(member.name)
+  const [draftEmail,setDraftEmail]= useState(member.email)
+  const [draftRole, setDraftRole] = useState(member.role)
+
+  function handleSave(e) {
+    e.stopPropagation()
+    onEdit(member.id, { name: draftName.trim() || member.name, email: draftEmail.trim() || member.email, role: draftRole })
+    setEditing(false)
+  }
+  function handleCancel(e) {
+    e.stopPropagation()
+    setDraftName(member.name); setDraftEmail(member.email); setDraftRole(member.role)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="border border-[#A31621]/20 rounded-xl overflow-hidden bg-white">
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Editar membro</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nome</label>
+              <input value={draftName} onChange={e => setDraftName(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" autoFocus />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Email</label>
+              <input type="email" value={draftEmail} onChange={e => setDraftEmail(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            </div>
+          </div>
+          <div className="w-40">
+            <label className="block text-xs text-gray-500 mb-1">Papel</label>
+            <select value={draftRole} onChange={e => setDraftRole(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]">
+              {ROLES.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleSave}
+              className="flex items-center gap-1.5 bg-[#A31621] hover:bg-[#8B121C] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+              <Check size={13} /> Salvar
+            </button>
+            <button onClick={handleCancel}
+              className="text-xs text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              Cancelar
+            </button>
+            <button onClick={e => { e.stopPropagation(); if (window.confirm(`Remover ${member.name} da equipe?`)) onDelete(member.id) }}
+              className="ml-auto flex items-center gap-1.5 text-xs text-red-500 hover:text-white hover:bg-red-500 px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-colors">
+              <Trash2 size={12} /> Remover
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-4 px-5 py-4 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
-        onClick={() => setExpanded((e) => !e)}>
+      <div className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors">
         <div className="w-9 h-9 rounded-full bg-[#A31621]/10 flex items-center justify-center text-[#A31621] font-bold text-sm shrink-0">
-          {member.name[0].toUpperCase()}
+          {(member.name || '?')[0].toUpperCase()}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(e => !e)}>
           <p className="font-semibold text-gray-800 text-sm truncate">{member.name}</p>
           <p className="text-xs text-gray-400 truncate">{member.email}</p>
         </div>
@@ -330,22 +401,13 @@ function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, all
         }`}>{member.role}</span>
         <span className="text-xs text-gray-400 hidden sm:block shrink-0">{member.tools.length} ferramentas</span>
         {isAdmin && (
-          <select value={member.role}
-            onChange={(e) => { e.stopPropagation(); onRoleChange(member.id, e.target.value) }}
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs border border-gray-200 rounded px-2 py-1 text-gray-600 focus:outline-none focus:border-[#A31621] hidden sm:block">
-            {ROLES.map((r) => <option key={r}>{r}</option>)}
-          </select>
-        )}
-        {isAdmin && (
-          <button
-            onClick={(e) => { e.stopPropagation(); if (window.confirm(`Remover ${member.name} da equipe?`)) onDelete(member.id) }}
-            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors shrink-0"
-            title="Remover membro">
-            <X size={14} />
+          <button onClick={e => { e.stopPropagation(); setEditing(true) }}
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-[#A31621]/40 hover:text-[#A31621] transition-colors shrink-0">
+            <Pencil size={12} /> Editar
           </button>
         )}
-        <ChevronDown size={15} className={`text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown size={15} className={`text-gray-400 transition-transform shrink-0 cursor-pointer ${expanded ? 'rotate-180' : ''}`}
+          onClick={() => setExpanded(e => !e)} />
       </div>
       {expanded && (
         <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
@@ -372,6 +434,152 @@ function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, all
   )
 }
 
+// ── Add Custom Tool Modal ─────────────────────────────────────────────────────
+const PRESET_COLORS = ['#A31621','#1877F2','#10A37F','#7C3AED','#E37400','#25D366','#FF4500','#181717','#F24E1E','#00C4CC']
+const PRESET_EMOJIS = ['🔧','⚡','🚀','🎯','📊','🤖','💬','🎨','📱','🔗','📧','🗂️','🔑','💰','🌐']
+
+function AddToolModal({ onClose, onSave, existingCategories }) {
+  const [name,     setName]     = useState('')
+  const [desc,     setDesc]     = useState('')
+  const [category, setCategory] = useState('Personalizado')
+  const [customCat,setCustomCat]= useState('')
+  const [url,      setUrl]      = useState('')
+  const [color,    setColor]    = useState('#A31621')
+  const [emoji,    setEmoji]    = useState('🔧')
+  const [login,    setLogin]    = useState('')
+  const [password, setPassword] = useState('')
+  const [saving,   setSaving]   = useState(false)
+
+  const categories = [...existingCategories.filter((c) => c !== 'Todos'), 'Personalizado']
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setSaving(true)
+    const finalCategory = category === 'Personalizado' && customCat.trim() ? customCat.trim() : category
+    await onSave({ name: name.trim(), desc: desc.trim(), category: finalCategory, url: url.trim(), color, emoji, credentials: { login: login.trim(), password } })
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-extrabold text-gray-800 text-base">Adicionar Serviço</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Preview */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ backgroundColor: color + '22' }}>
+              {emoji}
+            </div>
+            <div>
+              <p className="font-bold text-gray-800 text-sm">{name || 'Nome do serviço'}</p>
+              <p className="text-xs text-gray-400">{desc || 'Descrição'}</p>
+            </div>
+          </div>
+
+          {/* Emoji picker */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2">Ícone (emoji)</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {PRESET_EMOJIS.map((e) => (
+                <button key={e} type="button" onClick={() => setEmoji(e)}
+                  className={`text-xl p-1.5 rounded-lg border transition-colors ${emoji === e ? 'border-[#A31621] bg-[#A31621]/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                  {e}
+                </button>
+              ))}
+            </div>
+            <input value={emoji} onChange={(e) => setEmoji(e.target.value)}
+              className="w-20 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" maxLength={2} />
+          </div>
+
+          {/* Color picker */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2">Cor</label>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_COLORS.map((c) => (
+                <button key={c} type="button" onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${color === c ? 'border-gray-500 scale-110' : 'border-transparent'}`}
+                  style={{ backgroundColor: c }} />
+              ))}
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
+                className="w-7 h-7 rounded-full cursor-pointer border border-gray-200 p-0.5" title="Cor personalizada" />
+            </div>
+          </div>
+
+          {/* Name + Desc */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-gray-500 mb-1">Nome *</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus
+                placeholder="ex: Hotmart, ActiveCampaign…"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-gray-500 mb-1">Descrição</label>
+              <input value={desc} onChange={(e) => setDesc(e.target.value)}
+                placeholder="ex: Plataforma de afiliados"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1">Categoria</label>
+            <select value={category} onChange={(e) => setCategory(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]">
+              {categories.map((c) => <option key={c}>{c}</option>)}
+            </select>
+            {category === 'Personalizado' && (
+              <input value={customCat} onChange={(e) => setCustomCat(e.target.value)}
+                placeholder="Nome da categoria…"
+                className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            )}
+          </div>
+
+          {/* URL */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1">URL</label>
+            <input type="url" value={url} onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+          </div>
+
+          {/* Credentials */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Login</label>
+              <input value={login} onChange={(e) => setLogin(e.target.value)}
+                placeholder="email ou usuário"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Senha</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving || !name.trim()}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#A31621] hover:bg-[#8B121C] text-white text-sm font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+              {saving ? 'Salvando…' : <><Plus size={15} /> Adicionar Serviço</>}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function TeamDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab]     = useState('tools')
@@ -381,6 +589,8 @@ export default function TeamDashboard({ user, onLogout }) {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting]       = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [customTools, setCustomTools] = useState([])
+  const [showAddTool, setShowAddTool] = useState(false)
   const [credentials, setCredentials] = useState(
     Object.fromEntries(ALL_TOOLS.map((t) => [t.id, { login: t.credentials?.login ?? '', password: '' }]))
   )
@@ -402,49 +612,47 @@ export default function TeamDashboard({ user, onLogout }) {
             return next
           })
         }
-        // Load members from KV — merge with local defaults to preserve tool lists
-        const mRes = await fetch('https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members')
+        // Load members from Supabase auth (merged with KV roles/tools)
+        const mRes = await fetch('/api/team/users')
         if (mRes.ok) {
-          const { members: kvMembers } = await mRes.json()
-          if (kvMembers?.length) {
-            setMembers((prev) => {
-              const merged = kvMembers.map((kvm) => {
-                const local = prev.find((m) => m.email === kvm.email || m.id === kvm.id)
-                // KV tools take priority only if they have entries; otherwise keep local defaults
-                const tools = kvm.tools?.length ? kvm.tools : (local?.tools ?? ALL_TOOLS.map(t => t.id))
-                return { ...kvm, tools }
-              })
-              // If KV members had no tools, push the correct tools back to KV
-              merged.forEach((m, i) => {
-                if (!kvMembers[i]?.tools?.length) {
-                  fetch(`https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members/${m.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(m),
-                  }).catch(() => {})
-                }
-              })
-              return merged
-            })
-          }
+          const { members: fetched } = await mRes.json()
+          if (fetched?.length) setMembers(fetched)
         }
       } catch (e) { console.error('[dashboard] load failed', e) }
     }
+    async function loadCustomTools() {
+      try {
+        const res = await fetch('/api/kanban/custom-tools')
+        if (res.ok) {
+          const { tools } = await res.json()
+          setCustomTools(tools ?? [])
+        }
+      } catch {}
+    }
     loadCreds()
+    loadCustomTools()
   }, [])
 
   const isAdmin  = true
-  const myMember = members[0]
-  const myTools  = ALL_TOOLS.filter((t) => myMember.tools.includes(t.id))
+  const allTools = [...ALL_TOOLS, ...customTools]
+  // Find the logged-in user's member record; fall back to first member
+  const myMember = members.find((m) => m.email?.toLowerCase() === user?.email?.toLowerCase()) ?? members[0]
+  // Admins get all tools by default; others get their assigned tools
+  const effectiveTools = (myMember?.role === 'Admin' || isAdmin) && !myMember?.tools?.length
+    ? allTools.map((t) => t.id)
+    : (myMember?.tools ?? [])
+  const myTools  = allTools.filter((t) => effectiveTools.includes(t.id))
 
-  const filteredTools = ALL_TOOLS
+  const allCategories = ['Todos', ...Array.from(new Set(allTools.map((t) => t.category)))]
+
+  const filteredTools = allTools
     .filter((t) => category === 'Todos' || t.category === category)
     .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
 
   // Group by category for mobile stacked view
-  const toolsByCategory = CATEGORIES.filter((c) => c !== 'Todos').map((cat) => ({
+  const toolsByCategory = allCategories.filter((c) => c !== 'Todos').map((cat) => ({
     category: cat,
-    tools: ALL_TOOLS.filter((t) => t.category === cat &&
+    tools: allTools.filter((t) => t.category === cat &&
       t.name.toLowerCase().includes(search.toLowerCase())),
   })).filter((g) => g.tools.length > 0)
 
@@ -452,7 +660,9 @@ export default function TeamDashboard({ user, onLogout }) {
 
   async function saveMemberToKV(member) {
     try {
-      await fetch(`${KV}/api/kanban/members/${member.id}`, {
+      // Use email as the id segment so the worker can upsert by email for Supabase-only users
+      const idSegment = member.id ?? member.email
+      await fetch(`/api/kanban/members/${encodeURIComponent(idSegment)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(member),
@@ -462,14 +672,37 @@ export default function TeamDashboard({ user, onLogout }) {
 
   function toggleMyTool(toolId) {
     setMembers((prev) => {
-      const updated = prev.map((m, i) => {
-        if (i !== 0) return m
-        const tools = m.tools.includes(toolId) ? m.tools.filter((id) => id !== toolId) : [...m.tools, toolId]
+      const myEmail = user?.email?.toLowerCase()
+      const updated = prev.map((m) => {
+        if (m.email?.toLowerCase() !== myEmail) return m
+        // If tools was empty (admin default), start from all tools then toggle
+        const base  = m.tools?.length ? m.tools : allTools.map((t) => t.id)
+        const tools = base.includes(toolId) ? base.filter((id) => id !== toolId) : [...base, toolId]
         return { ...m, tools }
       })
-      saveMemberToKV(updated[0])
+      const changed = updated.find((m) => m.email?.toLowerCase() === myEmail)
+      if (changed) saveMemberToKV(changed)
       return updated
     })
+  }
+
+  async function handleAddCustomTool(toolData) {
+    try {
+      const res = await fetch('/api/kanban/custom-tools', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(toolData),
+      })
+      if (res.ok) {
+        const { tool } = await res.json()
+        setCustomTools((prev) => [...prev, tool])
+      }
+    } catch (e) { console.error('[custom-tools] save failed', e) }
+  }
+
+  async function handleDeleteCustomTool(id) {
+    try {
+      await fetch(`/api/kanban/custom-tools/${id}`, { method: 'DELETE' })
+      setCustomTools((prev) => prev.filter((t) => t.id !== id))
+    } catch (e) { console.error('[custom-tools] delete failed', e) }
   }
 
   async function handleCredentialSave(toolId, field, value) {
@@ -515,25 +748,57 @@ export default function TeamDashboard({ user, onLogout }) {
     if (!inviteEmail) return
     setInviting(true)
     try {
-      const body = { name: inviteEmail.split('@')[0], email: inviteEmail, role: 'Viewer', tools: ['gmail'] }
-      const res  = await fetch('https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      const name = inviteEmail.split('@')[0]
+      const memberBody = { name, email: inviteEmail, role: 'Viewer', tools: ['gmail'] }
+
+      // 1. Save member to KV
+      const memberRes = await fetch('/api/kanban/members', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(memberBody),
       })
-      const { member } = await res.json()
-      setMembers((prev) => [...prev, member])
-    } catch {
-      setMembers((prev) => [...prev, { id: String(Date.now()), email: inviteEmail, name: inviteEmail.split('@')[0], role: 'Viewer', tools: ['gmail'] }])
+      // 2. Send Supabase invite email (best-effort — don't fail if not configured)
+      const inviteRes = await fetch('/api/invite', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, name }),
+      })
+      if (!inviteRes.ok) {
+        const err = await inviteRes.json().catch(() => ({}))
+        console.warn('Invite email failed:', err.error ?? inviteRes.status)
+      }
+
+      // 3. Refresh list from Supabase so the new user shows up immediately
+      await refreshMembers()
+    } catch (err) {
+      console.error('handleInvite error:', err)
     } finally {
       setInviteEmail('')
       setInviting(false)
     }
   }
 
+  async function refreshMembers() {
+    try {
+      const r = await fetch('/api/team/users')
+      if (r.ok) { const { members: m } = await r.json(); if (m?.length) setMembers(m) }
+    } catch {}
+  }
+
   async function handleDeleteMember(id) {
     try {
-      await fetch(`https://growth-clube.hudsonargollo2.workers.dev/api/kanban/members/${id}`, { method: 'DELETE' })
+      await fetch(`/api/kanban/members/${id}`, { method: 'DELETE' })
     } catch {}
     setMembers((prev) => prev.filter((m) => m.id !== id))
+  }
+
+  function handleEditMember(memberId, updates) {
+    setMembers((prev) => {
+      // Match by id OR supabaseId (Supabase users before first KV save)
+      const updated = prev.map((m) =>
+        (m.id === memberId || m.supabaseId === memberId) ? { ...m, ...updates } : m
+      )
+      const changed = updated.find((m) => m.id === memberId || m.supabaseId === memberId)
+      if (changed) saveMemberToKV(changed)
+      return updated
+    })
   }
 
   async function handleLogout() {
@@ -542,9 +807,10 @@ export default function TeamDashboard({ user, onLogout }) {
   }
 
   const tabs = [
-    { id: 'tools',  label: 'Ferramentas', icon: Grid3x3 },
-    { id: 'kanban', label: 'Kanban',       icon: Kanban  },
-    { id: 'team',   label: 'Equipe',       icon: Users   },
+    { id: 'tools',   label: 'Ferramentas', icon: Grid3x3 },
+    { id: 'kanban',  label: 'Projetos',      icon: Kanban  },
+    { id: 'team',    label: 'Equipe',       icon: Users   },
+    { id: 'finance', label: 'Financeiro',   icon: Wallet  },
   ]
 
   return (
@@ -611,9 +877,6 @@ export default function TeamDashboard({ user, onLogout }) {
               </button>
             ))}
             <button disabled className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
-              <Kanban size={16} />Kanban <span className="text-xs font-normal ml-auto">Em breve</span>
-            </button>
-            <button disabled className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-300 cursor-not-allowed">
               <BarChart3 size={16} />CRM <span className="text-xs font-normal ml-auto">Em breve</span>
             </button>
             <div className="border-t border-gray-100 pt-3 mt-2 flex items-center justify-between px-1">
@@ -637,19 +900,27 @@ export default function TeamDashboard({ user, onLogout }) {
                 <h1 className="text-2xl font-extrabold text-[#A31621] tracking-tight">Ferramentas da Equipe</h1>
                 <p className="text-sm text-gray-500 mt-1">{myTools.length} ferramentas disponíveis</p>
               </div>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="text" placeholder="Buscar ferramenta…" value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  autoComplete="off"
-                  className="pl-9 pr-4 py-2 text-sm border border-gray-200 bg-white focus:outline-none focus:border-[#A31621] rounded-xl w-full sm:w-56" />
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input type="text" placeholder="Buscar ferramenta…" value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    autoComplete="off"
+                    className="pl-9 pr-4 py-2 text-sm border border-gray-200 bg-white focus:outline-none focus:border-[#A31621] rounded-xl w-full sm:w-56" />
+                </div>
+                {isAdmin && (
+                  <button onClick={() => setShowAddTool(true)}
+                    className="flex items-center gap-1.5 bg-[#A31621] hover:bg-[#8B121C] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors shrink-0">
+                    <Plus size={14} /> Adicionar
+                  </button>
+                )}
               </div>
             </div>
 
             {/* ── DESKTOP: category pills + large grid ── */}
             <div className="hidden sm:block">
               <div className="flex items-center gap-2 mb-6 flex-wrap">
-                {CATEGORIES.map((cat) => (
+                {allCategories.map((cat) => (
                   <button key={cat} onClick={() => setCategory(cat)}
                     className={`px-4 py-1.5 text-xs font-bold rounded-full transition-colors ${
                       category === cat ? 'bg-[#A31621] text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-[#A31621]/40'
@@ -661,11 +932,12 @@ export default function TeamDashboard({ user, onLogout }) {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTools.map((tool) => (
                   <DesktopToolCard key={tool.id}
-                    tool={{ ...tool, credentials: credentials[tool.id] }}
-                    granted={myMember.tools.includes(tool.id)}
+                    tool={{ ...tool, credentials: credentials[tool.id] ?? tool.credentials }}
+                    granted={effectiveTools.includes(tool.id)}
                     onToggle={toggleMyTool}
                     isAdmin={isAdmin}
                     onCredentialSave={handleCredentialSave}
+                    onDelete={handleDeleteCustomTool}
                   />
                 ))}
               </div>
@@ -680,7 +952,7 @@ export default function TeamDashboard({ user, onLogout }) {
                 <MobileStackedRow key={cat}
                   category={cat}
                   tools={tools}
-                  grantedIds={myMember.tools}
+                  grantedIds={effectiveTools}
                   credentials={credentials}
                   isAdmin={isAdmin}
                   onToggle={toggleMyTool}
@@ -692,6 +964,11 @@ export default function TeamDashboard({ user, onLogout }) {
               )}
             </div>
           </div>
+        )}
+
+        {/* ── FINANCE TAB ── */}
+        {activeTab === 'finance' && (
+          <Finance user={user} />
         )}
 
         {/* ── KANBAN TAB ── */}
@@ -722,14 +999,22 @@ export default function TeamDashboard({ user, onLogout }) {
             )}
             <div className="space-y-3">
               {members.map((member) => (
-                <MemberRow key={member.id} member={member} isAdmin={isAdmin}
+                <MemberRow key={member.id} member={member} isAdmin={isAdmin} allTools={allTools}
                   onRoleChange={handleRoleChange} onToolsChange={handleToolsChange}
-                  onDelete={handleDeleteMember} allTools={ALL_TOOLS} />
+                  onDelete={handleDeleteMember} onEdit={handleEditMember} />
               ))}
             </div>
           </div>
         )}
       </main>
+
+      {showAddTool && (
+        <AddToolModal
+          onClose={() => setShowAddTool(false)}
+          onSave={handleAddCustomTool}
+          existingCategories={allCategories}
+        />
+      )}
     </div>
   )
 }
