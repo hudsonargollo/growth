@@ -270,9 +270,10 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
   const serpKey = await resolveKey(env, 'SERPAPI_KEY')
   if (!serpKey) throw new Error('SERPAPI_KEY não configurada — adicione em Configurações')
 
-  // When siteRestrict is set (e.g. 'mercadolivre.com.br') we already know all results
-  // will come from that domain, so no need to over-fetch for post-filtering
-  const fetchLimit = (siteFilter !== 'all' && !siteRestrict) ? 100 : limit
+  // Always fetch 100 results from Google Shopping so post-filtering (ML/Amazon only)
+  // has enough raw results. SerpAPI paginates at 100 max; for direct site-restricted
+  // queries the results are already scoped, so we cap at limit there.
+  const fetchLimit = siteRestrict ? limit : 100
   const params = new URLSearchParams({ engine, api_key: serpKey, hl: 'pt', gl: 'br', num: String(fetchLimit) })
 
   if (engine === 'amazon') {
@@ -294,10 +295,12 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 
   if (engine === 'google_shopping') {
     const results = json.shopping_results ?? []
+    console.log(`[serp] q="${category}" siteFilter=${siteFilter} total_results=${results.length} sources=${JSON.stringify([...new Set(results.map(r => r.source))].slice(0,8))}`)
     function isML(item) {
       const link = (item.link ?? item.product_link ?? '').toLowerCase()
       const src  = (item.source ?? '').toLowerCase()
-      return link.includes('mercadolivre') || link.includes('mercadolibre') || src.includes('mercado livre') || src.includes('mercadolivre')
+      return link.includes('mercadolivre') || link.includes('mercadolibre') ||
+             src.includes('mercado livre') || src.includes('mercadolivre') || src.includes('mercado l')
     }
     function isAmazon(item) {
       const link = (item.link ?? item.product_link ?? '').toLowerCase()
@@ -311,6 +314,7 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
       if (amazonOnly) return isAmazon(item)
       return isML(item) || isAmazon(item)
     })
+    console.log(`[serp] after filter: ${filtered.length} items`)
     return filtered.slice(0, limit).map((item) => {
       const rawLink = item.link ?? item.product_link ?? ''
       const mp      = isML(item) ? 'mercadolivre' : 'amazon'
@@ -320,7 +324,8 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
       return {
         id: uid(), marketplace: mp,
         title:      item.title ?? '',
-        price:      parsePrice(item.price),
+        // Prefer extracted_price (already a float in local currency) over parsing the string
+        price:      item.extracted_price ?? parsePrice(item.price),
         rating:     item.rating ?? 0,
         reviews:    item.reviews ?? 0,
         affiliateLink,
@@ -400,7 +405,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
       const mlSort = sortBy === 'best_sellers' ? 'sold_quantity_desc'
                    : sortBy === 'price_asc'    ? 'price_asc'
                    : sortBy === 'price_desc'   ? 'price_desc'
-                   : 'sold_quantity_desc'
+                   : 'relevance'  // default: relevance surfaces consumer products; sold_quantity pulls commercial
       const { products, listingTotal: total } = await fetchMercadoLivreDirectAPI(env, { query: category, sortBy: mlSort, limit: 20, mlAffiliateId })
       rawProducts.push(...products)
       listingTotal = total
@@ -506,8 +511,9 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
       fulfillment: _f, officialStore: _os,
       catalogListing: _cl, discountPct: _dp,
       originalPrice: _op,
-      condition: _cond,            // added in migration 005
-      mlAffiliateLink: _mlAff,     // added in migration 005
+      condition: _cond,             // added in migration 005
+      freeShipping: _fs,            // added in migration 006
+      mlAffiliateLink: _mlAff,      // added in migration 005
       amazonAffiliateLink: _amzAff, // added in migration 005
       ...rest
     } = p

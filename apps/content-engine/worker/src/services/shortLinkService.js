@@ -21,7 +21,12 @@ export async function shortenUrl(env, { url, productId = null, marketplace = nul
   if (existing) return `${BASE_URL}/r/${existing.code}`
 
   const code = makeCode()
-  await db.from('short_links').insert({ id: uid(), code, originalUrl: url, productId, marketplace })
+  const { error: insertErr } = await db.from('short_links').insert({ id: uid(), code, originalUrl: url, productId, marketplace })
+  // If insert failed (e.g. table not yet migrated), fall back to original URL so we don't create dead links
+  if (insertErr) {
+    console.warn('[shortLink] insert failed, returning original URL:', insertErr.message)
+    return url
+  }
   return `${BASE_URL}/r/${code}`
 }
 
