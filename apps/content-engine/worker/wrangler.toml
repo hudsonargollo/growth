@@ -11,7 +11,7 @@ binding = "ASSETS"
 NODE_ENV           = "production"
 LLM_MODEL          = "claude-haiku-4-5-20251001"
 ML_SITE            = "brazil"
-EVOLUTION_API_URL  = "https://auto.clubemkt.digital"
+EVOLUTION_API_URL  = "https://evo.clubemkt.digital"
 EVOLUTION_INSTANCE = "FABRICADECONTEUDO"
 
 # Cron trigger — runs comment agent every 4 hours

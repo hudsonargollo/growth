@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export function useApi(path, deps = []) {
-  const [data, setData]     = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState(null)
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(path !== null)
+  const [error, setError]     = useState(null)
 
   const fetch_ = useCallback(async () => {
+    if (path === null) return   // skip — caller manages this fetch elsewhere
     setLoading(true)
     setError(null)
     try {

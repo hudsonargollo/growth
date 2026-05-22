@@ -6,6 +6,15 @@ import {
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import { useApi, timeAgo } from '../hooks/useApi.js'
+import { AILoadingOverlay, friendlyError } from './Scripts.jsx'
+
+const VOICE_STEPS = [
+  { icon: '📝', label: 'Lendo o roteiro…' },
+  { icon: '🎙️', label: 'Processando voz com IA…' },
+  { icon: '🔊', label: 'Sintetizando áudio…' },
+  { icon: '🎵', label: 'Ajustando entonação e ritmo…' },
+  { icon: '☁️', label: 'Fazendo upload do arquivo…' },
+]
 
 // ── Inline audio player ───────────────────────────────────────────────────────
 
@@ -168,7 +177,8 @@ export default function Voiceover() {
       if (!res.ok) throw new Error(data.error ?? res.statusText)
       await refetch()
     } catch (e) {
-      setError(e.message)
+      console.error('[voiceover]', e.message)
+      setError(friendlyError(e.message))
     } finally {
       setGenerating(false)
     }
@@ -181,6 +191,7 @@ export default function Voiceover() {
 
   return (
     <div>
+      <AILoadingOverlay show={generating} steps={VOICE_STEPS} title="Gerando Narração" />
       <PageHeader
         title="Narração"
         description="Gere áudio a partir dos seus roteiros com OpenAI TTS ou ElevenLabs"

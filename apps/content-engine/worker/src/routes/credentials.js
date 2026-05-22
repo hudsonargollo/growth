@@ -58,7 +58,7 @@ router.put('/:toolId', async (c) => {
     login,
     passwordEncrypted,
     iv,
-    updatedBy:  c.get('user').id,
+    updatedBy:  c.get('user')?.id ?? 'system',
     updatedAt:  new Date().toISOString(),
   }
 

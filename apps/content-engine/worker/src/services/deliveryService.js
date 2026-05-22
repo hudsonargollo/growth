@@ -29,16 +29,22 @@ async function evolutionSendText(env, { number, text }) {
   const base     = evolutionBase(env)
   const instance = evolutionInstance(env)
   const url      = `${base}/message/sendText/${instance}`
+  const phone    = normalisePhone(number)
+
+  // Ensure country code — Brazilian numbers without it get 55 prepended
+  const phoneWithCC = phone.length <= 11 ? `55${phone}` : phone
 
   const res = await fetch(url, {
     method:  'POST',
     headers: evolutionHeaders(env),
-    body: JSON.stringify({ number: normalisePhone(number), text }),
+    body: JSON.stringify({ number: phoneWithCC, text }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Evolution API error ${res.status}: ${err.slice(0, 300)}`)
+    throw new Error(
+      `Evolution API error ${res.status} (POST ${url}, number: ${phoneWithCC}): ${err.slice(0, 300)}`
+    )
   }
   return res.json()
 }
@@ -47,12 +53,14 @@ async function evolutionSendAudio(env, { number, audioUrl, caption }) {
   const base     = evolutionBase(env)
   const instance = evolutionInstance(env)
   const url      = `${base}/message/sendMedia/${instance}`
+  const phone    = normalisePhone(number)
+  const phoneWithCC = phone.length <= 11 ? `55${phone}` : phone
 
   const res = await fetch(url, {
     method:  'POST',
     headers: evolutionHeaders(env),
     body: JSON.stringify({
-      number:    normalisePhone(number),
+      number:    phoneWithCC,
       mediatype: 'audio',
       mimetype:  'audio/mpeg',
       media:     audioUrl,
@@ -97,12 +105,26 @@ function buildMessage(script, voiceoverUrl) {
 export async function sendDelivery(env, { scriptId, voiceoverId, editorContact }) {
   const db = getDb(env)
 
-  const { data: script, error: sErr } = await db
-    .from('scripts')
-    .select('id, title, blueprintId, language, sections')
-    .eq('id', scriptId)
-    .single()
-  if (sErr || !script) throw new Error(`Roteiro ${scriptId} não encontrado`)
+  let script
+  {
+    const { data, error } = await db
+      .from('scripts')
+      .select('id, title, blueprintId, language, sections')
+      .eq('id', scriptId)
+      .single()
+    if (error) {
+      const { data: d2, error: e2 } = await db
+        .from('scripts')
+        .select('id, blueprintId, language')
+        .eq('id', scriptId)
+        .single()
+      if (e2 || !d2) throw new Error(`Roteiro ${scriptId} não encontrado: ${error.message}`)
+      script = d2
+    } else {
+      script = data
+    }
+  }
+  if (!script) throw new Error(`Roteiro ${scriptId} não encontrado`)
 
   let voiceoverUrl = null
   if (voiceoverId) {
@@ -133,7 +155,7 @@ export async function sendDelivery(env, { scriptId, voiceoverId, editorContact }
     editorContact,
     scriptId,
     voiceoverId:   voiceoverId ?? null,
-    scriptUrl:     null,
+    scriptUrl:     '',
     voiceoverUrl,
     status:        'completed',
     sentAt:        new Date().toISOString(),
@@ -150,6 +172,14 @@ export async function listDeliveries(env) {
     .select('*, scripts(title, blueprintId, language), voiceovers(voiceModel, duration)')
     .order('createdAt', { ascending: false })
     .limit(50)
-  if (error) throw new Error(error.message)
+  if (error) {
+    const { data: d2, error: e2 } = await db
+      .from('delivery_jobs')
+      .select('*, scripts(blueprintId, language), voiceovers(voiceModel, duration)')
+      .order('createdAt', { ascending: false })
+      .limit(50)
+    if (e2) throw new Error(e2.message)
+    return d2 ?? []
+  }
   return data
 }

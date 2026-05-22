@@ -152,18 +152,39 @@ function ToolIcon({ tool, size = 22 }) {
 }
 
 // ── Desktop Tool Card (large, full email visible) ─────────────────────────────
-function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave, onDelete }) {
-  const creds = tool.credentials ?? { login: '', password: '' }
+function DesktopToolCard({ tool, isAdmin, onCredentialSave, onCredentialReplace, onDelete }) {
+  const [credsOpen, setCredsOpen] = useState(false)
+  const creds    = tool.credentials ?? { login: '', password: '' }
   const isCustom = !tool.icon
 
+  // local state for inline type-switching
+  const [editType,           setEditType]           = useState(creds.loginType ?? 'password')
+  const [editSocialProvider, setEditSocialProvider] = useState(creds.socialProvider ?? 'google')
+  const [editSocialAccount,  setEditSocialAccount]  = useState(creds.socialAccount ?? '')
+
+  // sync if parent re-renders with updated creds
+  useEffect(() => {
+    setEditType(creds.loginType ?? 'password')
+    setEditSocialProvider(creds.socialProvider ?? 'google')
+    setEditSocialAccount(creds.socialAccount ?? '')
+  }, [creds.loginType, creds.socialProvider, creds.socialAccount])
+
+  function saveSocial(e) {
+    e.stopPropagation()
+    onCredentialReplace(tool.id, {
+      loginType: 'social',
+      socialProvider: editSocialProvider,
+      socialAccount: editSocialAccount.trim(),
+    })
+  }
+
   return (
-    <div className={`group flex flex-col gap-4 p-5 border rounded-2xl transition-all duration-200 ${
-      granted
-        ? 'bg-white border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
-        : 'bg-gray-50/60 border-gray-100 opacity-50'
-    }`}>
-      {/* Header: icon + title/desc inline, toggle on far right */}
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col bg-white border border-gray-200 shadow-sm rounded-2xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden">
+      {/* Header — click to expand credentials */}
+      <button
+        onClick={() => setCredsOpen((o) => !o)}
+        className="flex items-center gap-3 p-5 text-left w-full"
+      >
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
           style={{ backgroundColor: tool.color + '18' }}>
           <ToolIcon tool={tool} size={22} />
@@ -172,46 +193,90 @@ function DesktopToolCard({ tool, granted, onToggle, isAdmin, onCredentialSave, o
           <p className="font-bold text-gray-900 text-base leading-tight truncate">{tool.name}</p>
           <p className="text-xs text-gray-400 mt-0.5 truncate">{tool.desc}</p>
         </div>
-        {isAdmin ? (
-          <button onClick={() => onToggle(tool.id)}
-            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-              granted ? 'bg-[#A31621] border-[#A31621]' : 'border-gray-300 hover:border-[#A31621]'
-            }`}>
-            {granted && <Check size={13} className="text-white" />}
-          </button>
-        ) : (
-          granted ? <Unlock size={16} className="text-green-500 shrink-0" /> : <Lock size={16} className="text-gray-300 shrink-0" />
-        )}
-      </div>
+        <ChevronDown size={15} className={`text-gray-300 transition-transform duration-200 shrink-0 ${credsOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-      {/* Credentials */}
-      {granted && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 border border-gray-100">
-          <div className="flex items-center gap-1.5 mb-1">
-            <KeyRound size={12} className="text-gray-300" />
-            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Credenciais</span>
+      {/* Credentials — collapsed by default, expands on click */}
+      {credsOpen && (
+        <div className="px-5 pb-5 flex flex-col gap-4 border-t border-gray-50">
+          <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100 mt-4">
+            {/* Type switcher */}
+            <div className="flex items-center gap-2">
+              <KeyRound size={12} className="text-gray-300" />
+              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest flex-1">Credenciais</span>
+              {isAdmin && (
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[10px] font-bold">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditType('password') }}
+                    className={`px-2.5 py-1 transition-colors ${editType === 'password' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                    Login/Senha
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditType('social') }}
+                    className={`px-2.5 py-1 transition-colors ${editType === 'social' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                    Social
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {editType === 'social' ? (
+              <div className="flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                {/* Provider grid */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {SOCIAL_PROVIDERS.map((p) => (
+                    <button key={p.id}
+                      onClick={() => setEditSocialProvider(p.id)}
+                      className={`flex flex-col items-center gap-0.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${
+                        editSocialProvider === p.id
+                          ? 'border-gray-800 bg-gray-800 text-white'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      <span>{p.emoji}</span>
+                      <span className="truncate w-full text-center px-0.5">{p.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Account input */}
+                <input
+                  value={editSocialAccount}
+                  onChange={(e) => setEditSocialAccount(e.target.value)}
+                  placeholder="e-mail ou usuário da conta"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-gray-400"
+                />
+                {isAdmin && (
+                  <button onClick={saveSocial}
+                    className="self-end text-xs font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-lg px-4 py-1.5 transition-colors">
+                    Salvar
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div onClick={(e) => e.stopPropagation()}>
+                <CredentialRow label="Login" value={creds.login} isPassword={false}
+                  isAdmin={isAdmin} onSave={(v) => onCredentialSave(tool.id, 'login', v)} />
+                <div className="mt-2">
+                  <CredentialRow label="Senha" value={creds.password} isPassword={true}
+                    isAdmin={isAdmin} onSave={(v) => onCredentialSave(tool.id, 'password', v)} />
+                </div>
+              </div>
+            )}
           </div>
-          <CredentialRow label="Login" value={creds.login} isPassword={false}
-            isAdmin={isAdmin} onSave={(v) => onCredentialSave(tool.id, 'login', v)} />
-          <CredentialRow label="Senha" value={creds.password} isPassword={true}
-            isAdmin={isAdmin} onSave={(v) => onCredentialSave(tool.id, 'password', v)} />
-        </div>
-      )}
 
-      {/* Open link + custom delete */}
-      {granted && (
-        <div className="mt-auto flex gap-2">
-          <a href={tool.url} target="_blank" rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-xl py-3 transition-colors">
-            Abrir <ExternalLink size={14} />
-          </a>
-          {isAdmin && isCustom && (
-            <button onClick={() => onDelete && onDelete(tool.id)}
-              title="Remover serviço"
-              className="flex items-center justify-center w-11 rounded-xl border border-red-100 text-red-300 hover:bg-red-50 hover:text-red-500 transition-colors">
-              <Trash2 size={15} />
-            </button>
-          )}
+          <div className="flex gap-2">
+            <a href={tool.url} target="_blank" rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#A31621] hover:bg-[#8B121C] rounded-xl py-3 transition-colors">
+              Abrir <ExternalLink size={14} />
+            </a>
+            {isAdmin && isCustom && (
+              <button onClick={(e) => { e.stopPropagation(); onDelete && onDelete(tool.id) }}
+                title="Remover serviço"
+                className="flex items-center justify-center w-11 rounded-xl border border-red-100 text-red-300 hover:bg-red-50 hover:text-red-500 transition-colors">
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -438,17 +503,31 @@ function MemberRow({ member, isAdmin, onRoleChange, onToolsChange, onDelete, onE
 const PRESET_COLORS = ['#A31621','#1877F2','#10A37F','#7C3AED','#E37400','#25D366','#FF4500','#181717','#F24E1E','#00C4CC']
 const PRESET_EMOJIS = ['🔧','⚡','🚀','🎯','📊','🤖','💬','🎨','📱','🔗','📧','🗂️','🔑','💰','🌐']
 
-function AddToolModal({ onClose, onSave, existingCategories }) {
-  const [name,     setName]     = useState('')
-  const [desc,     setDesc]     = useState('')
-  const [category, setCategory] = useState('Personalizado')
-  const [customCat,setCustomCat]= useState('')
-  const [url,      setUrl]      = useState('')
-  const [color,    setColor]    = useState('#A31621')
-  const [emoji,    setEmoji]    = useState('🔧')
-  const [login,    setLogin]    = useState('')
-  const [password, setPassword] = useState('')
-  const [saving,   setSaving]   = useState(false)
+const SOCIAL_PROVIDERS = [
+  { id: 'google',    label: 'Google',      emoji: '🔵', color: '#4285F4' },
+  { id: 'github',    label: 'GitHub',      emoji: '⚫', color: '#181717' },
+  { id: 'facebook',  label: 'Facebook',    emoji: '🔷', color: '#1877F2' },
+  { id: 'microsoft', label: 'Microsoft',   emoji: '🟦', color: '#00A4EF' },
+  { id: 'apple',     label: 'Apple',       emoji: '⬛', color: '#000000' },
+  { id: 'twitter',   label: 'X / Twitter', emoji: '🐦', color: '#1DA1F2' },
+  { id: 'linkedin',  label: 'LinkedIn',    emoji: '🔹', color: '#0A66C2' },
+  { id: 'other',     label: 'Outro',       emoji: '🔐', color: '#6366F1' },
+]
+
+function AddToolModal({ onClose, onSave, existingCategories, teamMembers = [] }) {
+  const [name,           setName]           = useState('')
+  const [desc,           setDesc]           = useState('')
+  const [category,       setCategory]       = useState('Personalizado')
+  const [customCat,      setCustomCat]      = useState('')
+  const [url,            setUrl]            = useState('')
+  const [color,          setColor]          = useState('#A31621')
+  const [emoji,          setEmoji]          = useState('🔧')
+  const [loginType,      setLoginType]      = useState('password')   // 'password' | 'social'
+  const [login,          setLogin]          = useState('')
+  const [password,       setPassword]       = useState('')
+  const [socialProvider, setSocialProvider] = useState('google')
+  const [socialAccount,  setSocialAccount]  = useState('')
+  const [saving,         setSaving]         = useState(false)
 
   const categories = [...existingCategories.filter((c) => c !== 'Todos'), 'Personalizado']
 
@@ -457,10 +536,15 @@ function AddToolModal({ onClose, onSave, existingCategories }) {
     if (!name.trim()) return
     setSaving(true)
     const finalCategory = category === 'Personalizado' && customCat.trim() ? customCat.trim() : category
-    await onSave({ name: name.trim(), desc: desc.trim(), category: finalCategory, url: url.trim(), color, emoji, credentials: { login: login.trim(), password } })
+    const credentials = loginType === 'social'
+      ? { loginType: 'social', socialProvider, socialAccount: socialAccount.trim() }
+      : { loginType: 'password', login: login.trim(), password }
+    await onSave({ name: name.trim(), desc: desc.trim(), category: finalCategory, url: url.trim(), color, emoji, credentials })
     setSaving(false)
     onClose()
   }
+
+  const provider = SOCIAL_PROVIDERS.find((p) => p.id === socialProvider)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -475,10 +559,15 @@ function AddToolModal({ onClose, onSave, existingCategories }) {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ backgroundColor: color + '22' }}>
               {emoji}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-800 text-sm">{name || 'Nome do serviço'}</p>
               <p className="text-xs text-gray-400">{desc || 'Descrição'}</p>
             </div>
+            {loginType === 'social' && provider && (
+              <span className="text-[10px] font-bold px-2 py-1 rounded-full border text-gray-600 border-gray-200 flex items-center gap-1 shrink-0">
+                {provider.emoji} {provider.label}
+              </span>
+            )}
           </div>
 
           {/* Emoji picker */}
@@ -548,21 +637,101 @@ function AddToolModal({ onClose, onSave, existingCategories }) {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
           </div>
 
-          {/* Credentials */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Login</label>
-              <input value={login} onChange={(e) => setLogin(e.target.value)}
-                placeholder="email ou usuário"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Senha</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+          {/* Login type toggle */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2">Tipo de Acesso</label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setLoginType('password')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                  loginType === 'password'
+                    ? 'bg-[#A31621] border-[#A31621] text-white'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}>
+                <KeyRound size={14} /> Login / Senha
+              </button>
+              <button type="button" onClick={() => setLoginType('social')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                  loginType === 'social'
+                    ? 'bg-[#A31621] border-[#A31621] text-white'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}>
+                <Users size={14} /> Login Social
+              </button>
             </div>
           </div>
+
+          {/* Password fields */}
+          {loginType === 'password' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Login</label>
+                <input value={login} onChange={(e) => setLogin(e.target.value)}
+                  placeholder="email ou usuário"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Senha</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+              </div>
+            </div>
+          )}
+
+          {/* Social login fields */}
+          {loginType === 'social' && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-2">Provedor</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {SOCIAL_PROVIDERS.map((p) => (
+                    <button key={p.id} type="button" onClick={() => setSocialProvider(p.id)}
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-[11px] font-semibold transition-all ${
+                        socialProvider === p.id
+                          ? 'border-[#A31621] bg-[#A31621]/5 text-[#A31621]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      <span className="text-lg leading-none">{p.emoji}</span>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">
+                  Conta vinculada
+                  {teamMembers.length > 0 && <span className="font-normal text-gray-400 ml-1">(selecione ou digite)</span>}
+                </label>
+                {teamMembers.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {teamMembers.map((m) => (
+                        <button key={m.id ?? m.email} type="button"
+                          onClick={() => setSocialAccount(m.email ?? m.name)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                            socialAccount === (m.email ?? m.name)
+                              ? 'border-[#A31621] bg-[#A31621]/5 text-[#A31621]'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}>
+                          <div className="w-4 h-4 rounded-full bg-[#A31621]/20 flex items-center justify-center text-[8px] font-bold text-[#A31621]">
+                            {(m.name || m.email || '?')[0].toUpperCase()}
+                          </div>
+                          {m.email ?? m.name}
+                        </button>
+                      ))}
+                    </div>
+                    <input value={socialAccount} onChange={(e) => setSocialAccount(e.target.value)}
+                      placeholder="ou digite outra conta…"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+                  </div>
+                ) : (
+                  <input value={socialAccount} onChange={(e) => setSocialAccount(e.target.value)}
+                    placeholder="ex: email@gmail.com"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A31621]" />
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={saving || !name.trim()}
@@ -598,17 +767,16 @@ export default function TeamDashboard({ user, onLogout }) {
   useEffect(() => {
     async function loadCreds() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-        // Load credentials
-        const res = await fetch('https://content-engine.hudsonargollo2.workers.dev/api/credentials', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
+        // Load credentials from KV (same-origin, no auth needed)
+        const res = await fetch('/api/kanban/credentials')
         if (res.ok) {
           const { credentials: rows } = await res.json()
           setCredentials((prev) => {
             const next = { ...prev }
-            for (const row of rows) next[row.toolId] = { login: row.login, password: row.password }
+            for (const row of rows) {
+              const { toolId, ...creds } = row
+              next[toolId] = creds
+            }
             return next
           })
         }
@@ -637,10 +805,10 @@ export default function TeamDashboard({ user, onLogout }) {
   const allTools = [...ALL_TOOLS, ...customTools]
   // Find the logged-in user's member record; fall back to first member
   const myMember = members.find((m) => m.email?.toLowerCase() === user?.email?.toLowerCase()) ?? members[0]
-  // Admins get all tools by default; others get their assigned tools
-  const effectiveTools = (myMember?.role === 'Admin' || isAdmin) && !myMember?.tools?.length
-    ? allTools.map((t) => t.id)
-    : (myMember?.tools ?? [])
+  // All tools are active by default — only revoked if explicitly removed from the list
+  const effectiveTools = myMember?.tools?.length
+    ? myMember.tools
+    : allTools.map((t) => t.id)
   const myTools  = allTools.filter((t) => effectiveTools.includes(t.id))
 
   const allCategories = ['Todos', ...Array.from(new Set(allTools.map((t) => t.category)))]
@@ -706,18 +874,24 @@ export default function TeamDashboard({ user, onLogout }) {
   }
 
   async function handleCredentialSave(toolId, field, value) {
-    setCredentials((prev) => ({ ...prev, [toolId]: { ...prev[toolId], [field]: value } }))
+    const updated = { ...(credentials[toolId] ?? {}), [field]: value }
+    setCredentials((prev) => ({ ...prev, [toolId]: updated }))
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const current = credentials[toolId] ?? { login: '', password: '' }
-      await fetch(`https://content-engine.hudsonargollo2.workers.dev/api/credentials/${toolId}`, {
+      await fetch(`/api/kanban/credentials/${toolId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          login:    field === 'login'    ? value : current.login,
-          password: field === 'password' ? value : current.password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      })
+    } catch (e) { console.error('[credentials] save failed', e) }
+  }
+
+  async function handleCredentialReplace(toolId, creds) {
+    setCredentials((prev) => ({ ...prev, [toolId]: creds }))
+    try {
+      await fetch(`/api/kanban/credentials/${toolId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(creds),
       })
     } catch (e) { console.error('[credentials] save failed', e) }
   }
@@ -933,10 +1107,9 @@ export default function TeamDashboard({ user, onLogout }) {
                 {filteredTools.map((tool) => (
                   <DesktopToolCard key={tool.id}
                     tool={{ ...tool, credentials: credentials[tool.id] ?? tool.credentials }}
-                    granted={effectiveTools.includes(tool.id)}
-                    onToggle={toggleMyTool}
                     isAdmin={isAdmin}
                     onCredentialSave={handleCredentialSave}
+                    onCredentialReplace={handleCredentialReplace}
                     onDelete={handleDeleteCustomTool}
                   />
                 ))}
@@ -1013,6 +1186,7 @@ export default function TeamDashboard({ user, onLogout }) {
           onClose={() => setShowAddTool(false)}
           onSave={handleAddCustomTool}
           existingCategories={allCategories}
+          teamMembers={members}
         />
       )}
     </div>

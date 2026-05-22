@@ -169,24 +169,48 @@ INSTRUÇÕES:
   // Parse sections from the generated text
   const parsedSections = parseSections(text, sections)
 
-  const scriptTitle = `${blueprint.name} — ${products[0]?.title?.slice(0, 40) ?? 'Roteiro'}`
+  const dateStr     = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const productName = products[0]?.title?.slice(0, 40)
+  const scriptTitle = productName
+    ? `${blueprint.name} — ${productName}`
+    : `${blueprint.name} · ${dateStr}`
 
-  const { data, error } = await db.from('scripts').insert({
-    id:               uid(),
-    catalogEntryId:   ids[0] ?? null,
-    blueprintId:      blueprint.id ?? blueprintId ?? 'custom',
+  const baseRow = {
+    id:             uid(),
+    catalogEntryId: null,
+    blueprintId:    blueprint.id ?? blueprintId ?? 'custom',
     text,
-    sections:         parsedSections,
-    title:            scriptTitle,
-    language:         language ?? 'pt',
-    confidence:       92,
-    version:          1,
-    prompt:           userPrompt,
-    channelProfileId: profile?.id ?? null,
-  }).select().single()
+    language:       language ?? 'pt',
+    confidence:     92,
+    version:        1,
+    prompt:         userPrompt,
+  }
 
-  if (error) throw new Error(error.message)
-  return data
+  // Try progressively simpler inserts as schema columns may not exist yet
+  async function tryInsert(row) {
+    const { data, error } = await db.from('scripts').insert(row).select().single()
+    return { data, error }
+  }
+
+  const fullRow = { ...baseRow, sections: parsedSections, title: scriptTitle, ...(profile?.id ? { channelProfileId: profile.id } : {}) }
+
+  let { data: saved, error: err } = await tryInsert(fullRow)
+
+  if (err) {
+    const msg = err.message ?? ''
+    if (msg.includes('channelProfileId')) {
+      // Strip channelProfileId and retry
+      const { channelProfileId: _, ...withoutProfile } = fullRow
+      ;({ data: saved, error: err } = await tryInsert(withoutProfile))
+    }
+    if (err && (msg.includes('sections') || msg.includes('title') || err.message?.includes('sections') || err.message?.includes('title'))) {
+      // Strip new columns entirely and retry with base row
+      ;({ data: saved, error: err } = await tryInsert(baseRow))
+    }
+    if (err) throw new Error(err.message)
+  }
+
+  return saved
 }
 
 function parseSections(text, blueprintSections) {
@@ -270,6 +294,15 @@ export async function listScripts(env) {
     .select('*')
     .order('createdAt', { ascending: false })
     .limit(50)
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Schema cache may be ahead of DB — fall back to guaranteed base columns
+    const { data: fallback, error: e2 } = await db
+      .from('scripts')
+      .select('id, "catalogEntryId", "blueprintId", text, language, confidence, version, "createdAt"')
+      .order('createdAt', { ascending: false })
+      .limit(50)
+    if (e2) throw new Error(e2.message)
+    return fallback ?? []
+  }
   return data
 }

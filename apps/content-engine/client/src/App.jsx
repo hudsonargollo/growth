@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -10,9 +10,11 @@ import {
   Settings,
   LogOut,
   Loader2,
+  Wallet,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
+import Landing      from './pages/Landing.jsx'
 import Dashboard    from './pages/Dashboard.jsx'
 import Mining       from './pages/Mining.jsx'
 import Scripts      from './pages/Scripts.jsx'
@@ -20,20 +22,21 @@ import Voiceover    from './pages/Voiceover.jsx'
 import Delivery     from './pages/Delivery.jsx'
 import Comments     from './pages/Comments.jsx'
 import SettingsPage from './pages/Settings.jsx'
+import Finance      from './pages/Finance.jsx'
 
 const navItems = [
-  { to: '/',          label: 'Dashboard',   icon: LayoutDashboard },
-  { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
-  { to: '/scripts',   label: 'Roteiros',    icon: FileText },
-  { to: '/voiceover', label: 'Narração',    icon: Mic },
-  { to: '/delivery',  label: 'Entrega',     icon: Send },
-  { to: '/comments',  label: 'Comentários', icon: MessageSquare },
-  { to: '/settings',  label: 'Configurações', icon: Settings },
+  { to: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
+  { to: '/mining',     label: 'Mineração',      icon: ShoppingBag },
+  { to: '/scripts',    label: 'Roteiros',       icon: FileText },
+  { to: '/voiceover',  label: 'Narração',       icon: Mic },
+  { to: '/delivery',   label: 'Entrega',        icon: Send },
+  { to: '/comments',   label: 'Comentários',    icon: MessageSquare },
+  { to: '/settings',   label: 'Configurações',  icon: Settings },
 ]
 
 function Sidebar({ user, onSignOut }) {
   return (
-    <aside className="w-60 min-h-screen bg-gray-900 text-white flex flex-col">
+    <aside className="w-60 h-screen sticky top-0 bg-gray-900 text-white flex flex-col overflow-y-auto">
       <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-3">
         <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-9 h-9 rounded-lg object-cover shrink-0" />
         <div>
@@ -46,7 +49,6 @@ function Sidebar({ user, onSignOut }) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -75,69 +77,23 @@ function Sidebar({ user, onSignOut }) {
   )
 }
 
-function LoginScreen() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    setLoading(false)
-  }
-
+function AppShell({ session }) {
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-4">
-          <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-20 h-20 rounded-2xl object-cover" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-white">Fábrica de Conteúdo</h1>
-            <p className="text-gray-400 text-sm mt-1">Acesse sua conta</p>
-          </div>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-900/30 border border-red-700 text-red-300 text-sm px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@exemplo.com"
-              className="w-full bg-gray-800 border border-gray-700 text-white text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-indigo-500 placeholder-gray-600"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-gray-800 border border-gray-700 text-white text-sm px-3 py-2.5 rounded-lg focus:outline-none focus:border-indigo-500 placeholder-gray-600"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm py-2.5 rounded-lg transition-colors"
-          >
-            {loading && <Loader2 size={14} className="animate-spin" />}
-            Entrar
-          </button>
-        </form>
-      </div>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar user={session.user} onSignOut={() => supabase.auth.signOut()} />
+      <main className="flex-1 p-8 overflow-auto">
+        <Routes>
+          <Route path="/dashboard"  element={<Dashboard />} />
+          <Route path="/mining"     element={<Mining />} />
+          <Route path="/scripts"    element={<Scripts />} />
+          <Route path="/voiceover"  element={<Voiceover />} />
+          <Route path="/delivery"   element={<Delivery />} />
+          <Route path="/comments"   element={<Comments />} />
+          <Route path="/finance"    element={<Finance />} />
+          <Route path="/settings"   element={<SettingsPage />} />
+          <Route path="*"           element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </main>
     </div>
   )
 }
@@ -159,24 +115,20 @@ export default function App() {
     )
   }
 
-  if (!session) return <LoginScreen />
-
   return (
     <BrowserRouter>
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar user={session.user} onSignOut={() => supabase.auth.signOut()} />
-        <main className="flex-1 p-8 overflow-auto">
-          <Routes>
-            <Route path="/"          element={<Dashboard />} />
-            <Route path="/mining"    element={<Mining />} />
-            <Route path="/scripts"   element={<Scripts />} />
-            <Route path="/voiceover" element={<Voiceover />} />
-            <Route path="/delivery"  element={<Delivery />} />
-            <Route path="/comments"  element={<Comments />} />
-            <Route path="/settings"  element={<SettingsPage />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        {/* Landing page — always accessible */}
+        <Route
+          path="/"
+          element={session ? <Navigate to="/dashboard" replace /> : <Landing />}
+        />
+        {/* App shell — requires auth, redirects to landing if not signed in */}
+        <Route
+          path="/*"
+          element={session ? <AppShell session={session} /> : <Navigate to="/" replace />}
+        />
+      </Routes>
     </BrowserRouter>
   )
 }

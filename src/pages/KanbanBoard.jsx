@@ -164,7 +164,7 @@ function CardModal({ card, clients, members, onSave, onDelete, onClose }) {
 
 // ── Kanban Card ───────────────────────────────────────────────────────────────
 
-function KanbanCard({ card, clients, onEdit, onDragStart, onDragEnd, isDragging }) {
+function KanbanCard({ card, clients, onEdit, onDelete, onDragStart, onDragEnd, isDragging }) {
   const isOverdue = card.dueDate && card.dueDate < today() && card.columnId !== 'done'
   const client = clients.find(c => c.id === card.clientId)
 
@@ -174,12 +174,21 @@ function KanbanCard({ card, clients, onEdit, onDragStart, onDragEnd, isDragging 
       onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(card.id) }}
       onDragEnd={onDragEnd}
       onClick={() => onEdit(card)}
-      className={`bg-white border rounded-xl p-3.5 cursor-pointer select-none transition-all duration-150 ${
+      className={`group relative bg-white border rounded-xl p-3.5 cursor-pointer select-none transition-all duration-150 ${
         isDragging ? 'opacity-40 scale-95 shadow-none' : 'border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5'
       }`}
     >
+      {/* Delete button — hover reveal */}
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(card.id) }}
+        className="absolute top-2.5 right-2.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"
+        title="Excluir card"
+      >
+        <Trash2 size={12} />
+      </button>
+
       {card.labelColor && <div className="h-1 rounded-full mb-3" style={{ backgroundColor: card.labelColor }} />}
-      <p className="text-sm font-semibold text-gray-800 leading-snug mb-2">{card.title}</p>
+      <p className="text-sm font-semibold text-gray-800 leading-snug mb-2 pr-5">{card.title}</p>
       {card.description && <p className="text-xs text-gray-400 mb-3 line-clamp-2">{card.description}</p>}
       {client && (
         <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-2"
@@ -205,7 +214,7 @@ function KanbanCard({ card, clients, onEdit, onDragStart, onDragEnd, isDragging 
 
 // ── Kanban Column ─────────────────────────────────────────────────────────────
 
-function KanbanColumn({ col, cards, clients, onAdd, onEdit, onDragStart, onDragEnd, onDrop, isOver, setOver, draggingId }) {
+function KanbanColumn({ col, cards, clients, onAdd, onEdit, onDelete, onDragStart, onDragEnd, onDrop, isOver, setOver, draggingId }) {
   return (
     <div className="flex flex-col w-72 shrink-0">
       <div className="flex items-center justify-between mb-3 px-1">
@@ -228,7 +237,7 @@ function KanbanColumn({ col, cards, clients, onAdd, onEdit, onDragStart, onDragE
       >
         {cards.map(card => (
           <KanbanCard key={card.id} card={card} clients={clients}
-            onEdit={onEdit} onDragStart={onDragStart} onDragEnd={onDragEnd}
+            onEdit={onEdit} onDelete={onDelete} onDragStart={onDragStart} onDragEnd={onDragEnd}
             isDragging={draggingId === card.id} />
         ))}
         {cards.length === 0 && (
@@ -335,6 +344,7 @@ function BoardView({ cards, clients, members, activeClientId, onCardsChange, onA
             clients={clients}
             onAdd={addCard}
             onEdit={setEditingCard}
+            onDelete={deleteCard}
             onDragStart={setDraggingId}
             onDragEnd={() => setDraggingId(null)}
             onDrop={handleDrop}

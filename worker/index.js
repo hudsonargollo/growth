@@ -240,6 +240,29 @@ export default {
         }
       }
 
+      // ── Tool credentials (GET all / PUT one) ──────────────────────────────
+      if (path === '/api/kanban/credentials' && method === 'GET') {
+        const map = await kvGet(kv, 'kanban:credentials', {})
+        // Return as array for compat with existing frontend loader
+        const credentials = Object.entries(map).map(([toolId, creds]) => ({ toolId, ...creds }))
+        return json({ credentials })
+      }
+
+      const credMatch = path.match(/^\/api\/kanban\/credentials\/([^/]+)$/)
+      if (credMatch) {
+        const toolId = credMatch[1]
+        const map    = await kvGet(kv, 'kanban:credentials', {})
+        if (method === 'GET') {
+          return json({ toolId, ...(map[toolId] ?? {}) })
+        }
+        if (method === 'PUT') {
+          const body = await request.json()
+          map[toolId] = body
+          await kvSet(kv, 'kanban:credentials', map)
+          return json({ ok: true, toolId })
+        }
+      }
+
       return json({ error: 'Not found' }, 404)
     }
 

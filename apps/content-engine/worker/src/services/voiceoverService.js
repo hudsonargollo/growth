@@ -23,16 +23,40 @@ export const ELEVENLABS_VOICES = [
 
 // ── Text helpers ──────────────────────────────────────────────────────────────
 
+/**
+ * Clean a raw script string so it reads naturally when spoken by a TTS engine.
+ * Removes markdown syntax, stage directions, section headers, and formatting symbols.
+ */
+function cleanForTTS(raw) {
+  return raw
+    // Remove full lines that are ONLY stage directions / production notes in brackets
+    .replace(/^\s*\[.*?\]\s*$/gm, '')
+    // Remove inline stage directions between brackets (e.g. [corte rápido])
+    .replace(/\[.*?\]/g, '')
+    // Remove markdown headings (## Seção, # Título)
+    .replace(/^#{1,6}\s*/gm, '')
+    // Remove ROTEIRO: prefix lines  (e.g. "# ROTEIRO: Cadeira Gamer…")
+    .replace(/^ROTEIRO:\s*/gim, '')
+    // Remove bold/italic markers  (**texto**, *texto*, __texto__, _texto_)
+    .replace(/(\*{1,3}|_{1,3})(.*?)\1/g, '$2')
+    // Remove horizontal rules  --- or ___
+    .replace(/^[-_]{3,}\s*$/gm, '')
+    // Remove markdown-style list bullets at line start
+    .replace(/^\s*[-*•]\s+/gm, '')
+    // Collapse 3+ blank lines to 2
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim each line
+    .split('\n').map((l) => l.trim()).join('\n')
+    .trim()
+}
+
 function scriptToText(script) {
   // Prefer structured sections, fall back to raw text blob
   const sections = script.sections ?? []
-  if (sections.length > 0) {
-    return sections
-      .map((s) => s.content ?? '')
-      .filter(Boolean)
-      .join('\n\n')
-  }
-  return script.text ?? ''
+  const raw = sections.length > 0
+    ? sections.map((s) => s.content ?? '').filter(Boolean).join('\n\n')
+    : (script.text ?? '')
+  return cleanForTTS(raw)
 }
 
 function estimateDuration(byteLength, format = 'mp3') {
@@ -102,12 +126,28 @@ async function generateElevenLabs(env, { text, voiceId, stability, similarityBoo
 
 // ── Supabase Storage upload ───────────────────────────────────────────────────
 
+async function ensureBucket(env, bucket) {
+  const res = await fetch(`${env.SUPABASE_URL}/storage/v1/bucket`, {
+    method:  'POST',
+    headers: {
+      Authorization:  `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ id: bucket, name: bucket, public: true }),
+  })
+  // 200 = created, 409 = already exists — both are fine
+  if (!res.ok && res.status !== 409) {
+    const err = await res.text()
+    console.warn(`[storage] bucket create ${res.status}: ${err.slice(0, 100)}`)
+  }
+}
+
 async function uploadAudio(env, { buffer, fileName }) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY não configurados')
   }
 
-  const res = await fetch(
+  const upload = () => fetch(
     `${env.SUPABASE_URL}/storage/v1/object/voiceovers/${fileName}`,
     {
       method:  'POST',
@@ -120,9 +160,21 @@ async function uploadAudio(env, { buffer, fileName }) {
     }
   )
 
+  let res = await upload()
+
   if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Storage upload error ${res.status}: ${err.slice(0, 200)}`)
+    const errText = await res.text()
+    // Bucket doesn't exist — create it and retry once
+    if (errText.includes('Bucket not found') || res.status === 400) {
+      await ensureBucket(env, 'voiceovers')
+      res = await upload()
+      if (!res.ok) {
+        const err2 = await res.text()
+        throw new Error(`Storage upload error ${res.status}: ${err2.slice(0, 200)}`)
+      }
+    } else {
+      throw new Error(`Storage upload error ${res.status}: ${errText.slice(0, 200)}`)
+    }
   }
 
   return `${env.SUPABASE_URL}/storage/v1/object/public/voiceovers/${fileName}`
@@ -141,12 +193,27 @@ export async function generateVoiceover(env, {
 }) {
   const db = getDb(env)
 
-  const { data: script, error: sErr } = await db
-    .from('scripts')
-    .select('id, text, sections, title, blueprintId, language')
-    .eq('id', scriptId)
-    .single()
-  if (sErr || !script) throw new Error(`Roteiro ${scriptId} não encontrado`)
+  let script
+  {
+    const { data, error } = await db
+      .from('scripts')
+      .select('id, text, sections, language, blueprintId')
+      .eq('id', scriptId)
+      .single()
+    if (error) {
+      // sections column may not be in schema cache yet — retry with base columns
+      const { data: d2, error: e2 } = await db
+        .from('scripts')
+        .select('id, text, language, blueprintId')
+        .eq('id', scriptId)
+        .single()
+      if (e2 || !d2) throw new Error(`Roteiro ${scriptId} não encontrado: ${error.message}`)
+      script = d2
+    } else {
+      script = data
+    }
+  }
+  if (!script) throw new Error(`Roteiro ${scriptId} não encontrado`)
 
   const text = scriptToText(script)
   if (!text) throw new Error('Roteiro sem conteúdo — gere o roteiro primeiro')
@@ -168,7 +235,7 @@ export async function generateVoiceover(env, {
   const fileUrl  = await uploadAudio(env, { buffer: audioBuffer, fileName })
   const duration = estimateDuration(audioBuffer.byteLength)
 
-  const { data, error } = await db.from('voiceovers').insert({
+  const fullRow = {
     id:             uid(),
     scriptId,
     provider,
@@ -181,9 +248,29 @@ export async function generateVoiceover(env, {
     stability,
     similarityBoost,
     status:         'completed',
-  }).select().single()
+  }
 
-  if (error) throw new Error(error.message)
+  let { data, error } = await db.from('voiceovers').insert(fullRow).select().single()
+
+  if (error) {
+    // provider/charCount columns may not be in schema cache — use only Prisma-original columns
+    const baseRow = {
+      id:             fullRow.id,
+      scriptId,
+      fileUrl,
+      duration,
+      voiceModel:     fullRow.voiceModel,
+      voiceId:        voiceId ?? '',
+      bitrate:        '128kbps',
+      stability,
+      similarityBoost,
+      status:         'completed',
+    }
+    const { data: d2, error: e2 } = await db.from('voiceovers').insert(baseRow).select().single()
+    if (e2) throw new Error(e2.message)
+    data = d2
+  }
+
   return data
 }
 
@@ -191,9 +278,18 @@ export async function listVoiceovers(env) {
   const db = getDb(env)
   const { data, error } = await db
     .from('voiceovers')
-    .select('id, scriptId, provider, voiceModel, voiceId, fileUrl, duration, status, createdAt, scripts(title, blueprintId, language)')
+    .select('id, scriptId, provider, voiceModel, voiceId, fileUrl, duration, status, createdAt, scripts(blueprintId, language)')
     .order('createdAt', { ascending: false })
     .limit(50)
-  if (error) throw new Error(error.message)
+  if (error) {
+    // provider/voiceId may not be in schema cache — fall back to guaranteed columns
+    const { data: d2, error: e2 } = await db
+      .from('voiceovers')
+      .select('id, scriptId, voiceModel, fileUrl, duration, status, createdAt')
+      .order('createdAt', { ascending: false })
+      .limit(50)
+    if (e2) throw new Error(e2.message)
+    return d2 ?? []
+  }
   return data
 }

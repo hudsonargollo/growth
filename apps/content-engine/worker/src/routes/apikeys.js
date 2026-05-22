@@ -19,6 +19,8 @@ const ALLOWED_KEYS = new Set([
   'SERPAPI_KEY',
   'AMAZON_AFFILIATE_TAG',
   'ML_AFFILIATE_TAG',
+  'ML_APP_ID',
+  'ML_CLIENT_SECRET',
 ])
 
 // Normalise: accept both UPPER_CASE and lower_case variants

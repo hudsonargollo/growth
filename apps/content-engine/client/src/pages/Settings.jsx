@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Save, Tv2 } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Save, Tv2, Terminal, Copy, Check } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import { apiPut, apiDelete } from '../hooks/useApi.js'
 import { supabase } from '../lib/supabase.js'
@@ -29,6 +29,8 @@ const KEY_GROUPS = [
       { key: 'SERPAPI_KEY',          label: 'SerpAPI Key',               placeholder: '…',      required: false },
       { key: 'AMAZON_AFFILIATE_TAG', label: 'Tag Amazon Associates',    placeholder: 'seusite-20',         required: false },
       { key: 'ML_AFFILIATE_TAG',    label: 'Tag Afiliado MercadoLivre', placeholder: 'matt:usuario:toolId', required: false, hint: 'Formato matt: ex. matt:seunome:78793736 — ou tag simples' },
+      { key: 'ML_APP_ID',           label: 'Mercado Livre App ID',      placeholder: '1234567',            required: false, hint: 'App ID do seu aplicativo no Mercado Libre Developers — necessário para ML Direto' },
+      { key: 'ML_CLIENT_SECRET',    label: 'Mercado Livre Client Secret', placeholder: 'xxxxx…',           required: false, hint: 'Client Secret do seu aplicativo ML — necessário para ML Direto' },
     ],
   },
 ]
@@ -251,6 +253,38 @@ function Field({ label, hint, children }) {
   )
 }
 
+const CHANNEL_PROFILE_SQL = `CREATE TABLE IF NOT EXISTS channel_profiles (
+  id            text PRIMARY KEY,
+  "channelName" text NOT NULL DEFAULT '',
+  niche         text NOT NULL DEFAULT '',
+  "platformFocus"      text NOT NULL DEFAULT 'youtube',
+  "targetAudience"     text NOT NULL DEFAULT '',
+  tone          text NOT NULL DEFAULT 'energético e informativo',
+  "affiliatePlatforms" jsonb NOT NULL DEFAULT '[]',
+  "ctaStyle"    text NOT NULL DEFAULT '',
+  "signaturePhrases"   text NOT NULL DEFAULT '',
+  "introStyle"  text NOT NULL DEFAULT 'hook_question',
+  "createdAt"   timestamptz NOT NULL DEFAULT now(),
+  "updatedAt"   timestamptz NOT NULL DEFAULT now()
+);
+NOTIFY pgrst, 'reload schema';`
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={handleCopy}
+      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 rounded hover:bg-white/10">
+      {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+      {copied ? 'Copiado!' : 'Copiar'}
+    </button>
+  )
+}
+
 function ChannelProfileTab() {
   const defaultProfile = {
     channelName: '',
@@ -264,11 +298,12 @@ function ChannelProfileTab() {
     introStyle: 'hook_question',
   }
 
-  const [profile, setProfile]   = useState(defaultProfile)
-  const [loading, setLoading]   = useState(true)
-  const [saving, setSaving]     = useState(false)
-  const [saved, setSaved]       = useState(false)
-  const [error, setError]       = useState(null)
+  const [profile, setProfile]     = useState(defaultProfile)
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
+  const [error, setError]         = useState(null)
+  const [tableMissing, setTableMissing] = useState(false)
 
   useEffect(() => {
     fetch('/api/channel-profile')
@@ -299,6 +334,7 @@ function ChannelProfileTab() {
   async function handleSave() {
     setSaving(true)
     setError(null)
+    setTableMissing(false)
     try {
       const res = await fetch('/api/channel-profile', {
         method: 'PUT',
@@ -306,7 +342,13 @@ function ChannelProfileTab() {
         body: JSON.stringify(profile),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? res.statusText)
+      if (!res.ok) {
+        if (data.error === 'TABLE_MISSING' || data.error?.includes('channel_profiles')) {
+          setTableMissing(true)
+          return
+        }
+        throw new Error(data.error ?? res.statusText)
+      }
       setProfile(data)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
@@ -321,6 +363,33 @@ function ChannelProfileTab() {
 
   return (
     <div className="space-y-6">
+      {/* ── Table missing setup guide ── */}
+      {tableMissing && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-amber-200">
+            <Terminal size={16} className="text-amber-600 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">Tabela não encontrada — setup rápido necessário</p>
+              <p className="text-xs text-amber-600 mt-0.5">Execute o SQL abaixo no Supabase → SQL Editor para criar a tabela do perfil de canal.</p>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="bg-gray-900 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
+                <span className="text-xs text-gray-400 font-mono">SQL Editor → New query</span>
+                <CopyButton text={CHANNEL_PROFILE_SQL} />
+              </div>
+              <pre className="p-4 text-xs text-green-300 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                {CHANNEL_PROFILE_SQL}
+              </pre>
+            </div>
+            <p className="text-xs text-amber-700 mt-3">
+              Após executar, clique em <strong>Salvar Perfil</strong> novamente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />

@@ -3,10 +3,171 @@ import {
   Wand2, FileText, Plus, Trash2, ChevronUp, ChevronDown,
   Pencil, RefreshCw, Copy, Check, GripVertical, X,
   Loader2, BookTemplate, Package, Eye, EyeOff, Clock,
-  ChevronRight, Layers,
+  ChevronRight, Layers, Sparkles, Brain, Mic, Zap,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import { useApi, apiPost, timeAgo } from '../hooks/useApi.js'
+
+// ── Friendly error messages ───────────────────────────────────────────────────
+
+export function friendlyError(raw = '') {
+  const r = raw.toLowerCase()
+  if (r.includes('quota_exceeded') || r.includes('quota exceeded') || r.includes('credits are required'))
+    return 'Créditos insuficientes no ElevenLabs. Adicione créditos em elevenlabs.io ou troque para OpenAI TTS.'
+  if (r.includes('invalid_api_key') || r.includes('invalid api key') || r.includes('unauthorized') || r.includes('401'))
+    return 'Chave de API inválida ou expirada. Verifique em Configurações.'
+  if (r.includes('rate_limit') || r.includes('rate limit') || r.includes('429'))
+    return 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+  if (r.includes('openai_api_key') || r.includes('openai api key'))
+    return 'Chave OpenAI não configurada. Adicione em Configurações → API Keys.'
+  if (r.includes('elevenlabs_api_key') || r.includes('elevenlabs api key'))
+    return 'Chave ElevenLabs não configurada. Adicione em Configurações → API Keys.'
+  if (r.includes('network') || r.includes('fetch') || r.includes('failed to fetch'))
+    return 'Erro de conexão. Verifique sua internet e tente novamente.'
+  if (r.includes('timeout') || r.includes('timed out'))
+    return 'A requisição demorou demais. Tente novamente em instantes.'
+  if (r.includes('roteiro') || r.includes('script') || r.includes('not found'))
+    return 'Roteiro não encontrado. Selecione outro roteiro e tente novamente.'
+  if (r.includes('supabase') || r.includes('database') || r.includes('db error'))
+    return 'Erro ao salvar no banco de dados. Tente novamente.'
+  // fallback: strip JSON noise, show first sentence only
+  const clean = raw.replace(/\{.*?\}/gs, '').replace(/["']/g, '').trim()
+  return clean.split('.')[0].slice(0, 120) || 'Algo deu errado. Tente novamente.'
+}
+
+// ── AI Processing Overlay ─────────────────────────────────────────────────────
+
+const SCRIPT_STEPS = [
+  { icon: '🔍', label: 'Analisando produtos e mercado…' },
+  { icon: '🧠', label: 'Estruturando o roteiro com IA…' },
+  { icon: '✍️', label: 'Escrevendo seções e hooks…' },
+  { icon: '🎯', label: 'Refinando CTAs e gatilhos…' },
+  { icon: '✨', label: 'Finalizando e revisando…' },
+]
+
+export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando Roteiro' }) {
+  const [currentStep, setCurrentStep] = useState(0)
+  const [dots, setDots]               = useState('')
+  const [particles, setParticles]     = useState([])
+
+  useEffect(() => {
+    if (!show) { setCurrentStep(0); return }
+    // Animate dots
+    const dotsInterval = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 400)
+    // Cycle steps
+    const stepInterval = setInterval(() => setCurrentStep(s => (s + 1) % steps.length), 2200)
+    // Generate floating particles once
+    setParticles(Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 4 + 2,
+      duration: Math.random() * 4 + 3,
+      delay: Math.random() * 3,
+    })))
+    return () => { clearInterval(dotsInterval); clearInterval(stepInterval) }
+  }, [show, steps.length])
+
+  if (!show) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(9, 9, 11, 0.88)', backdropFilter: 'blur(12px)' }}>
+      <style>{`
+        @keyframes floatUp {
+          0%   { transform: translateY(0px) scale(1);   opacity: 0.6; }
+          50%  { transform: translateY(-30px) scale(1.2); opacity: 1; }
+          100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+        }
+        @keyframes orbitSpin {
+          from { transform: rotate(0deg) translateX(70px) rotate(0deg); }
+          to   { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+        }
+        @keyframes pulseRing {
+          0%   { transform: scale(0.8); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        @keyframes stepIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes barFill {
+          0%   { width: 5%; }
+          100% { width: 85%; }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .ai-particle  { animation: floatUp var(--dur) var(--delay) ease-in infinite; }
+        .ai-step-in   { animation: stepIn 0.4s ease both; }
+        .ai-bar       { animation: barFill 12s ease-out forwards; }
+        .ai-shimmer   {
+          background: linear-gradient(90deg, #6366f1 0%, #a78bfa 40%, #6366f1 80%);
+          background-size: 200% auto;
+          animation: shimmer 2s linear infinite;
+        }
+      `}</style>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {particles.map(p => (
+          <div key={p.id} className="ai-particle absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`,
+              width: p.size, height: p.size,
+              '--dur': `${p.duration}s`, '--delay': `${p.delay}s`,
+              background: p.id % 3 === 0 ? '#6366f1' : p.id % 3 === 1 ? '#a78bfa' : '#34d399',
+              opacity: 0.6,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Card */}
+      <div className="relative flex flex-col items-center gap-8 px-12 py-10 rounded-3xl max-w-sm w-full mx-4"
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+
+        {/* Pulsing rings + icon */}
+        <div className="relative flex items-center justify-center w-24 h-24">
+          <div className="absolute w-24 h-24 rounded-full border border-violet-500/30"
+            style={{ animation: 'pulseRing 2s ease-out infinite' }} />
+          <div className="absolute w-24 h-24 rounded-full border border-violet-500/20"
+            style={{ animation: 'pulseRing 2s ease-out 0.6s infinite' }} />
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 40px rgba(99,102,241,0.5)' }}>
+            🤖
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="text-center space-y-1">
+          <h2 className="text-white font-bold text-xl tracking-tight">{title}</h2>
+          <p className="text-gray-500 text-xs">Powered by IA · aguarde alguns segundos</p>
+        </div>
+
+        {/* Step indicator */}
+        <div key={currentStep} className="ai-step-in flex items-center gap-3 px-4 py-3 rounded-xl w-full"
+          style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
+          <span className="text-xl shrink-0">{steps[currentStep].icon}</span>
+          <span className="text-sm text-gray-200">{steps[currentStep].label}<span className="text-violet-400">{dots}</span></span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full space-y-2">
+          <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+            <div className="ai-bar h-full rounded-full ai-shimmer" />
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-600">
+            {steps.map((s, i) => (
+              <span key={i} className={`transition-colors duration-500 ${i <= currentStep ? 'text-violet-400' : ''}`}>●</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const SECTION_TYPES = [
   { value: 'intro',      label: 'Abertura',     color: 'bg-violet-100 text-violet-700 border-violet-200' },
@@ -408,39 +569,170 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
   )
 }
 
+// ── Inline rename ─────────────────────────────────────────────────────────────
+
+function InlineTitle({ scriptId, initialTitle, blueprintId, onRenamed }) {
+  const display = initialTitle || blueprintId || 'Sem título'
+  const [editing, setEditing] = useState(false)
+  const [draft,   setDraft]   = useState(display)
+  const [saving,  setSaving]  = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (editing) inputRef.current?.select() }, [editing])
+
+  async function handleSave() {
+    const title = draft.trim() || display
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/scripts/${scriptId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
+      if (res.ok) onRenamed?.(title)
+    } catch {}
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0">
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
+          className="font-semibold text-gray-800 text-sm border-b-2 border-indigo-400 focus:outline-none bg-transparent min-w-0 flex-1"
+          autoFocus
+        />
+        <button onClick={handleSave} disabled={saving}
+          className="p-1 text-emerald-600 hover:text-emerald-700 shrink-0">
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+        </button>
+        <button onClick={() => setEditing(false)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
+          <X size={13} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(display); setEditing(true) }}
+      className="group flex items-center gap-1.5 text-left min-w-0"
+      title="Clique para renomear"
+    >
+      <span className="font-semibold text-gray-800 truncate">{display}</span>
+      <Pencil size={11} className="text-gray-300 group-hover:text-indigo-400 shrink-0 transition-colors" />
+    </button>
+  )
+}
+
 // ── Script Viewer ─────────────────────────────────────────────────────────────
 
 function ScriptViewer({ script, onUpdate }) {
   const sections = script.sections ?? []
-  const [copyAll, setCopyAll] = useState(false)
+  const [copyAll,   setCopyAll]   = useState(false)
+  const [rawMode,   setRawMode]   = useState(false)
+  const [rawText,   setRawText]   = useState('')
+  const [rawSaving, setRawSaving] = useState(false)
+  const [title,     setTitle]     = useState(script.title || script.blueprintId || '')
 
-  const fullText = sections.map((s) => `[${s.label.toUpperCase()}]\n${s.content ?? ''}`).join('\n\n')
+  const fullText = sections.length > 0
+    ? sections.map((s) => `[${s.label.toUpperCase()}]\n${s.content ?? ''}`).join('\n\n')
+    : (script.text ?? '')
 
   function handleCopyAll() {
-    navigator.clipboard.writeText(fullText || script.text || '')
+    navigator.clipboard.writeText(fullText)
     setCopyAll(true)
     setTimeout(() => setCopyAll(false), 2500)
   }
 
+  function enterRaw() {
+    setRawText(fullText)
+    setRawMode(true)
+  }
+
+  async function handleSaveRaw() {
+    setRawSaving(true)
+    try {
+      const res = await fetch(`/api/scripts/${script.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawText }),
+      })
+      if (!res.ok) throw new Error('Erro ao salvar')
+      const updated = await res.json()
+      onUpdate?.({ ...script, ...updated, text: rawText })
+      setRawMode(false)
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setRawSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-gray-800">{script.title || script.blueprintId}</h3>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <InlineTitle
+            scriptId={script.id}
+            initialTitle={title}
+            blueprintId={script.blueprintId}
+            onRenamed={(t) => { setTitle(t); onUpdate?.({ ...script, title: t }) }}
+          />
           <p className="text-xs text-gray-400 mt-0.5">
             {sections.length} seções · {script.language?.toUpperCase()} · {timeAgo(script.createdAt)}
           </p>
         </div>
-        <button
-          onClick={handleCopyAll}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          {copyAll ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-          {copyAll ? 'Copiado!' : 'Copiar tudo'}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={rawMode ? () => setRawMode(false) : enterRaw}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              rawMode
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Pencil size={12} />
+            {rawMode ? 'Seções' : 'Editar tudo'}
+          </button>
+          <button
+            onClick={handleCopyAll}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {copyAll ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            {copyAll ? 'Copiado!' : 'Copiar tudo'}
+          </button>
+        </div>
       </div>
 
-      {sections.length > 0 ? (
+      {/* Raw text editor */}
+      {rawMode ? (
+        <div className="space-y-2">
+          <textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            rows={20}
+            className="w-full text-sm text-gray-700 font-mono border border-indigo-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y leading-relaxed"
+            placeholder="Conteúdo do roteiro…"
+          />
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={() => setRawMode(false)}
+              className="text-xs text-gray-500 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
+              Cancelar
+            </button>
+            <button onClick={handleSaveRaw} disabled={rawSaving}
+              className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 px-4 py-1.5 rounded-lg font-medium transition-colors">
+              {rawSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+              Salvar alterações
+            </button>
+          </div>
+        </div>
+      ) : sections.length > 0 ? (
         sections.map((sec, i) => (
           <SectionCard
             key={sec.id ?? i}
@@ -461,15 +753,21 @@ function ScriptViewer({ script, onUpdate }) {
 
 // ── Script List Row ───────────────────────────────────────────────────────────
 
-function ScriptListRow({ script, onSelect, isSelected }) {
+function ScriptListRow({ script, onSelect, isSelected, onRenamed }) {
   const sections = script.sections ?? []
   return (
     <tr
-      onClick={() => onSelect(script)}
-      className={`border-b border-gray-50 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+      className={`border-b border-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
     >
-      <td className="px-4 py-3">
-        <div className="font-medium text-gray-800 text-sm truncate max-w-xs">{script.title || script.blueprintId}</div>
+      <td className="px-4 py-3 cursor-pointer" onClick={() => onSelect(script)}>
+        <div className="max-w-xs" onClick={(e) => e.stopPropagation()}>
+          <InlineTitle
+            scriptId={script.id}
+            initialTitle={script.title}
+            blueprintId={script.blueprintId}
+            onRenamed={(t) => onRenamed?.(script.id, t)}
+          />
+        </div>
         <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
           <Layers size={10} />
           {sections.length > 0 ? `${sections.length} seções` : 'roteiro completo'}
@@ -594,7 +892,7 @@ export default function Scripts() {
       setSelected(data)
       setView('generate')
     } catch (e) {
-      setError(e.message)
+      console.error("[scripts]", e.message); setError(friendlyError(e.message))
     } finally {
       setGenerating(false)
     }
@@ -616,7 +914,7 @@ export default function Scripts() {
       setActiveDbBp(data.id)
       await refetchBp()
     } catch (e) {
-      setError(e.message)
+      console.error("[scripts]", e.message); setError(friendlyError(e.message))
     } finally {
       setSavingBp(false)
     }
@@ -637,10 +935,17 @@ export default function Scripts() {
     refetch()
   }
 
+  function handleScriptRenamed(scriptId, newTitle) {
+    // Optimistically update list without full refetch
+    refetch()
+    if (selectedScript?.id === scriptId) setSelected((s) => s ? { ...s, title: newTitle } : s)
+  }
+
   const totalDuration = blueprint.sections?.reduce((s, sec) => s + (sec.duration ?? 60), 0) ?? 0
 
   return (
     <div>
+      <AILoadingOverlay show={generating} title="Gerando Roteiro" />
       <PageHeader
         title="Roteiros"
         description="Crie roteiros estruturados com blueprints personalizados e edição por seção"
@@ -765,52 +1070,107 @@ export default function Scripts() {
           </div>
         </div>
 
-        {/* Right: Script viewer + list */}
+        {/* Right: Blueprints manager OR Script viewer + list */}
         <div className="col-span-3 space-y-4">
-          {/* Selected script viewer */}
-          {selectedScript && (
-            <div className="bg-white rounded-xl border border-indigo-200 p-5">
-              <ScriptViewer script={selectedScript} onUpdate={handleScriptUpdate} />
+          {view === 'blueprints' ? (
+            /* ── Blueprints panel ── */
+            <div className="bg-white rounded-xl border border-gray-200">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                <BookTemplate size={15} className="text-indigo-500" />
+                <h3 className="font-semibold text-gray-800 text-sm">Blueprints Salvos</h3>
+                <span className="ml-auto text-xs text-gray-400">{dbBlueprints.length} total</span>
+              </div>
+              {dbBlueprints.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <BookTemplate size={32} className="mx-auto text-gray-200 mb-3" />
+                  <p className="text-sm font-medium text-gray-500">Nenhum blueprint salvo ainda</p>
+                  <p className="text-xs text-gray-400 mt-1">Configure um blueprint e clique em <strong>Salvar</strong> para reutilizá-lo depois.</p>
+                  <button onClick={() => setView('generate')} className="mt-4 text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                    ← Voltar para Geração
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {dbBlueprints.map((bp) => (
+                    <div key={bp.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                        <Layers size={15} className="text-indigo-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 text-sm truncate">{bp.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {bp.sections?.length ?? 0} seções
+                          {bp.description ? ` · ${bp.description}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => { setBlueprint(bp); setActiveDbBp(bp.id); setActiveTypeId(null); setView('generate') }}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors"
+                        >
+                          Usar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBlueprint(bp.id)}
+                          className="p-1.5 text-gray-300 hover:text-red-400 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          ) : (
+            <>
+              {/* Selected script viewer */}
+              {selectedScript && (
+                <div className="bg-white rounded-xl border border-indigo-200 p-5">
+                  <ScriptViewer script={selectedScript} onUpdate={handleScriptUpdate} />
+                </div>
+              )}
 
-          {/* Scripts list */}
-          <div className="bg-white rounded-xl border border-gray-200">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-              <FileText size={15} className="text-gray-400" />
-              <h3 className="font-semibold text-gray-800 text-sm">Roteiros</h3>
-              <span className="ml-auto text-xs text-gray-400">{scripts.length} total</span>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-100 text-xs">
-                  <th className="px-4 py-2 font-medium">Título / Blueprint</th>
-                  <th className="px-4 py-2 font-medium">Idioma</th>
-                  <th className="px-4 py-2 font-medium">Score</th>
-                  <th className="px-4 py-2 font-medium">Criado</th>
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {scripts.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
-                      Nenhum roteiro ainda — configure o blueprint e gere o primeiro acima.
-                    </td>
-                  </tr>
-                ) : (
-                  scripts.map((s) => (
-                    <ScriptListRow
-                      key={s.id}
-                      script={s}
-                      isSelected={selectedScript?.id === s.id}
-                      onSelect={(script) => setSelected((prev) => prev?.id === script.id ? null : script)}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+              {/* Scripts list */}
+              <div className="bg-white rounded-xl border border-gray-200">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                  <FileText size={15} className="text-gray-400" />
+                  <h3 className="font-semibold text-gray-800 text-sm">Roteiros</h3>
+                  <span className="ml-auto text-xs text-gray-400">{scripts.length} total</span>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-400 border-b border-gray-100 text-xs">
+                      <th className="px-4 py-2 font-medium">Título / Blueprint</th>
+                      <th className="px-4 py-2 font-medium">Idioma</th>
+                      <th className="px-4 py-2 font-medium">Score</th>
+                      <th className="px-4 py-2 font-medium">Criado</th>
+                      <th className="px-4 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scripts.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
+                          Nenhum roteiro ainda — configure o blueprint e gere o primeiro acima.
+                        </td>
+                      </tr>
+                    ) : (
+                      scripts.map((s) => (
+                        <ScriptListRow
+                          key={s.id}
+                          script={s}
+                          isSelected={selectedScript?.id === s.id}
+                          onSelect={(script) => setSelected((prev) => prev?.id === script.id ? null : script)}
+                          onRenamed={handleScriptRenamed}
+                        />
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

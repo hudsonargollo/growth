@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { runMiningSession, getCatalog, getSessions }          from './services/miningService.js'
+import { runMiningSession, getCatalog, getCatalogStats, getSessions, fetchMLTrends } from './services/miningService.js'
 import { generateNicheReport }                                from './services/nicheService.js'
 import { getDb }                                              from './lib/db.js'
 import { generateScript, listScripts, regenerateSection }     from './services/scriptService.js'
@@ -13,11 +13,12 @@ import { runCommentAgent, listCommentJobs, reviewComment }    from './services/c
 import { resolveAndTrack, listShortLinks }                   from './services/shortLinkService.js'
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
+import financeRouter                                          from './routes/finance.js'
 
 const app = new Hono()
 
 app.use('*', cors({
-  origin: ['https://growth-clube.hudsonargollo2.workers.dev', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: ['https://growth-clube.hudsonargollo2.workers.dev', 'https://growth.clubemkt.digital', 'http://localhost:5173', 'http://localhost:5174'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }))
@@ -53,10 +54,26 @@ app.delete('/api/mining/sessions', async (c) => {
   await db.from('mining_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   return c.json({ ok: true })
 })
-app.post('/api/mining/run', async (c) => {
-  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all' } = await c.req.json()
+app.get('/api/mining/catalog/stats', async (c) => {
   try {
-    const result = await runMiningSession(c.env, { marketplace, category, siteFilter })
+    const stats = await getCatalogStats(c.env)
+    return c.json(stats)
+  } catch (e) {
+    return c.json({ total: 0, avgPrice: 0, bestScore: 0, totalSold: 0, byMarketplace: {} })
+  }
+})
+app.get('/api/mining/trends', async (c) => {
+  try {
+    const trends = await fetchMLTrends(c.env)
+    return c.json({ trends })
+  } catch (e) {
+    return c.json({ trends: [] })
+  }
+})
+app.post('/api/mining/run', async (c) => {
+  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all', sortBy = 'relevance' } = await c.req.json()
+  try {
+    const result = await runMiningSession(c.env, { marketplace, category, siteFilter, sortBy })
     return c.json(result)
   } catch (e) {
     const msg = e?.message || e?.toString() || 'Unknown error'
@@ -82,6 +99,42 @@ app.post('/api/scripts/generate', async (c) => {
   const { blueprintId, blueprintData, catalogIds, productIds, language = 'pt', channelProfileId } = body
   const script = await generateScript(c.env, { blueprintId, blueprintData, catalogIds, productIds, language, channelProfileId })
   return c.json(script)
+})
+app.patch('/api/scripts/:id', async (c) => {
+  const id   = c.req.param('id')
+  const body = await c.req.json().catch(() => ({}))
+  const db   = (await import('./lib/db.js')).getDb(c.env)
+
+  // ── Case 1: update title only
+  if (body.title !== undefined && body.sectionIndex === undefined && body.text === undefined) {
+    const { data, error } = await db.from('scripts').update({ title: body.title }).eq('id', id).select().single()
+    if (error) return c.json({ error: error.message }, 500)
+    return c.json(data)
+  }
+
+  // ── Case 2: update a single section's content
+  if (body.sectionIndex !== undefined && body.content !== undefined) {
+    const { data: current, error: fetchErr } = await db.from('scripts').select('sections').eq('id', id).single()
+    if (fetchErr) return c.json({ error: fetchErr.message }, 500)
+    const sections = current?.sections ?? []
+    if (sections[body.sectionIndex] !== undefined) {
+      sections[body.sectionIndex] = { ...sections[body.sectionIndex], content: body.content }
+    }
+    const { data, error } = await db.from('scripts').update({ sections }).eq('id', id).select().single()
+    if (error) return c.json({ error: error.message }, 500)
+    return c.json(data)
+  }
+
+  // ── Case 3: replace full raw text
+  if (body.text !== undefined) {
+    const updates = { text: body.text }
+    if (body.title !== undefined) updates.title = body.title
+    const { data, error } = await db.from('scripts').update(updates).eq('id', id).select().single()
+    if (error) return c.json({ error: error.message }, 500)
+    return c.json(data)
+  }
+
+  return c.json({ error: 'Nothing to update' }, 400)
 })
 app.post('/api/scripts/:id/sections/:index/regenerate', async (c) => {
   const scriptId      = c.req.param('id')
@@ -204,6 +257,7 @@ app.delete('/api/products/:id', async (c) => {
 
 app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
+app.route('/api/finance',     financeRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.onError((err, c) => {
