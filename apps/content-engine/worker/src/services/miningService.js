@@ -309,18 +309,24 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
     }
     const mlOnly     = siteFilter === 'mercadolivre'
     const amazonOnly = siteFilter === 'amazon'
+    // siteFilter='all' — keep every result so specific product searches don't return 0.
+    // ML/Amazon items get affiliate links; others use the raw product URL directly.
     const filtered   = results.filter(item => {
       if (mlOnly)     return isML(item)
       if (amazonOnly) return isAmazon(item)
-      return isML(item) || isAmazon(item)
+      return true  // 'all': include every store, affiliate links built per-marketplace below
     })
     console.log(`[serp] after filter: ${filtered.length} items`)
     return filtered.slice(0, limit).map((item) => {
       const rawLink = item.link ?? item.product_link ?? ''
-      const mp      = isML(item) ? 'mercadolivre' : 'amazon'
-      const affiliateLink = mp === 'mercadolivre'
+      const mlItem  = isML(item)
+      const amzItem = isAmazon(item)
+      const mp      = mlItem ? 'mercadolivre' : amzItem ? 'amazon' : (item.source ?? 'other').toLowerCase().replace(/\s+/g, '_').slice(0, 40)
+      const affiliateLink = mlItem
         ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
-        : buildAmazonAffiliateLink(rawLink, '', amazonTag)
+        : amzItem
+          ? buildAmazonAffiliateLink(rawLink, '', amazonTag)
+          : rawLink  // non-affiliate store: just use the direct product URL
       return {
         id: uid(), marketplace: mp,
         title:      item.title ?? '',
