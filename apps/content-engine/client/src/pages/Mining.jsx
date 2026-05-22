@@ -699,7 +699,7 @@ function ShortNicheCard({ niche, onMine }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Mining() {
   const { data: sessionsData, refetch: refetchSessions } = useApi('/mining/sessions')
-  const { data: statsData } = useApi('/mining/catalog/stats')
+  const { data: statsData, refetch: refetchStats } = useApi('/mining/catalog/stats')
   const { data: trendsData } = useApi('/mining/trends')
   const sessions = sessionsData?.sessions ?? []
   const catalogStats = statsData ?? {}
@@ -780,7 +780,7 @@ export default function Mining() {
     try {
       const result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
       setLastResult({ count: result.count, warnings: result.warnings, competitionLevel: result.competitionLevel, listingTotal: result.listingTotal })
-      await Promise.all([refetchCatalog(), refetchSessions()])
+      await Promise.all([refetchCatalog(), refetchSessions(), refetchStats()])
     } catch (e) { console.error("[mining]", e.message); setError(friendlyError(e.message)) }
     finally { setRunning(false) }
   }
@@ -819,7 +819,7 @@ export default function Mining() {
   async function handleClearAll() {
     if (!window.confirm('Apagar todos os produtos do catálogo? Esta ação não pode ser desfeita.')) return
     await fetch('/api/products/all', { method: 'DELETE' })
-    refetchCatalog()
+    await Promise.all([refetchCatalog(), refetchStats()])
   }
 
   async function handleSaveAffiliateLink(productId, field, value) {
@@ -996,8 +996,8 @@ export default function Mining() {
           sub="produto top" icon={Trophy} color="yellow" />
         <StatCard label="Preço Médio"         value={catalogStats.avgPrice ? fmtPrice(catalogStats.avgPrice) : '—'}
           sub="média do catálogo" icon={DollarSign} color="green" />
-        <StatCard label="Total Vendidos"      value={catalogStats.totalSold ? fmtNumber(catalogStats.totalSold) : '—'}
-          sub="soma ML soldQuantity" icon={Flame} color="orange" />
+        <StatCard label="Total Vendidos"      value={catalogStats.totalSold ? fmtNumber(catalogStats.totalSold) : '0'}
+          sub="unidades ML confirmadas" icon={Flame} color="orange" />
       </div>
 
       {/* ── Trending keywords ──────────────────────────────────────────────── */}

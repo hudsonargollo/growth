@@ -307,13 +307,16 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
       const src  = (item.source ?? '').toLowerCase()
       return link.includes('amazon.com') || src.includes('amazon')
     }
-    const mlOnly     = siteFilter === 'mercadolivre'
-    const amazonOnly = siteFilter === 'amazon'
+    const mlOnly       = siteFilter === 'mercadolivre'
+    const amazonOnly   = siteFilter === 'amazon'
+    const mlAmazonOnly = siteFilter === 'ml_amazon'  // UI default: both affiliate marketplaces only
     // siteFilter='all' — keep every result so specific product searches don't return 0.
+    // ml_amazon — ML + Amazon only (affiliate links available for both).
     // ML/Amazon items get affiliate links; others use the raw product URL directly.
     const filtered   = results.filter(item => {
-      if (mlOnly)     return isML(item)
-      if (amazonOnly) return isAmazon(item)
+      if (mlOnly)       return isML(item)
+      if (amazonOnly)   return isAmazon(item)
+      if (mlAmazonOnly) return isML(item) || isAmazon(item)
       return true  // 'all': include every store, affiliate links built per-marketplace below
     })
     console.log(`[serp] after filter: ${filtered.length} items`)
@@ -606,7 +609,8 @@ export async function getCatalogStats(env) {
   const total    = products.length
   const avgPrice = Math.round(products.filter(p => p.price > 0).reduce((s, p) => s + p.price, 0) / total)
   const bestScore = Math.max(...products.map(p => p.score ?? 0))
-  const totalSold = products.filter(p => p.sourceApi === 'ml_direct').reduce((s, p) => s + (p.reviews ?? 0), 0)
+  // Use soldQuantity (set for ml_direct products) or fall back to reviews for older rows
+  const totalSold = products.reduce((s, p) => s + (p.soldQuantity ?? (p.sourceApi === 'ml_direct' ? (p.reviews ?? 0) : 0)), 0)
   const byMarketplace = products.reduce((acc, p) => {
     acc[p.marketplace] = (acc[p.marketplace] ?? 0) + 1
     return acc
