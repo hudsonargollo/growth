@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, CheckCircle, MessageCircle, Mic } from 'lucide-react'
+import { Send, CheckCircle, MessageCircle, Mic, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import { useApi, apiPost, timeAgo } from '../hooks/useApi.js'
@@ -168,7 +168,19 @@ export default function Delivery() {
         <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
           <Send size={14} className="text-gray-400" />
           <h3 className="font-semibold text-gray-800 text-sm">Histórico de Entregas</h3>
-          <span className="ml-auto text-xs text-gray-400">{deliveries.length} total</span>
+          <span className="text-xs text-gray-400">{deliveries.length} total</span>
+          {deliveries.length > 0 && (
+            <button
+              onClick={async () => {
+                if (!window.confirm('Apagar todo o histórico de entregas?')) return
+                await fetch('/api/delivery/all', { method: 'DELETE' })
+                refetch()
+              }}
+              className="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+            >
+              <Trash2 size={11} /> Limpar histórico
+            </button>
+          )}
         </div>
         <table className="w-full text-sm">
           <thead>

@@ -200,6 +200,11 @@ app.get('/api/delivery', async (c) => {
   const jobs = await listDeliveries(c.env)
   return c.json({ jobs })
 })
+app.delete('/api/delivery/all', async (c) => {
+  const db = getDb(c.env)
+  await db.from('delivery_jobs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  return c.json({ ok: true })
+})
 app.post('/api/delivery/send', async (c) => {
   const { scriptId, voiceoverId, editorContact } = await c.req.json()
   if (!scriptId || !editorContact) return c.json({ error: 'scriptId and editorContact are required' }, 400)
