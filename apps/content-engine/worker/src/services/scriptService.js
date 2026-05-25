@@ -259,10 +259,30 @@ INSTRUÇÕES:
       ;({ data: saved, error: err } = await tryInsert(withoutSections))
     }
     if (err) {
-      // Last resort: base row only (title is now always in baseRow)
+      // Last resort: base row only (title is always in baseRow)
       ;({ data: saved, error: err } = await tryInsert(baseRow))
     }
     if (err) throw new Error(err.message)
+  }
+
+  // ── Belt-and-suspenders: force title via explicit UPDATE ─────────────────
+  // In rare Supabase schema-cache edge cases the INSERT may persist but the
+  // title field gets silently dropped (schema cache not yet refreshed).
+  // A separate UPDATE guarantees the title is always written.
+  if (saved?.id) {
+    const titleToSet = saved.title || scriptTitle
+    if (!saved.title || saved.title !== scriptTitle) {
+      const { data: patched } = await db
+        .from('scripts')
+        .update({ title: scriptTitle })
+        .eq('id', saved.id)
+        .select()
+        .single()
+      if (patched) saved = patched
+      else saved = { ...saved, title: scriptTitle }  // patch in-memory if DB call fails
+    } else {
+      saved = { ...saved, title: titleToSet }
+    }
   }
 
   return saved
@@ -354,13 +374,22 @@ export async function listScripts(env) {
     .order('createdAt', { ascending: false })
     .limit(50)
   if (error) {
-    // Schema cache may be ahead of DB — fall back to guaranteed base columns
+    // Schema cache may be ahead of DB — fall back to stable columns + title + sections
     const { data: fallback, error: e2 } = await db
       .from('scripts')
-      .select('id, "catalogEntryId", "blueprintId", text, language, confidence, version, "createdAt"')
+      .select('id, "catalogEntryId", "blueprintId", title, sections, text, language, confidence, version, "createdAt"')
       .order('createdAt', { ascending: false })
       .limit(50)
-    if (e2) throw new Error(e2.message)
+    if (e2) {
+      // title/sections columns may not exist yet — absolute minimum
+      const { data: minimal, error: e3 } = await db
+        .from('scripts')
+        .select('id, "catalogEntryId", "blueprintId", text, language, confidence, version, "createdAt"')
+        .order('createdAt', { ascending: false })
+        .limit(50)
+      if (e3) throw new Error(e3.message)
+      return minimal ?? []
+    }
     return fallback ?? []
   }
   return data
