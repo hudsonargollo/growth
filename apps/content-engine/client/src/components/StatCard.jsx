@@ -1,22 +1,26 @@
+// Dark metric card with gradient icon well — distinctive against the light canvas
+const iconBg = {
+  indigo: 'from-indigo-500 to-violet-500',
+  green:  'from-emerald-500 to-teal-500',
+  yellow: 'from-amber-400  to-orange-500',
+  red:    'from-red-500    to-rose-600',
+  blue:   'from-blue-500   to-indigo-500',
+  violet: 'from-violet-500 to-purple-600',
+}
+
 export default function StatCard({ label, value, sub, icon: Icon, color = 'indigo' }) {
-  const colors = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    green:  'bg-green-50 text-green-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    red:    'bg-red-50 text-red-600',
-    blue:   'bg-blue-50 text-blue-600',
-  }
+  const grad = iconBg[color] ?? iconBg.indigo
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-start gap-4">
+    <div className="metric-card">
       {Icon && (
-        <div className={`p-2.5 rounded-lg ${colors[color]}`}>
-          <Icon size={20} />
+        <div className={`bg-gradient-to-br ${grad} p-2.5 rounded-xl shrink-0 shadow-[0_4px_12px_rgba(99,102,241,0.35)]`}>
+          <Icon size={18} className="text-white" strokeWidth={2} />
         </div>
       )}
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      <div className="min-w-0">
+        <p className="metric-label">{label}</p>
+        <p className="metric-value">{value}</p>
+        {sub && <p className="metric-sub">{sub}</p>}
       </div>
     </div>
   )
