@@ -324,7 +324,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
               </div>
               {primaryLink && (
                 <a href={primaryLink} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shrink-0">
+                  className="btn-primary text-xs shrink-0">
                   Ver produto <ExternalLink size={11} />
                 </a>
               )}
@@ -493,7 +493,7 @@ function MineModal({ open, onClose, onRun, loading }) {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Marketplace</label>
             <select value={marketplace} onChange={e => setMarketplace(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="input">
               <option value="mercadolivre_direct">🏆 Mercado Livre Direto (melhor dados)</option>
               <option value="google_shopping">Google Shopping</option>
               <option value="amazon">Amazon (SerpAPI)</option>
@@ -505,7 +505,7 @@ function MineModal({ open, onClose, onRun, loading }) {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Ordenação</label>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                className="input">
                 <option value="sold_quantity_desc">🔥 Mais Vendidos</option>
                 <option value="relevance">Relevância</option>
                 <option value="price_asc">💰 Menor Preço</option>
@@ -518,7 +518,7 @@ function MineModal({ open, onClose, onRun, loading }) {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Filtro de sites</label>
               <select value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                className="input">
                 <option value="ml_amazon">ML + Amazon</option>
                 <option value="mercadolivre">Só Mercado Livre</option>
                 <option value="amazon">Só Amazon</option>
@@ -531,17 +531,17 @@ function MineModal({ open, onClose, onRun, loading }) {
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Produto / Categoria</label>
             <input type="text" value={category} onChange={e => setCategory(e.target.value)}
               placeholder="Ex: fone de ouvido, tênis running, air fryer…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input"
               autoFocus />
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+              className="btn-secondary flex-1 justify-center">
               Cancelar
             </button>
             <button type="submit" disabled={loading || !category.trim()}
-              className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+              className="btn-primary flex-1 justify-center">
               {loading ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
               {loading ? 'Minerando…' : 'Iniciar'}
             </button>
@@ -617,7 +617,7 @@ function NicheCard({ niche, onMine }) {
           </div>
         )}
         <button onClick={() => onMine(niche)}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+          className="btn-primary w-full justify-center text-xs">
           <Play size={12} /> Minerar produtos desta categoria
         </button>
       </div>
@@ -836,15 +836,16 @@ export default function Mining() {
   const topProducts = useMemo(() => [...rawProducts].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5), [rawProducts])
 
   return (
-    <div>
+    <div className="animate-fade-up">
       <AILoadingOverlay show={running} steps={MINING_STEPS} title="Minerando Produtos" />
       <PageHeader
+        overline="Pipeline"
         title="Mineração de Produtos"
         description="Dashboard de produtos com analytics e filtros de nicho"
         action={
           <div className="flex items-center gap-2">
             <button onClick={() => setMineModalOpen(true)} disabled={running}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="btn-primary">
               {running ? <RefreshCw size={15} className="animate-spin" /> : <Play size={15} />}
               {running ? 'Minerando…' : 'Nova Mineração'}
             </button>
@@ -892,12 +893,12 @@ export default function Mining() {
       )}
 
       {/* ── Niche Intelligence ─────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 mb-6">
+      <div className="card mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <button onClick={() => setNicheOpen(o => !o)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
               <Sparkles size={16} className="text-indigo-500" />
-              <h3 className="font-semibold text-gray-800">Inteligência de Nicho</h3>
+              <h3 className="card-title">Inteligência de Nicho</h3>
             </button>
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
               <button onClick={() => setNicheFormat('longform')}
@@ -963,7 +964,7 @@ export default function Mining() {
                 <button
                   onClick={handleGenerateNiches}
                   disabled={nicheLoading}
-                  className={`shrink-0 flex items-center gap-2 disabled:opacity-60 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors shadow-sm ${nicheFormat === 'shortform' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                  className="btn-primary shrink-0 px-5 py-3">
                   <Sparkles size={15} /> Gerar Recomendações
                 </button>
               </div>
@@ -1064,7 +1065,7 @@ export default function Mining() {
           <Filter size={13} className="text-gray-400 shrink-0" />
           {NICHES.map(n => (
             <button key={n.id} onClick={() => setNicheFilter(n.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${nicheFilter === n.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${nicheFilter === n.id ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} style={nicheFilter === n.id ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)'} : {}}>
               {n.label}
             </button>
           ))}
@@ -1082,12 +1083,12 @@ export default function Mining() {
           {marketplaces.length > 1 && (
             <div className="flex gap-1">
               <button onClick={() => setMpFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${mpFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mpFilter === 'all' ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} style={mpFilter === 'all' ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)'} : {}}>
                 Todos
               </button>
               {marketplaces.map(mp => (
                 <button key={mp} onClick={() => setMpFilter(mp)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${mpFilter === mp ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${mpFilter === mp ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} style={mpFilter === mp ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)'} : {}}>
                   {mp.replace(/_/g, ' ')}
                 </button>
               ))}
@@ -1115,12 +1116,12 @@ export default function Mining() {
         <div className="mb-4">
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setSelectedSessionId(null)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedSessionId === null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${selectedSessionId === null ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} style={selectedSessionId === null ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)'} : {}}>
               Todas as sessões
             </button>
             {sessions.map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id === selectedSessionId ? null : s.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${selectedSessionId === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedSessionId === s.id ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} style={selectedSessionId === s.id ? {background:'linear-gradient(135deg,#6366f1,#8b5cf6)'} : {}}>
                 {s.category}
                 <span className={`text-[10px] ${selectedSessionId === s.id ? 'text-indigo-200' : 'text-gray-400'}`}>{timeAgo(s.createdAt)}</span>
                 {s.status === 'failed' && <AlertTriangle size={10} className="text-red-400" />}
@@ -1138,13 +1139,13 @@ export default function Mining() {
 
       {/* ── Product grid ──────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">
+        <h3 className="text-sm font-bold text-gray-800">
           {selectedSession ? `Busca: "${selectedSession.category}"` : 'Catálogo de Produtos'}
           {products.length > 0 && <span className="ml-2 text-gray-400 font-normal">{products.length} produto{products.length !== 1 ? 's' : ''}</span>}
         </h3>
         {rawProducts.length > 0 && (
           <button onClick={handleClearAll}
-            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+            className="btn-danger">
             <Trash2 size={11} /> Limpar catálogo
           </button>
         )}
@@ -1166,7 +1167,7 @@ export default function Mining() {
           )}
           {rawProducts.length === 0 && (
             <button onClick={() => setMineModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700">
+              className="btn-primary">
               <Play size={14} /> Iniciar primeira mineração
             </button>
           )}
