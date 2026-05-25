@@ -42,7 +42,7 @@ export async function upsertChannelProfile(env, profile) {
 
   const { data, error } = await db
     .from('channel_profiles')
-    .insert({ id: uid(), ...profile })
+    .insert({ id: crypto.randomUUID(), ...profile })
     .select()
     .single()
   if (error) {

@@ -36,7 +36,7 @@ export async function upsertBlueprint(env, blueprint) {
   }
   const { data, error } = await db
     .from('blueprints')
-    .insert({ id: uid(), ...blueprint })
+    .insert({ id: crypto.randomUUID(), ...blueprint })
     .select()
     .single()
   if (error) throw new Error(error.message)
