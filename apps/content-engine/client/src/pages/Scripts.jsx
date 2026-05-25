@@ -473,7 +473,7 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
     <div className={`border rounded-xl overflow-hidden ${open ? 'border-gray-200' : 'border-gray-100'}`}>
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-white hover:bg-indigo-50/40 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-white hover:bg-gray-50 transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${typeColor(section.type)}`}>
@@ -526,7 +526,7 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
           <button
             onClick={handleRegenerate}
             disabled={regen}
-            className="btn-primary"
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
           >
             {regen ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
             Regerar
@@ -549,10 +549,10 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
                 className="w-full text-sm text-gray-700 font-mono border border-indigo-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y"
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setEditing(false)} className="btn-ghost text-xs">
+                <button onClick={() => setEditing(false)} className="text-xs text-gray-500 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
                   Cancelar
                 </button>
-                <button onClick={handleSaveEdit} disabled={saving} className="btn-primary py-1.5 px-3 text-xs">
+                <button onClick={handleSaveEdit} disabled={saving} className="flex items-center gap-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg font-medium">
                   {saving ? <Loader2 size={11} className="animate-spin" /> : null}
                   Salvar
                 </button>
@@ -722,11 +722,11 @@ function ScriptViewer({ script, onUpdate }) {
           />
           <div className="flex items-center justify-end gap-2">
             <button onClick={() => setRawMode(false)}
-              className="btn-ghost text-xs">
+              className="text-xs text-gray-500 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
               Cancelar
             </button>
             <button onClick={handleSaveRaw} disabled={rawSaving}
-              className="btn-primary py-1.5 text-xs">
+              className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 px-4 py-1.5 rounded-lg font-medium transition-colors">
               {rawSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
               Salvar alterações
             </button>
@@ -757,7 +757,7 @@ function ScriptListRow({ script, onSelect, isSelected, onRenamed }) {
   const sections = script.sections ?? []
   return (
     <tr
-      className={`tr ${isSelected ? "bg-indigo-50" : ""}`}
+      className={`border-b border-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
     >
       <td className="px-4 py-3 cursor-pointer" onClick={() => onSelect(script)}>
         <div className="max-w-xs" onClick={(e) => e.stopPropagation()}>
@@ -944,10 +944,9 @@ export default function Scripts() {
   const totalDuration = blueprint.sections?.reduce((s, sec) => s + (sec.duration ?? 60), 0) ?? 0
 
   return (
-    <div className="animate-fade-up">
+    <div>
       <AILoadingOverlay show={generating} title="Gerando Roteiro" />
       <PageHeader
-        overline="Pipeline"
         title="Roteiros"
         description="Crie roteiros estruturados com blueprints personalizados e edição por seção"
         action={
@@ -966,7 +965,7 @@ export default function Scripts() {
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="btn-primary"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               {generating ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />}
               {generating ? 'Gerando…' : 'Gerar Roteiro'}
@@ -976,7 +975,7 @@ export default function Scripts() {
       />
 
       {error && (
-        <div className="alert-error mb-4">{error}</div>
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
       )}
 
       <div className="grid grid-cols-5 gap-6">
@@ -1000,9 +999,9 @@ export default function Scripts() {
           </div>
 
           {/* Blueprint panel */}
-          <div className="card overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="card-title flex items-center gap-2">
+              <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
                 <Layers size={14} className="text-indigo-500" />
                 Blueprint
               </h3>
@@ -1037,8 +1036,8 @@ export default function Scripts() {
           </div>
 
           {/* Language */}
-          <div className="card p-4 space-y-3">
-            <h3 className="card-title">Idioma</h3>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            <h3 className="font-semibold text-gray-800 text-sm">Idioma</h3>
             <div className="flex gap-2">
               {[{ v: 'pt', l: 'Português' }, { v: 'en', l: 'English' }, { v: 'es', l: 'Español' }].map((lang) => (
                 <button
@@ -1057,8 +1056,8 @@ export default function Scripts() {
           </div>
 
           {/* Product picker */}
-          <div className="card p-4 space-y-3">
-            <h3 className="card-title flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
               <Package size={14} className="text-indigo-500" />
               Produtos
               {selectedProducts.length > 0 && (
@@ -1075,10 +1074,10 @@ export default function Scripts() {
         <div className="col-span-3 space-y-4">
           {view === 'blueprints' ? (
             /* ── Blueprints panel ── */
-            <div className="card">
+            <div className="bg-white rounded-xl border border-gray-200">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                 <BookTemplate size={15} className="text-indigo-500" />
-                <h3 className="card-title">Blueprints Salvos</h3>
+                <h3 className="font-semibold text-gray-800 text-sm">Blueprints Salvos</h3>
                 <span className="ml-auto text-xs text-gray-400">{dbBlueprints.length} total</span>
               </div>
               {dbBlueprints.length === 0 ? (
@@ -1093,7 +1092,7 @@ export default function Scripts() {
               ) : (
                 <div className="divide-y divide-gray-50">
                   {dbBlueprints.map((bp) => (
-                    <div key={bp.id} className="flex items-center gap-4 px-5 py-4 hover:bg-indigo-50/40 transition-colors group">
+                    <div key={bp.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group">
                       <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
                         <Layers size={15} className="text-indigo-500" />
                       </div>
@@ -1127,25 +1126,25 @@ export default function Scripts() {
             <>
               {/* Selected script viewer */}
               {selectedScript && (
-                <div className="card p-5 border-indigo-200">
+                <div className="bg-white rounded-xl border border-indigo-200 p-5">
                   <ScriptViewer script={selectedScript} onUpdate={handleScriptUpdate} />
                 </div>
               )}
 
               {/* Scripts list */}
-              <div className="card">
+              <div className="bg-white rounded-xl border border-gray-200">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
                   <FileText size={15} className="text-gray-400" />
-                  <h3 className="card-title">Roteiros</h3>
+                  <h3 className="font-semibold text-gray-800 text-sm">Roteiros</h3>
                   <span className="ml-auto text-xs text-gray-400">{scripts.length} total</span>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="th">Título / Blueprint</th>
-                      <th className="th">Idioma</th>
-                      <th className="th">Score</th>
-                      <th className="th">Criado</th>
+                    <tr className="text-left text-gray-400 border-b border-gray-100 text-xs">
+                      <th className="px-4 py-2 font-medium">Título / Blueprint</th>
+                      <th className="px-4 py-2 font-medium">Idioma</th>
+                      <th className="px-4 py-2 font-medium">Score</th>
+                      <th className="px-4 py-2 font-medium">Criado</th>
                       <th className="px-4 py-2"></th>
                     </tr>
                   </thead>
