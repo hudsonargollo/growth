@@ -38,4 +38,4 @@ dist-ssr
 *.mp3
 
 # Stray generated source outside apps/
-src/
+/src/

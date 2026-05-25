@@ -394,6 +394,9 @@ async function loadAffiliateIds(env) {
   return { amazonTag: amazonTag ?? '', mlAffiliateId: mlAffiliateTag ?? '' }
 }
 
+// Root tenant UUID — pinned in migration 002
+const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+
 // ── Main session runner ───────────────────────────────────────────────────────
 export async function runMiningSession(env, { marketplace, category, siteFilter = 'all', sortBy = 'relevance' }) {
   const db        = getDb(env)
@@ -401,7 +404,10 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
 
   const { amazonTag, mlAffiliateId } = await loadAffiliateIds(env)
 
-  await db.from('mining_sessions').insert({ id: sessionId, marketplace, category, status: 'in_progress' })
+  await db.from('mining_sessions').insert({
+    id: sessionId, marketplace, category, status: 'in_progress',
+    tenant_id: ROOT_TENANT_ID,
+  })
 
   const rawProducts  = []
   const errors       = []
@@ -427,21 +433,30 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     }
 
     // ML Direct failed OR returned 0 results → fall back to SerpAPI.
-    // NOTE: site:mercadolivre.com.br doesn't work as a Google Shopping operator,
-    // so we fetch 100 results without a site restriction and post-filter to ML only.
+    // Pass 1: ML-only filter (preferred — affiliate links available).
+    // Pass 2: if ML filter yields 0, retry with siteFilter='all' so niche products
+    //         that aren't indexed under a ML URL on Google Shopping still surface.
     if (!mlDirectOk) {
       try {
-        const items = await fetchSerpApi(env, {
+        let items = await fetchSerpApi(env, {
           category, engine: 'google_shopping',
           mlAffiliateId, amazonTag,
-          siteRestrict: '',          // no site: operator — it breaks Google Shopping
-          siteFilter: 'mercadolivre', // post-filter: keep only ML results from the 100 fetched
-          limit: 20,
+          siteRestrict: '', siteFilter: 'mercadolivre', limit: 20,
         })
-        console.log(`[ML-serp] SerpAPI fallback returned ${items.length} ML items`)
+        console.log(`[ML-serp] SerpAPI ML-only returned ${items.length} items`)
+
+        if (items.length === 0) {
+          // Niche product not indexed under ML on Google Shopping — widen to all stores
+          items = await fetchSerpApi(env, {
+            category, engine: 'google_shopping',
+            mlAffiliateId, amazonTag,
+            siteRestrict: '', siteFilter: 'all', limit: 20,
+          })
+          console.log(`[ML-serp] SerpAPI all-stores fallback returned ${items.length} items`)
+        }
+
         rawProducts.push(...items)
       } catch (e2) {
-        // Both sources failed — now worth showing the user
         errors.push(`MercadoLivre: ${e2.message}`)
       }
     }
@@ -538,18 +553,21 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
       e.message.includes('does not exist')
     )
 
+  // Inject tenant_id into every product row (required NOT NULL after migration 002)
+  const addTenant = (rows) => rows.map(r => ({ ...r, tenant_id: ROOT_TENANT_ID }))
+
   // Attempt 1: full insert with all fields
   let saved, pErr
-  ;({ data: saved, error: pErr } = await db.from('products').insert(withShortLinks).select())
+  ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(withShortLinks)).select())
 
   // Attempt 2: strip blog fields
   if (isSchemaErr(pErr)) {
-    ;({ data: saved, error: pErr } = await db.from('products').insert(forDbT1).select())
+    ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT1)).select())
   }
 
   // Attempt 3: strip all potentially new columns
   if (isSchemaErr(pErr)) {
-    ;({ data: saved, error: pErr } = await db.from('products').insert(forDbT2).select())
+    ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT2)).select())
   }
 
   // Re-attach any stripped fields from memory so the session response stays complete
@@ -566,6 +584,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const entries = saved.map((p) => ({
     id: uid(), productId: p.id, market: marketplace,
     freshnessScore: 1.0, provenance: `session-${sessionId}`,
+    tenant_id: ROOT_TENANT_ID,
   }))
   const { error: eErr } = await db.from('catalog_entries').insert(entries)
   if (eErr) throw new Error(eErr.message)

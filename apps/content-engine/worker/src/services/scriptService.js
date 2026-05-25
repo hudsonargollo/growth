@@ -234,6 +234,7 @@ INSTRUÇÕES:
     confidence:     92,
     version:        1,
     prompt:         userPrompt,
+    tenant_id:      '00000000-0000-0000-0000-000000000001',
   }
 
   // Try progressively simpler inserts as schema columns may not exist yet
