@@ -202,16 +202,33 @@ INSTRUÇÕES:
   // Parse sections from the generated text
   const parsedSections = parseSections(text, sections)
 
-  const dateStr     = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-  const productName = products[0]?.title?.slice(0, 40)
-  const scriptTitle = productName
-    ? `${blueprint.name} — ${productName}`
-    : `${blueprint.name} · ${dateStr}`
+  // ── Smart title: blueprint type + concise product keyword ───────────────────
+  // Strip marketplace noise (brand codes, model numbers, long spec strings)
+  // and keep the first meaningful 2–4 words from the top product name.
+  function cleanProductTitle(raw = '') {
+    return raw
+      .replace(/\b(com|para|de|do|da|em|no|na|os|as|um|uma)\b/gi, '')  // pt stop words
+      .replace(/[()[\]{}_]/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 4)
+      .join(' ')
+  }
+
+  const blueprintLabel = blueprint.name ?? 'Roteiro'
+  const topProduct     = products[0]?.title ? cleanProductTitle(products[0].title) : null
+  const langSuffix     = isEnglish ? ' [EN]' : ''
+  const dateStr        = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const scriptTitle    = topProduct
+    ? `${blueprintLabel} — ${topProduct}${langSuffix}`
+    : `${blueprintLabel} · ${dateStr}${langSuffix}`
 
   const baseRow = {
     id:             uid(),
     catalogEntryId: null,
     blueprintId:    blueprint.id ?? blueprintId ?? 'custom',
+    title:          scriptTitle,   // always present — fallback inserts won't lose the title
     text,
     language:       language ?? 'pt',
     confidence:     92,
@@ -236,8 +253,13 @@ INSTRUÇÕES:
       const { channelProfileId: _, ...withoutProfile } = fullRow
       ;({ data: saved, error: err } = await tryInsert(withoutProfile))
     }
-    if (err && (msg.includes('sections') || msg.includes('title') || err.message?.includes('sections') || err.message?.includes('title'))) {
-      // Strip new columns entirely and retry with base row
+    if (err && (msg.includes('sections') || err.message?.includes('sections'))) {
+      // sections column missing — strip it but keep title
+      const { sections: _s, channelProfileId: _cp, ...withoutSections } = fullRow
+      ;({ data: saved, error: err } = await tryInsert(withoutSections))
+    }
+    if (err) {
+      // Last resort: base row only (title is now always in baseRow)
       ;({ data: saved, error: err } = await tryInsert(baseRow))
     }
     if (err) throw new Error(err.message)
