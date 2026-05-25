@@ -10,6 +10,25 @@ const FLAG_PATTERNS = [
 ]
 const isFlagged = (text) => FLAG_PATTERNS.some((p) => p.test(text))
 
+// Strip HTML tags and decode common entities from YouTube textDisplay
+function stripHtml(html = '') {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+}
+
+// True if a comment looks like a channel-owner pinned product list (not a viewer comment)
+function isProductListComment(text) {
+  const linkCount = (text.match(/https?:\/\//g) ?? []).length
+  return linkCount >= 3 || text.length > 800
+}
+
 // ── YouTube Data API ──────────────────────────────────────────────────────────
 async function fetchYouTubeComments(keys) {
   if (!keys.YOUTUBE_API_KEY) {
@@ -35,9 +54,16 @@ async function fetchYouTubeComments(keys) {
     for (const item of json.items ?? []) {
       const snippet = item.snippet?.topLevelComment?.snippet
       if (!snippet) continue
+      const rawText  = snippet.textDisplay ?? ''
+      const cleanText = stripHtml(rawText)
+      // Skip pinned product-list comments (channel owner posts with many links)
+      if (isProductListComment(rawText)) {
+        console.log(`[comments] skipping product-list comment ${item.snippet.topLevelComment.id}`)
+        continue
+      }
       comments.push({
         id:      item.snippet.topLevelComment.id,
-        text:    snippet.textDisplay,
+        text:    cleanText,
         videoId,
         author:  snippet.authorDisplayName,
       })
@@ -74,7 +100,7 @@ async function generateReply(keys, comment) {
       model:       keys.LLM_MODEL ?? 'gpt-4o-mini',
       messages:    [
         { role: 'system', content: BRAND_TONE },
-        { role: 'user',   content: `Reply to this YouTube comment from "${comment.author ?? 'viewer'}": "${comment.text}"` },
+        { role: 'user',   content: `Reply to this YouTube comment from "${comment.author ?? 'viewer'}": "${comment.text.slice(0, 400)}"` },
       ],
       temperature: 0.6,
       max_tokens:  150,
