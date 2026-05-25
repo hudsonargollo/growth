@@ -119,7 +119,10 @@ async function postYouTubeReply(keys, { commentId, reply }) {
 // db: Supabase client to use (user-scoped for API calls, service role for cron)
 // keys: API keys object { YOUTUBE_API_KEY, YOUTUBE_CHANNEL_ID, OPENAI_API_KEY, ... }
 //       For API-triggered runs, keys are sourced from env (Phase 3 will load per-tenant keys)
-export async function runCommentAgent(env, tenantId, db, keys) {
+export async function runCommentAgent(env, tenantId, dbArg, keys) {
+  // If db not passed (API-triggered call), create a service-role client
+  const db = dbArg ?? getDb(env)
+
   // Load keys from env secrets first, fall back to DB-stored credentials (Settings UI)
   const { resolveKey } = await import('../lib/resolveKey.js')
   const resolvedKeys = keys ?? {
