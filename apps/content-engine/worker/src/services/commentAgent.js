@@ -81,39 +81,19 @@ async function fetchChannelVideoIds(keys) {
   return (json.items ?? []).map((item) => item.id.videoId).filter(Boolean)
 }
 
-// ── OpenAI reply generation ───────────────────────────────────────────────────
+// ── LLM reply generation (Anthropic preferred, OpenAI fallback via llm.js) ────
 const BRAND_TONE = `You are a friendly YouTube channel assistant for a product review channel.
 Reply to comments in a helpful, enthusiastic tone. Keep replies under 3 sentences.
 Always mention checking the description for affiliate links when relevant.
 Never make false claims. Include affiliate disclosure when recommending products.`
 
-async function generateReply(keys, comment) {
-  if (!keys.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured')
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization:  `Bearer ${keys.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model:       keys.LLM_MODEL ?? 'gpt-4o-mini',
-      messages:    [
-        { role: 'system', content: BRAND_TONE },
-        { role: 'user',   content: `Reply to this YouTube comment from "${comment.author ?? 'viewer'}": "${comment.text.slice(0, 400)}"` },
-      ],
-      temperature: 0.6,
-      max_tokens:  150,
-    }),
+async function generateReply(env, comment) {
+  const { callLLM } = await import('../lib/llm.js')
+  return callLLM(env, {
+    system:    BRAND_TONE,
+    prompt:    `Reply to this YouTube comment from "${comment.author ?? 'viewer'}": "${comment.text.slice(0, 400)}"`,
+    maxTokens: 150,
   })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`OpenAI API error ${res.status}: ${err.slice(0, 200)}`)
-  }
-
-  const json = await res.json()
-  return json.choices?.[0]?.message?.content?.trim() ?? ''
 }
 
 // ── YouTube reply posting ─────────────────────────────────────────────────────
@@ -183,7 +163,7 @@ export async function runCommentAgent(env, tenantId, dbArg, keys) {
 
     if (!flagged) {
       try {
-        reply  = await generateReply(resolvedKeys, comment)
+        reply  = await generateReply(env, comment)
         status = 'completed'
         await postYouTubeReply(resolvedKeys, { commentId: comment.id, reply })
       } catch (e) {
