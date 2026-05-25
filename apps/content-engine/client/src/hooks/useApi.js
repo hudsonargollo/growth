@@ -55,6 +55,19 @@ export async function apiDelete(path) {
   return json
 }
 
+/** Strip HTML tags and decode common entities from YouTube textDisplay */
+export function stripHtml(html = '') {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+}
+
 export function timeAgo(iso) {
   if (!iso) return '—'
   const diff = Date.now() - new Date(iso).getTime()

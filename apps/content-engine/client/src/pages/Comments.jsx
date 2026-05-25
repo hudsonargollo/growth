@@ -3,7 +3,7 @@ import { MessageSquare, ShieldCheck, AlertTriangle, RefreshCw, Bot, User, CheckC
 import PageHeader  from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import StatCard    from '../components/StatCard.jsx'
-import { useApi, apiPost, timeAgo } from '../hooks/useApi.js'
+import { useApi, apiPost, timeAgo, stripHtml } from '../hooks/useApi.js'
 
 const GUARDRAILS = [
   { label: 'Bloquear assédio / discurso de ódio',          defaultChecked: true },
@@ -141,11 +141,11 @@ export default function Comments() {
                     Video: <span className="font-mono">{c.videoId}</span> · {timeAgo(c.createdAt)}
                   </p>
                   <p className="text-[13px] text-gray-800 font-medium leading-relaxed">
-                    💬 {c.comment}
+                    💬 {stripHtml(c.comment)}
                   </p>
                   {c.reply && (
                     <p className="text-[13px] text-indigo-700 mt-2.5 pl-3 border-l-2 border-indigo-200 leading-relaxed">
-                      {c.reply}
+                      {stripHtml(c.reply)}
                     </p>
                   )}
                   {c.flagged && (
