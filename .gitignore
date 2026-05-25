@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets & env files
+.env
+.env.*
+!.env.example
+
+# Images / media at repo root (these belong in a CDN, not git)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mp3
+
+# Stray generated source outside apps/
+src/
