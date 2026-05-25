@@ -140,14 +140,47 @@ export async function generateScript(env, { blueprintId, blueprintData, catalogI
   const totalSeconds   = sections.reduce((s, sec) => s + (sec.duration ?? 60), 0)
   const sectionLabels  = sections.map((s) => s.label).join(' → ')
 
-  const systemPrompt = `Você é um roteirista de YouTube especializado em reviews de produtos para o mercado brasileiro.
+  const isEnglish  = (language ?? 'pt').toLowerCase().startsWith('en')
+  const lang       = isEnglish ? 'en' : 'pt'
+  const langLabel  = isEnglish ? 'English' : 'Portuguese (Brazilian)'
+
+  // Language guard — placed FIRST so the model cannot miss it
+  const langGuard  = isEnglish
+    ? `CRITICAL INSTRUCTION: Write the ENTIRE script in English. Every word, sentence, and section must be in English. Do NOT use any Portuguese words or phrases.\n\n`
+    : `INSTRUÇÃO CRÍTICA: Escreva TODO o roteiro em Português Brasileiro.\n\n`
+
+  const systemPrompt = isEnglish
+    ? `${langGuard}You are a YouTube scriptwriter specializing in product reviews.
+Write engaging, persuasive scripts that follow the provided structure exactly.
+Always include an affiliate disclosure. Maintain a ${profile?.tone || 'energetic and informative'} tone.
+When affiliate links are available, include them in description callouts and the CTA.
+When "Blog opinions" are available for a product, use the snippets as factual basis for technical points, pros/cons, and sales arguments — but rewrite in the channel's voice, never copy literally.
+Language: ENGLISH`
+    : `${langGuard}Você é um roteirista de YouTube especializado em reviews de produtos para o mercado brasileiro.
 Escreva roteiros envolventes e persuasivos que seguem exatamente a estrutura fornecida.
 Sempre inclua aviso de afiliado. Mantenha um tom ${profile?.tone || 'energético e informativo'}.
 Quando links de afiliados estiverem disponíveis, inclua-os nas chamadas de descrição e no CTA.
 Quando "Opiniões de blogs" estiverem disponíveis para um produto, use os snippets como base factual para pontos técnicos, prós/contras e argumentos de venda — mas reescreva com a voz do canal, nunca copie literalmente.
-Idioma: ${language?.toUpperCase() ?? 'PT'}`
+Idioma: PORTUGUÊS BRASILEIRO`
 
-  const userPrompt = `Escreva um roteiro de YouTube "${blueprint.name}" com duração aproximada de ${Math.round(totalSeconds / 60)} minutos.
+  const userPrompt = isEnglish
+    ? `${langGuard}Write a "${blueprint.name}" YouTube script approximately ${Math.round(totalSeconds / 60)} minutes long.
+
+${channelContext ? `CHANNEL CONTEXT:\n${channelContext}\n` : ''}
+STRUCTURE (sections): ${sectionLabels}
+${sections.map((s) => s.instructions ? `- ${s.label}: ${s.instructions}` : '').filter(Boolean).join('\n')}
+
+PRODUCTS TO REVIEW:
+${productList}
+
+INSTRUCTIONS:
+- Mark each section clearly with [SECTION_NAME]
+- Include each product's affiliate link in the callout (e.g. "Link in description: <url>")
+- Affiliate disclosure at the start or end
+- CTA encouraging subscribe and bell notification
+- Conversational and natural tone in English
+- Each section should be approximately ${Math.round(totalSeconds / sections.length / 60 * 100)} words`
+    : `Escreva um roteiro de YouTube "${blueprint.name}" com duração aproximada de ${Math.round(totalSeconds / 60)} minutos.
 
 ${channelContext ? `CONTEXTO DO CANAL:\n${channelContext}\n` : ''}
 ESTRUTURA (seções): ${sectionLabels}
@@ -161,7 +194,7 @@ INSTRUÇÕES:
 - Inclua o link afiliado de cada produto na chamada (ex: "Link na descrição: <url>")
 - Aviso de afiliado no início ou final
 - CTA com incentivo a se inscrever e ativar notificações
-- Tom conversacional e natural em ${language?.toUpperCase() ?? 'PT'}
+- Tom conversacional e natural em Português Brasileiro
 - Cada seção deve ter aproximadamente ${Math.round(totalSeconds / sections.length / 60 * 100)} palavras`
 
   const text = await llm(env, { system: systemPrompt, prompt: userPrompt, maxTokens: 3000 })
@@ -261,9 +294,13 @@ export async function regenerateSection(env, { scriptId, sectionIndex, instructi
     return `[${s.label}]: ${s.content?.slice(0, 100) ?? ''}…`
   }).join('\n')
 
-  const sysPrompt = `Você é um roteirista de YouTube. Reescreva APENAS a seção indicada mantendo consistência com o restante do roteiro.
-Tom: ${profile?.tone ?? 'energético e informativo'}. Idioma: ${script.language?.toUpperCase() ?? 'PT'}.
-Retorne APENAS o conteúdo da seção, sem marcadores extras.`
+  const regenLang    = (script.language ?? 'pt').toLowerCase().startsWith('en')
+  const regenGuard   = regenLang
+    ? `CRITICAL: Rewrite ONLY in English. No Portuguese.\n\n`
+    : `INSTRUÇÃO: Reescreva APENAS em Português Brasileiro.\n\n`
+  const sysPrompt = regenLang
+    ? `${regenGuard}You are a YouTube scriptwriter. Rewrite ONLY the indicated section while keeping consistency with the rest of the script.\nTone: ${profile?.tone ?? 'energetic and informative'}. Language: ENGLISH.\nReturn ONLY the section content, no extra markers.`
+    : `${regenGuard}Você é um roteirista de YouTube. Reescreva APENAS a seção indicada mantendo consistência com o restante do roteiro.\nTom: ${profile?.tone ?? 'energético e informativo'}. Idioma: PORTUGUÊS BRASILEIRO.\nRetorne APENAS o conteúdo da seção, sem marcadores extras.`
 
   const userPrompt = `ROTEIRO ATUAL (contexto):
 ${contextSections}
