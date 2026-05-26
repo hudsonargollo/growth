@@ -212,20 +212,13 @@ app.post('/api/delivery/send', async (c) => {
   return c.json(result)
 })
 
-// Root tenant UUID — pinned in migration 002
-const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
-
 // ── Comments ──────────────────────────────────────────────────────────────────
 app.get('/api/comments', async (c) => {
-  try {
-    const jobs = await listCommentJobs(c.env)
-    return c.json({ jobs: jobs ?? [] })
-  } catch (e) {
-    return c.json({ jobs: [], error: e.message }, 200) // 200 so UI can show the message
-  }
+  const jobs = await listCommentJobs(c.env)
+  return c.json({ jobs })
 })
 app.post('/api/comments/run', async (c) => {
-  const result = await runCommentAgent(c.env, ROOT_TENANT_ID)
+  const result = await runCommentAgent(c.env)
   return c.json({ status: 'ok', ...result })
 })
 app.post('/api/comments/:id/approve', async (c) => {
@@ -284,6 +277,6 @@ export default {
 
   // Cron trigger (wrangler.toml: crons = ["0 */4 * * *"])
   async scheduled(_event, env, ctx) {
-    ctx.waitUntil(runCommentAgent(env, ROOT_TENANT_ID))
+    ctx.waitUntil(runCommentAgent(env))
   },
 }

@@ -248,7 +248,6 @@ export async function generateVoiceover(env, {
     stability,
     similarityBoost,
     status:         'completed',
-    tenant_id:      '00000000-0000-0000-0000-000000000001',
   }
 
   let { data, error } = await db.from('voiceovers').insert(fullRow).select().single()
@@ -266,7 +265,6 @@ export async function generateVoiceover(env, {
       stability,
       similarityBoost,
       status:         'completed',
-      tenant_id:      '00000000-0000-0000-0000-000000000001',
     }
     const { data: d2, error: e2 } = await db.from('voiceovers').insert(baseRow).select().single()
     if (e2) throw new Error(e2.message)

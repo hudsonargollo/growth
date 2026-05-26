@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import {
-  LayoutDashboard, ShoppingBag, FileText, Mic, Send,
-  MessageSquare, Settings, LogOut, Loader2, Wallet, Zap,
+  LayoutDashboard,
+  ShoppingBag,
+  FileText,
+  Mic,
+  Send,
+  MessageSquare,
+  Settings,
+  LogOut,
+  Loader2,
+  Wallet,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
@@ -17,114 +25,63 @@ import SettingsPage from './pages/Settings.jsx'
 import Finance      from './pages/Finance.jsx'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard',   icon: LayoutDashboard },
-  { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
-  { to: '/scripts',   label: 'Roteiros',    icon: FileText },
-  { to: '/voiceover', label: 'Narração',    icon: Mic },
-  { to: '/delivery',  label: 'Entrega',     icon: Send },
-  { to: '/comments',  label: 'Comentários', icon: MessageSquare },
+  { to: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
+  { to: '/mining',     label: 'Mineração',      icon: ShoppingBag },
+  { to: '/scripts',    label: 'Roteiros',       icon: FileText },
+  { to: '/voiceover',  label: 'Narração',       icon: Mic },
+  { to: '/delivery',   label: 'Entrega',        icon: Send },
+  { to: '/comments',   label: 'Comentários',    icon: MessageSquare },
+  { to: '/settings',   label: 'Configurações',  icon: Settings },
 ]
-
-const bottomNavItems = [
-  { to: '/finance',  label: 'Finanças',      icon: Wallet },
-  { to: '/settings', label: 'Configurações', icon: Settings },
-]
-
-function SideLink({ to, label, icon: Icon }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 ${
-          isActive
-            ? 'text-white shadow-[0_0_20px_rgba(99,102,241,0.22)]'
-            : 'text-white/40 hover:text-white/80 hover:bg-white/[0.05]'
-        }`
-      }
-      style={({ isActive }) =>
-        isActive
-          ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.8) 0%, rgba(139,92,246,0.8) 100%)' }
-          : {}
-      }
-    >
-      <Icon size={14} />
-      {label}
-    </NavLink>
-  )
-}
 
 function Sidebar({ user, onSignOut }) {
-  const initials = (user?.email ?? 'U').slice(0, 2).toUpperCase()
   return (
-    <aside
-      className="w-[220px] h-screen sticky top-0 flex flex-col overflow-y-auto shrink-0"
-      style={{ background: 'linear-gradient(180deg, #0a0a12 0%, #0d0d1a 100%)' }}
-    >
-      {/* Logo */}
-      <div className="px-5 pt-6 pb-5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 14px rgba(99,102,241,0.5)' }}
-          >
-            <Zap size={13} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-white font-black text-[13px] tracking-tight leading-snug">
-            Fábrica de<br />Conteúdo
-          </span>
+    <aside className="w-60 h-screen sticky top-0 bg-gray-900 text-white flex flex-col overflow-y-auto">
+      <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-3">
+        <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+        <div>
+          <h1 className="text-sm font-bold tracking-tight leading-tight">Fábrica de Conteúdo</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Automação de Conteúdo YouTube</p>
         </div>
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/15 mt-3">
-          YouTube Automation
-        </p>
       </div>
-
-      <div className="mx-5 h-px bg-white/[0.06] mb-4" />
-
-      <nav className="flex-1 px-3 space-y-0.5">
-        <p className="px-2.5 mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/15">Pipeline</p>
-        {navItems.map(({ to, label, icon }) => (
-          <SideLink key={to} to={to} label={label} icon={icon} />
-        ))}
-
-        <div className="h-px bg-white/[0.06] my-4" />
-
-        <p className="px-2.5 mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/15">Sistema</p>
-        {bottomNavItems.map(({ to, label, icon }) => (
-          <SideLink key={to} to={to} label={label} icon={icon} />
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {navItems.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`
+            }
+          >
+            <Icon size={16} />
+            {label}
+          </NavLink>
         ))}
       </nav>
-
-      <div className="mx-5 h-px bg-white/[0.06] mt-4" />
-      <div className="px-4 py-4 flex items-center gap-3">
-        <div
-          className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black text-white"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-        >
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] text-white/35 truncate font-medium">{user?.email}</p>
-        </div>
+      <div className="px-4 py-4 border-t border-gray-700">
+        <p className="text-xs text-gray-400 truncate mb-2">{user?.email}</p>
         <button
           onClick={onSignOut}
-          title="Sair"
-          className="text-white/20 hover:text-white/60 transition-colors"
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors w-full"
         >
           <LogOut size={13} />
+          Sair
         </button>
       </div>
-      <div className="px-5 pb-4 text-[9px] text-white/10 font-black uppercase tracking-widest">
-        v0.1.0 · MVP
-      </div>
+      <div className="px-6 py-3 text-xs text-gray-600">v0.1.0 · MVP</div>
     </aside>
   )
 }
 
 function AppShell({ session }) {
   return (
-    <div className="flex min-h-screen" style={{ background: '#f0f0f8' }}>
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar user={session.user} onSignOut={() => supabase.auth.signOut()} />
-      <main className="flex-1 px-8 py-7 overflow-auto min-w-0">
+      <main className="flex-1 p-8 overflow-auto">
         <Routes>
           <Route path="/dashboard"  element={<Dashboard />} />
           <Route path="/mining"     element={<Mining />} />
@@ -142,7 +99,7 @@ function AppShell({ session }) {
 }
 
 export default function App() {
-  const [session, setSession] = useState(undefined)
+  const [session, setSession] = useState(undefined) // undefined = loading
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
@@ -152,16 +109,8 @@ export default function App() {
 
   if (session === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a12' }}>
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 24px rgba(99,102,241,0.5)' }}
-          >
-            <Zap size={20} className="text-white" />
-          </div>
-          <Loader2 size={16} className="animate-spin text-indigo-500" />
-        </div>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-indigo-500" />
       </div>
     )
   }
@@ -169,8 +118,16 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"   element={session ? <Navigate to="/dashboard" replace /> : <Landing />} />
-        <Route path="/*"  element={session ? <AppShell session={session} /> : <Navigate to="/" replace />} />
+        {/* Landing page — always accessible */}
+        <Route
+          path="/"
+          element={session ? <Navigate to="/dashboard" replace /> : <Landing />}
+        />
+        {/* App shell — requires auth, redirects to landing if not signed in */}
+        <Route
+          path="/*"
+          element={session ? <AppShell session={session} /> : <Navigate to="/" replace />}
+        />
       </Routes>
     </BrowserRouter>
   )

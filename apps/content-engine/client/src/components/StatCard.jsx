@@ -1,51 +1,22 @@
-// Dark metric card — inline styles for gradients so Tailwind v4 build never strips them
-const ICON_COLORS = {
-  indigo: { from: '#6366f1', to: '#8b5cf6', glow: 'rgba(99,102,241,0.4)'  },
-  green:  { from: '#10b981', to: '#14b8a6', glow: 'rgba(16,185,129,0.35)' },
-  yellow: { from: '#f59e0b', to: '#f97316', glow: 'rgba(245,158,11,0.35)' },
-  red:    { from: '#ef4444', to: '#f43f5e', glow: 'rgba(239,68,68,0.35)'  },
-  blue:   { from: '#3b82f6', to: '#6366f1', glow: 'rgba(59,130,246,0.35)' },
-  violet: { from: '#8b5cf6', to: '#a855f7', glow: 'rgba(139,92,246,0.4)'  },
-}
-
-const CARD_STYLE = {
-  background: 'linear-gradient(140deg, #13131e 0%, #1c1c2e 100%)',
-  borderRadius: '16px',
-  border: '1px solid rgba(255,255,255,0.07)',
-  padding: '20px',
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '16px',
-  transition: 'all 0.2s',
-}
-
 export default function StatCard({ label, value, sub, icon: Icon, color = 'indigo' }) {
-  const ic = ICON_COLORS[color] ?? ICON_COLORS.indigo
+  const colors = {
+    indigo: 'bg-indigo-50 text-indigo-600',
+    green:  'bg-green-50 text-green-600',
+    yellow: 'bg-yellow-50 text-yellow-600',
+    red:    'bg-red-50 text-red-600',
+    blue:   'bg-blue-50 text-blue-600',
+  }
   return (
-    <div style={CARD_STYLE}>
+    <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-start gap-4">
       {Icon && (
-        <div style={{
-          background: `linear-gradient(135deg, ${ic.from}, ${ic.to})`,
-          boxShadow: `0 4px 12px ${ic.glow}`,
-          padding: '10px',
-          borderRadius: '12px',
-          flexShrink: 0,
-        }}>
-          <Icon size={18} color="#fff" strokeWidth={2} />
+        <div className={`p-2.5 rounded-lg ${colors[color]}`}>
+          <Icon size={20} />
         </div>
       )}
-      <div style={{ minWidth: 0 }}>
-        <p style={{
-          fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)', marginBottom: '4px',
-        }}>{label}</p>
-        <p style={{
-          fontSize: '30px', fontWeight: 900, color: '#fff',
-          letterSpacing: '-0.03em', lineHeight: 1, fontVariantNumeric: 'tabular-nums',
-        }}>{value}</p>
-        {sub && <p style={{
-          fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '6px', fontWeight: 500,
-        }}>{sub}</p>}
+      <div>
+        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>
     </div>
   )

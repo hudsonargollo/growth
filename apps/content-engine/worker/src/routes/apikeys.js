@@ -1,17 +1,13 @@
 /**
  * /api/apikeys — store and retrieve API keys (OpenAI, ElevenLabs, etc.)
  * Keys are AES-GCM encrypted at rest using CREDENTIALS_SECRET.
- * Storage: tenant_api_keys (migration 001/002 — replaced tool_credentials).
  */
 import { Hono } from 'hono'
 import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
-import { encrypt } from '../lib/crypto.js'
+import { encrypt, decrypt } from '../lib/crypto.js'
 
 const router = new Hono()
-
-// Root tenant UUID — pinned in migration 002
-const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
 const ALLOWED_KEYS = new Set([
   'ANTHROPIC_API_KEY',
@@ -37,20 +33,21 @@ function normalise(keyId) {
 
 // GET /api/apikeys — returns saved keys (metadata only, no raw values)
 router.get('/', async (c) => {
-  const db = getDb(c.env)
+  const db     = getDb(c.env)
+  const secret = c.env.CREDENTIALS_SECRET
+  if (!secret) return c.json({ error: 'CREDENTIALS_SECRET not configured' }, 500)
 
   const { data, error } = await db
-    .from('tenant_api_keys')
-    .select('key_name, updated_at')
-    .eq('tenant_id', ROOT_TENANT_ID)
-    .in('key_name', [...ALLOWED_KEYS])
+    .from('tool_credentials')
+    .select('toolId, updatedAt')
+    .in('toolId', [...ALLOWED_KEYS])
 
   if (error) return c.json({ error: error.message }, 500)
 
   const keys = (data ?? []).map((row) => ({
-    key_name:   row.key_name,
+    key_name:   row.toolId,
     isSet:      true,
-    updated_at: row.updated_at,
+    updated_at: row.updatedAt,
   }))
 
   return c.json({ keys })
@@ -72,20 +69,27 @@ router.put('/:keyId', async (c) => {
 
   const { ciphertext, iv } = await encrypt(value.trim(), secret)
 
-  const { error: err } = await db
-    .from('tenant_api_keys')
-    .upsert(
-      {
-        id:              uid(),
-        tenant_id:       ROOT_TENANT_ID,
-        key_name:        keyId,
-        value_encrypted: ciphertext,
-        iv,
-        updated_at:      new Date().toISOString(),
-        updated_by:      null,
-      },
-      { onConflict: 'tenant_id,key_name' },
-    )
+  const { data: existing } = await db
+    .from('tool_credentials')
+    .select('id')
+    .eq('toolId', keyId)
+    .maybeSingle()
+
+  const payload = {
+    toolId:            keyId,
+    login:             '',
+    passwordEncrypted: ciphertext,
+    iv,
+    updatedBy:         'system',
+    updatedAt:         new Date().toISOString(),
+  }
+
+  let err
+  if (existing) {
+    ;({ error: err } = await db.from('tool_credentials').update(payload).eq('toolId', keyId))
+  } else {
+    ;({ error: err } = await db.from('tool_credentials').insert({ id: uid(), ...payload }))
+  }
 
   if (err) return c.json({ error: err.message }, 500)
   return c.json({ ok: true, key_name: keyId })
@@ -98,12 +102,7 @@ router.delete('/:keyId', async (c) => {
   if (!keyId) return c.json({ error: `Chave desconhecida: ${raw}` }, 400)
 
   const db = getDb(c.env)
-  const { error } = await db
-    .from('tenant_api_keys')
-    .delete()
-    .eq('tenant_id', ROOT_TENANT_ID)
-    .eq('key_name', keyId)
-
+  const { error } = await db.from('tool_credentials').delete().eq('toolId', keyId)
   if (error) return c.json({ error: error.message }, 500)
   return c.json({ ok: true })
 })

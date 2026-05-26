@@ -159,7 +159,6 @@ export async function sendDelivery(env, { scriptId, voiceoverId, editorContact }
     voiceoverUrl,
     status:        'completed',
     sentAt:        new Date().toISOString(),
-    tenant_id:     '00000000-0000-0000-0000-000000000001',
   }).select().single()
 
   if (error) throw new Error(error.message)
