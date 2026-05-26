@@ -14,11 +14,20 @@ import { resolveAndTrack, listShortLinks }                   from './services/sh
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
 import financeRouter                                          from './routes/finance.js'
+import youtubeRouter                                          from './routes/youtube.js'
+import { uid }                                               from './lib/uid.js'
 
 const app = new Hono()
 
 app.use('*', cors({
-  origin: ['https://growth-clube.hudsonargollo2.workers.dev', 'https://growth.clubemkt.digital', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: [
+    'https://growth-clube.hudsonargollo2.workers.dev',
+    'https://growth.clubemkt.digital',
+    'https://fabricadeconteudo.clubemkt.digital',
+    'https://content-engine.hudsonargollo2.workers.dev',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }))
@@ -206,19 +215,32 @@ app.delete('/api/delivery/all', async (c) => {
   return c.json({ ok: true })
 })
 app.post('/api/delivery/send', async (c) => {
-  const { scriptId, voiceoverId, editorContact } = await c.req.json()
-  if (!scriptId || !editorContact) return c.json({ error: 'scriptId and editorContact are required' }, 400)
-  const result = await sendDelivery(c.env, { scriptId, voiceoverId, editorContact })
+  const body = await c.req.json()
+  const { items, scriptId, voiceoverId, editorContact } = body
+
+  if (!editorContact) return c.json({ error: 'editorContact is required' }, 400)
+  // Support both new multi-item format and legacy single-item format
+  const hasItems = Array.isArray(items) && items.length > 0
+  if (!hasItems && !scriptId) return c.json({ error: 'items or scriptId is required' }, 400)
+
+  const result = await sendDelivery(c.env, { items, scriptId, voiceoverId, editorContact })
   return c.json(result)
 })
 
+// Root tenant UUID — pinned in migration 002
+const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+
 // ── Comments ──────────────────────────────────────────────────────────────────
 app.get('/api/comments', async (c) => {
-  const jobs = await listCommentJobs(c.env)
-  return c.json({ jobs })
+  try {
+    const jobs = await listCommentJobs(c.env)
+    return c.json({ jobs: jobs ?? [] })
+  } catch (e) {
+    return c.json({ jobs: [], error: e.message }, 200) // 200 so UI can show the message
+  }
 })
 app.post('/api/comments/run', async (c) => {
-  const result = await runCommentAgent(c.env)
+  const result = await runCommentAgent(c.env, ROOT_TENANT_ID)
   return c.json({ status: 'ok', ...result })
 })
 app.post('/api/comments/:id/approve', async (c) => {
@@ -260,9 +282,44 @@ app.delete('/api/products/:id', async (c) => {
   return c.json({ ok: true })
 })
 
+// ── Editor contact (stored unencrypted in tenant_api_keys.label) ─────────────
+app.get('/api/settings/editor-contact', async (c) => {
+  const db = getDb(c.env)
+  const { data } = await db
+    .from('tenant_api_keys')
+    .select('label')
+    .eq('tenant_id', ROOT_TENANT_ID)
+    .eq('key_name', 'EDITOR_WHATSAPP')
+    .maybeSingle()
+  return c.json({ contact: data?.label ?? '' })
+})
+
+app.put('/api/settings/editor-contact', async (c) => {
+  const db = getDb(c.env)
+  const { contact = '' } = await c.req.json()
+  const { error } = await db
+    .from('tenant_api_keys')
+    .upsert(
+      {
+        id:              uid(),
+        tenant_id:       ROOT_TENANT_ID,
+        key_name:        'EDITOR_WHATSAPP',
+        label:           contact.trim(),
+        value_encrypted: '',
+        iv:              '',
+        updated_at:      new Date().toISOString(),
+        updated_by:      null,
+      },
+      { onConflict: 'tenant_id,key_name' },
+    )
+  if (error) return c.json({ error: error.message }, 500)
+  return c.json({ ok: true })
+})
+
 app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
 app.route('/api/finance',     financeRouter)
+app.route('/api/youtube',     youtubeRouter)
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.onError((err, c) => {
@@ -277,6 +334,6 @@ export default {
 
   // Cron trigger (wrangler.toml: crons = ["0 */4 * * *"])
   async scheduled(_event, env, ctx) {
-    ctx.waitUntil(runCommentAgent(env))
+    ctx.waitUntil(runCommentAgent(env, ROOT_TENANT_ID))
   },
 }

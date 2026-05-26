@@ -96,17 +96,63 @@ async function generateReply(env, comment) {
   })
 }
 
+// ── YouTube OAuth token refresh ───────────────────────────────────────────────
+/**
+ * Exchanges the stored refresh_token for a short-lived access_token.
+ * Falls back to the legacy static YOUTUBE_OAUTH_TOKEN if no refresh token is stored.
+ * Returns an access token string, or null if neither credential is available.
+ */
+async function refreshYouTubeToken(env) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+
+  // Prefer OAuth refresh token flow (long-lived, automatic)
+  const clientId     = env.GOOGLE_CLIENT_ID
+  const clientSecret = env.GOOGLE_CLIENT_SECRET
+  const refreshToken = await resolveKey(env, 'GOOGLE_REFRESH_TOKEN')
+
+  if (clientId && clientSecret && refreshToken) {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({
+        client_id:     clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type:    'refresh_token',
+      }),
+    })
+
+    if (res.ok) {
+      const { access_token } = await res.json()
+      if (access_token) return access_token
+    } else {
+      console.error('[comments] OAuth token refresh failed:', res.status, await res.text().catch(() => ''))
+    }
+  }
+
+  // Legacy fallback: static token stored via Settings → API Keys UI
+  const staticToken = await resolveKey(env, 'YOUTUBE_OAUTH_TOKEN')
+  if (staticToken) {
+    console.warn('[comments] Using legacy static YOUTUBE_OAUTH_TOKEN — consider connecting via YouTube OAuth')
+    return staticToken
+  }
+
+  return null
+}
+
 // ── YouTube reply posting ─────────────────────────────────────────────────────
-async function postYouTubeReply(keys, { commentId, reply }) {
-  if (!keys.YOUTUBE_OAUTH_TOKEN) {
-    console.log(`[comments] No YOUTUBE_OAUTH_TOKEN — reply not posted to YouTube: ${reply.slice(0, 60)}`)
+async function postYouTubeReply(env, { commentId, reply }) {
+  const accessToken = await refreshYouTubeToken(env)
+
+  if (!accessToken) {
+    console.log(`[comments] No YouTube auth token — reply saved to DB but not posted: ${reply.slice(0, 60)}`)
     return
   }
 
   const res = await fetch('https://www.googleapis.com/youtube/v3/comments?part=snippet', {
     method: 'POST',
     headers: {
-      Authorization:  `Bearer ${keys.YOUTUBE_OAUTH_TOKEN}`,
+      Authorization:  `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -165,7 +211,7 @@ export async function runCommentAgent(env, tenantId, dbArg, keys) {
       try {
         reply  = await generateReply(env, comment)
         status = 'completed'
-        await postYouTubeReply(resolvedKeys, { commentId: comment.id, reply })
+        await postYouTubeReply(env, { commentId: comment.id, reply })
       } catch (e) {
         console.error(`[comments] Reply generation failed for ${comment.id}:`, e.message)
         status = 'failed'
