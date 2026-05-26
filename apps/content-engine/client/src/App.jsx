@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  ShoppingBag,
-  FileText,
-  Mic,
-  Send,
-  MessageSquare,
-  Settings,
-  LogOut,
-  Loader2,
-  Wallet,
+  LayoutDashboard, ShoppingBag, FileText, Mic, Send,
+  MessageSquare, Settings, LogOut, Loader2, Zap, Wand2,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
@@ -22,74 +14,125 @@ import Voiceover    from './pages/Voiceover.jsx'
 import Delivery     from './pages/Delivery.jsx'
 import Comments     from './pages/Comments.jsx'
 import SettingsPage from './pages/Settings.jsx'
-import Finance      from './pages/Finance.jsx'
+import Wizard       from './pages/Wizard.jsx'
 
 const navItems = [
-  { to: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
-  { to: '/mining',     label: 'Mineração',      icon: ShoppingBag },
-  { to: '/scripts',    label: 'Roteiros',       icon: FileText },
-  { to: '/voiceover',  label: 'Narração',       icon: Mic },
-  { to: '/delivery',   label: 'Entrega',        icon: Send },
-  { to: '/comments',   label: 'Comentários',    icon: MessageSquare },
-  { to: '/settings',   label: 'Configurações',  icon: Settings },
+  { to: '/dashboard', label: 'Dashboard',   icon: LayoutDashboard },
+  { to: '/wizard',    label: 'Wizard',      icon: Wand2,           highlight: true },
+  { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
+  { to: '/scripts',   label: 'Roteiros',    icon: FileText },
+  { to: '/voiceover', label: 'Narração',    icon: Mic },
+  { to: '/delivery',  label: 'Entrega',     icon: Send },
+  { to: '/comments',  label: 'Comentários', icon: MessageSquare },
 ]
 
-function Sidebar({ user, onSignOut }) {
+const bottomNavItems = [
+  { to: '/settings', label: 'Configurações', icon: Settings },
+]
+
+function SideLink({ to, label, icon: Icon, highlight }) {
   return (
-    <aside className="w-60 h-screen sticky top-0 bg-gray-900 text-white flex flex-col overflow-y-auto">
-      <div className="px-4 py-4 border-b border-gray-700 flex items-center gap-3">
-        <img src="/meajudenaescolha-logo.jpg" alt="Logo" className="w-9 h-9 rounded-lg object-cover shrink-0" />
-        <div>
-          <h1 className="text-sm font-bold tracking-tight leading-tight">Fábrica de Conteúdo</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Automação de Conteúdo YouTube</p>
-        </div>
-      </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`
-            }
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center gap-2.5 pl-3 pr-2.5 py-2 text-[13px] font-medium transition-all border-l-2 ${
+          isActive
+            ? highlight
+              ? 'text-[#07070B] bg-[#CCFF00] border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.25)] rounded-r-xl'
+              : 'text-white bg-[#0F0F16] border-[#8B5CF6] shadow-[0_0_20px_rgba(139,92,246,0.15)] rounded-r-xl'
+            : highlight
+              ? 'text-[#CCFF00]/70 border-transparent hover:text-[#CCFF00] hover:bg-[#CCFF00]/[0.06] rounded-r-xl'
+              : 'text-white/40 border-transparent hover:text-white/75 hover:bg-white/[0.04] rounded-r-xl'
+        }`
+      }
+      style={{ transitionTimingFunction: 'cubic-bezier(0.19, 1, 0.22, 1)', transitionDuration: '200ms' }}
+    >
+      <Icon size={14} strokeWidth={2} />
+      {label}
+    </NavLink>
+  )
+}
+
+function Sidebar({ user, onSignOut }) {
+  const initials = (user?.email ?? 'U').slice(0, 2).toUpperCase()
+  return (
+    <aside
+      className="w-[220px] h-screen sticky top-0 flex flex-col overflow-y-auto shrink-0"
+      style={{ background: '#07070B', borderRight: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      {/* Logo */}
+      <div className="px-5 pt-6 pb-5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: '#CCFF00', boxShadow: '0 0 16px rgba(204,255,0,0.35)' }}
           >
-            <Icon size={16} />
-            {label}
-          </NavLink>
+            <Zap size={13} style={{ color: '#07070B' }} strokeWidth={2.5} />
+          </div>
+          <span className="font-black text-[13px] tracking-tight leading-snug" style={{ color: 'rgba(255,255,255,0.92)' }}>
+            Fábrica de<br />Conteúdo
+          </span>
+        </div>
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/15 mt-3">
+          YouTube Automation
+        </p>
+      </div>
+
+      <div className="mx-5 h-px bg-white/[0.06] mb-4" />
+
+      <nav className="flex-1 px-3 space-y-0.5">
+        <p className="px-2.5 mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/15">Pipeline</p>
+        {navItems.map(({ to, label, icon, highlight }) => (
+          <SideLink key={to} to={to} label={label} icon={icon} highlight={highlight} />
+        ))}
+
+        <div className="h-px bg-white/[0.06] my-4" />
+
+        <p className="px-2.5 mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-white/15">Sistema</p>
+        {bottomNavItems.map(({ to, label, icon }) => (
+          <SideLink key={to} to={to} label={label} icon={icon} />
         ))}
       </nav>
-      <div className="px-4 py-4 border-t border-gray-700">
-        <p className="text-xs text-gray-400 truncate mb-2">{user?.email}</p>
+
+      <div className="mx-5 h-px bg-white/[0.06] mt-4" />
+      <div className="px-4 py-4 flex items-center gap-3">
+        <div
+          className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-black"
+          style={{ background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.40)', color: '#8B5CF6' }}
+        >
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-white/35 truncate font-medium">{user?.email}</p>
+        </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors w-full"
+          title="Sair"
+          className="text-white/20 hover:text-white/60 transition-colors"
         >
           <LogOut size={13} />
-          Sair
         </button>
       </div>
-      <div className="px-6 py-3 text-xs text-gray-600">v0.1.0 · MVP</div>
+      <div className="px-5 pb-4 text-[9px] text-white/10 font-black uppercase tracking-widest">
+        v0.1.0 · MVP
+      </div>
     </aside>
   )
 }
 
 function AppShell({ session }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen" style={{ background: '#07070B' }}>
       <Sidebar user={session.user} onSignOut={() => supabase.auth.signOut()} />
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 px-8 py-7 overflow-auto min-w-0">
         <Routes>
           <Route path="/dashboard"  element={<Dashboard />} />
+          <Route path="/wizard"     element={<Wizard />} />
           <Route path="/mining"     element={<Mining />} />
           <Route path="/scripts"    element={<Scripts />} />
           <Route path="/voiceover"  element={<Voiceover />} />
           <Route path="/delivery"   element={<Delivery />} />
           <Route path="/comments"   element={<Comments />} />
-          <Route path="/finance"    element={<Finance />} />
           <Route path="/settings"   element={<SettingsPage />} />
           <Route path="*"           element={<Navigate to="/dashboard" replace />} />
         </Routes>
@@ -99,7 +142,7 @@ function AppShell({ session }) {
 }
 
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = loading
+  const [session, setSession] = useState(undefined)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
@@ -109,8 +152,16 @@ export default function App() {
 
   if (session === undefined) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-indigo-500" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#07070B' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{ background: '#CCFF00', boxShadow: '0 0 28px rgba(204,255,0,0.40)' }}
+          >
+            <Zap size={20} style={{ color: '#07070B' }} strokeWidth={2.5} />
+          </div>
+          <Loader2 size={16} className="animate-spin" style={{ color: '#8B5CF6' }} />
+        </div>
       </div>
     )
   }
@@ -118,16 +169,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page — always accessible */}
-        <Route
-          path="/"
-          element={session ? <Navigate to="/dashboard" replace /> : <Landing />}
-        />
-        {/* App shell — requires auth, redirects to landing if not signed in */}
-        <Route
-          path="/*"
-          element={session ? <AppShell session={session} /> : <Navigate to="/" replace />}
-        />
+        <Route path="/"   element={session ? <Navigate to="/dashboard" replace /> : <Landing />} />
+        <Route path="/*"  element={session ? <AppShell session={session} /> : <Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
