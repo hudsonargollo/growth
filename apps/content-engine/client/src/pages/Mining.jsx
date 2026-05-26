@@ -44,8 +44,8 @@ const SORT_OPTIONS = [
 const LISTING_COLORS = {
   gold_pro:      { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Gold Pro' },
   gold_special:  { bg: 'bg-yellow-50',  text: 'text-yellow-700', label: 'Gold Especial' },
-  gold:          { bg: 'bg-amber-50',   text: 'text-amber-700',  label: 'Gold' },
-  silver:        { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Silver' },
+  gold:          { bg: 'bg-[#FFB800]/8',   text: 'text-[#FFB800]',  label: 'Gold' },
+  silver:        { bg: 'bg-[#0F0F16]/[0.05]',   text: 'text-white/60',   label: 'Silver' },
 }
 
 const SELLER_LEVEL_COLORS = {
@@ -53,7 +53,7 @@ const SELLER_LEVEL_COLORS = {
   '4_light_green': 'text-green-500',
   '3_yellow': 'text-yellow-600',
   '2_orange': 'text-orange-500',
-  '1_red':    'text-red-500',
+  '1_red':    'text-[#FF3366]',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -69,10 +69,10 @@ function fmtNumber(n) {
 }
 
 function scoreColor(score) {
-  if (score >= 80) return 'bg-green-100 text-green-700'
-  if (score >= 60) return 'bg-blue-100 text-blue-700'
+  if (score >= 80) return 'bg-[#00FFB9]/12 text-[#00FFB9]'
+  if (score >= 60) return 'bg-violet-500/12 text-violet-400'
   if (score >= 40) return 'bg-yellow-100 text-yellow-700'
-  return 'bg-gray-100 text-gray-500'
+  return 'bg-[#0F0F16]/[0.05] text-white/40'
 }
 
 function discountPct(original, current) {
@@ -112,22 +112,22 @@ function AffiliateLinkEditor({ productId, label, placeholder, initialValue, colo
           <button onMouseDown={e => e.preventDefault()} onClick={handleSave}
             className="p-1 text-green-600 hover:bg-green-50 rounded shrink-0"><Check size={11} /></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => setEditing(false)}
-            className="p-1 text-gray-400 hover:bg-gray-100 rounded shrink-0"><X size={11} /></button>
+            className="p-1 text-white/35 hover:bg-[#0F0F16]/[0.05] rounded shrink-0"><X size={11} /></button>
         </div>
       ) : (
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {initialValue ? (
             <a href={initialValue} target="_blank" rel="noreferrer"
-              className="text-xs text-indigo-500 hover:underline font-mono truncate flex-1 flex items-center gap-1">
+              className="text-xs text-violet-400 hover:underline font-mono truncate flex-1 flex items-center gap-1">
               {initialValue} <ExternalLink size={9} className="shrink-0" />
             </a>
           ) : (
-            <span className="text-xs text-gray-300 flex-1">—</span>
+            <span className="text-xs text-white/25 flex-1">—</span>
           )}
           {saved
             ? <Check size={11} className="text-green-500 shrink-0" />
             : <button onMouseDown={e => e.preventDefault()} onClick={() => setEditing(true)}
-                className="p-0.5 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 shrink-0">
+                className="p-0.5 rounded hover:bg-[#0F0F16]/[0.05] text-white/25 hover:text-white/40 shrink-0">
                 <Pencil size={10} />
               </button>
           }
@@ -150,9 +150,9 @@ function ScoreBadge({ score, blogBonus }) {
 
 // ── Competition level badge ───────────────────────────────────────────────────
 const COMPETITION_META = {
-  low:    { label: 'Baixa Concorrência', color: 'bg-green-100 text-green-700',  desc: 'Nicho com poucos concorrentes — boa oportunidade' },
+  low:    { label: 'Baixa Concorrência', color: 'bg-[#00FFB9]/12 text-[#00FFB9]',  desc: 'Nicho com poucos concorrentes — boa oportunidade' },
   medium: { label: 'Concorrência Média', color: 'bg-yellow-100 text-yellow-700', desc: 'Mercado moderado' },
-  high:   { label: 'Alta Concorrência',  color: 'bg-red-100 text-red-600',      desc: 'Mercado saturado — diferenciação necessária' },
+  high:   { label: 'Alta Concorrência',  color: 'bg-red-100 text-[#FF3366]',      desc: 'Mercado saturado — diferenciação necessária' },
 }
 
 // ── Product card (grid) ───────────────────────────────────────────────────────
@@ -168,18 +168,18 @@ function ProductCard({ product, onOpen }) {
   return (
     <div
       onClick={() => onOpen(product)}
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all group"
+      className="bg-[#0F0F16] border border-white/[0.08] rounded-xl overflow-hidden cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all group"
     >
       {/* Image */}
-      <div className="relative h-40 bg-gray-50 flex items-center justify-center overflow-hidden">
+      <div className="relative h-40 bg-[#0F0F16]/[0.03] flex items-center justify-center overflow-hidden">
         {product.imageUrl ? (
           <img src={product.imageUrl} alt=""
             className="h-full w-full object-contain p-3 group-hover:scale-105 transition-transform" />
         ) : (
-          <ShoppingBag size={32} className="text-gray-200" />
+          <ShoppingBag size={32} className="text-white/20" />
         )}
         {discount > 0 && (
-          <span className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+          <span className="absolute top-2 left-2 bg-[#FF3366]/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
             -{discount}%
           </span>
         )}
@@ -201,18 +201,18 @@ function ProductCard({ product, onOpen }) {
 
       {/* Body */}
       <div className="p-3">
-        <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-snug mb-2">{product.title}</p>
+        <p className="text-xs font-medium text-white/80 line-clamp-2 leading-snug mb-2">{product.title}</p>
 
         <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-sm font-bold text-gray-900">{fmtPrice(product.price)}</span>
+          <span className="text-sm font-bold text-white/90">{fmtPrice(product.price)}</span>
           {discount > 0 && (
-            <span className="text-[11px] text-gray-400 line-through">{fmtPrice(product.originalPrice)}</span>
+            <span className="text-[11px] text-white/35 line-through">{fmtPrice(product.originalPrice)}</span>
           )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {soldQty > 0 && (
-            <span className="flex items-center gap-0.5 text-[11px] text-orange-600 font-medium">
+            <span className="flex items-center gap-0.5 text-[11px] text-[#FFB800] font-medium">
               <Flame size={10} /> {fmtNumber(soldQty)} vendidos
             </span>
           )}
@@ -234,10 +234,10 @@ function ProductCard({ product, onOpen }) {
         </div>
 
         <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 capitalize bg-gray-50 px-1.5 py-0.5 rounded">
+          <span className="text-[10px] text-white/35 capitalize bg-[#0F0F16]/[0.03] px-1.5 py-0.5 rounded">
             {product.marketplace?.replace(/_/g, ' ')}
           </span>
-          <ChevronRight size={12} className="text-gray-300 group-hover:text-indigo-500 transition-colors" />
+          <ChevronRight size={12} className="text-white/25 group-hover:text-violet-400 transition-colors" />
         </div>
       </div>
     </div>
@@ -272,15 +272,15 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] bg-white shadow-2xl flex flex-col overflow-hidden">
+      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] bg-[#0F0F16] shadow-2xl flex flex-col overflow-hidden">
         {/* ── Header ── */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 shrink-0">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#0F0F16]/[0.05] text-white/35 hover:text-white/60 transition-colors">
             <X size={15} />
           </button>
-          <span className="text-xs text-gray-400 flex-1 truncate">{mpLabel}</span>
+          <span className="text-xs text-white/35 flex-1 truncate">{mpLabel}</span>
           <button onClick={() => { onDelete(product.id); onClose() }}
-            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors">
+            className="p-1.5 rounded-lg hover:bg-[#FF3366]/8 text-white/25 hover:text-[#FF3366] transition-colors">
             <Trash2 size={13} />
           </button>
         </div>
@@ -290,13 +290,13 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
           {/* ── Hero ── */}
           <div className="p-5 pb-4">
             <div className="flex gap-4 items-start mb-4">
-              <div className="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+              <div className="w-20 h-20 bg-[#0F0F16]/[0.03] rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
                 {product.imageUrl
                   ? <img src={product.imageUrl} alt="" className="w-full h-full object-contain p-1" />
-                  : <ShoppingBag size={22} className="text-gray-200" />}
+                  : <ShoppingBag size={22} className="text-white/20" />}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
-                <h2 className="text-sm font-bold text-gray-900 leading-snug mb-2 line-clamp-3">{product.title}</h2>
+                <h2 className="text-sm font-bold text-white/90 leading-snug mb-2 line-clamp-3">{product.title}</h2>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <ScoreBadge score={totalScore} blogBonus={blogBonus} />
                   {listing && (
@@ -312,19 +312,19 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
             </div>
 
             {/* Price row */}
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-[#0F0F16]/[0.03] rounded-xl px-4 py-3">
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-extrabold text-gray-900">{fmtPrice(product.price)}</span>
-                  {discount > 0 && <span className="text-sm text-gray-400 line-through">{fmtPrice(product.originalPrice)}</span>}
+                  <span className="text-2xl font-extrabold text-white/90">{fmtPrice(product.price)}</span>
+                  {discount > 0 && <span className="text-sm text-white/35 line-through">{fmtPrice(product.originalPrice)}</span>}
                 </div>
                 {discount > 0 && (
-                  <span className="text-xs font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">{discount}% off</span>
+                  <span className="text-xs font-bold text-[#00FFB9] bg-[#00FFB9]/12 px-1.5 py-0.5 rounded-full">{discount}% off</span>
                 )}
               </div>
               {primaryLink && (
                 <a href={primaryLink} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shrink-0">
+                  className="btn-primary text-xs shrink-0">
                   Ver produto <ExternalLink size={11} />
                 </a>
               )}
@@ -333,30 +333,30 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
 
           {/* ── Métricas ── */}
           <div className="px-5 pb-4 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
               <BarChart2 size={11} /> Métricas de Mercado
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { icon: Flame,   label: 'Vendas confirmadas', value: soldQty > 0 ? soldQty.toLocaleString('pt-BR') : '—', color: 'text-orange-500', bg: 'bg-orange-50' },
+                { icon: Flame,   label: 'Vendas confirmadas', value: soldQty > 0 ? soldQty.toLocaleString('pt-BR') : '—', color: 'text-orange-500', bg: 'bg-[#FFB800]/8' },
                 { icon: Star,    label: 'Avaliação média',    value: product.rating > 0 ? `${product.rating} ★` : '—',      color: 'text-yellow-500', bg: 'bg-yellow-50' },
-                { icon: Truck,   label: 'Frete',              value: product.freeShipping ? 'Grátis ✓' : 'Cobrado',          color: product.freeShipping ? 'text-green-600' : 'text-gray-400', bg: product.freeShipping ? 'bg-green-50' : 'bg-gray-50' },
-                { icon: Package, label: 'Logística',          value: product.fulfillment  ? 'Full (ML)' : 'Vendedor',        color: product.fulfillment  ? 'text-blue-600'  : 'text-gray-400', bg: product.fulfillment  ? 'bg-blue-50'  : 'bg-gray-50' },
+                { icon: Truck,   label: 'Frete',              value: product.freeShipping ? 'Grátis ✓' : 'Cobrado',          color: product.freeShipping ? 'text-green-600' : 'text-white/35', bg: product.freeShipping ? 'bg-green-50' : 'bg-[#0F0F16]/[0.03]' },
+                { icon: Package, label: 'Logística',          value: product.fulfillment  ? 'Full (ML)' : 'Vendedor',        color: product.fulfillment  ? 'text-blue-600'  : 'text-white/35', bg: product.fulfillment  ? 'bg-violet-500/8'  : 'bg-[#0F0F16]/[0.03]' },
               ].map(({ icon: Icon, label, value, color, bg }) => (
                 <div key={label} className={`${bg} rounded-xl px-3 py-2.5`}>
                   <div className="flex items-center gap-1 mb-0.5">
                     <Icon size={10} className={color} />
-                    <span className="text-[9px] text-gray-400 uppercase tracking-wide font-medium">{label}</span>
+                    <span className="text-[9px] text-white/35 uppercase tracking-wide font-medium">{label}</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-800">{value}</span>
+                  <span className="text-sm font-bold text-white/80">{value}</span>
                 </div>
               ))}
             </div>
             {product.sellerLevel && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs bg-gray-50 rounded-lg px-3 py-2">
-                <Award size={11} className="text-gray-400 shrink-0" />
-                <span className="text-gray-500">Vendedor</span>
-                <span className={`font-bold ml-auto ${SELLER_LEVEL_COLORS[product.sellerLevel] ?? 'text-gray-600'}`}>
+              <div className="mt-2 flex items-center gap-1.5 text-xs bg-[#0F0F16]/[0.03] rounded-lg px-3 py-2">
+                <Award size={11} className="text-white/35 shrink-0" />
+                <span className="text-white/40">Vendedor</span>
+                <span className={`font-bold ml-auto ${SELLER_LEVEL_COLORS[product.sellerLevel] ?? 'text-white/60'}`}>
                   {product.sellerLevel?.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -365,36 +365,36 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
 
           {/* ── Score ── */}
           <div className="px-5 py-4 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <Trophy size={11} /> Como o Score foi calculado
             </p>
             <div className="space-y-2.5">
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-600 font-medium">📦 Dados da plataforma</span>
-                  <span className="font-bold text-indigo-600">{platformScore}<span className="text-gray-400 font-normal">/100</span></span>
+                  <span className="text-white/60 font-medium">📦 Dados da plataforma</span>
+                  <span className="font-bold text-violet-400">{platformScore}<span className="text-white/35 font-normal">/100</span></span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min(100, platformScore)}%` }} />
+                <div className="h-2 bg-[#0F0F16]/[0.05] rounded-full overflow-hidden">
+                  <div className="h-full bg-violet-500/100 rounded-full" style={{ width: `${Math.min(100, platformScore)}%` }} />
                 </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">Baseado em vendas, tipo de anúncio e reputação do vendedor</p>
+                <p className="text-[10px] text-white/35 mt-0.5">Baseado em vendas, tipo de anúncio e reputação do vendedor</p>
               </div>
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-600 font-medium">📰 Reviews editoriais</span>
-                  <span className={`font-bold ${blogBonus > 0 ? 'text-purple-600' : 'text-gray-400'}`}>+{blogBonus}<span className="text-gray-400 font-normal">/15</span></span>
+                  <span className="text-white/60 font-medium">📰 Reviews editoriais</span>
+                  <span className={`font-bold ${blogBonus > 0 ? 'text-purple-600' : 'text-white/35'}`}>+{blogBonus}<span className="text-white/35 font-normal">/15</span></span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-[#0F0F16]/[0.05] rounded-full overflow-hidden">
                   <div className="h-full bg-purple-400 rounded-full" style={{ width: `${Math.min(100, (blogBonus / 15) * 100)}%` }} />
                 </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">
+                <p className="text-[10px] text-white/35 mt-0.5">
                   {blogReviews.length === 0
                     ? 'Nenhuma review encontrada em blogs especializados'
                     : `${blogReviews.length} review${blogReviews.length > 1 ? 's' : ''} encontrada${blogReviews.length > 1 ? 's' : ''} — ${blogReviews.filter(r => r.trusted).length} de fontes confiáveis`}
                 </p>
               </div>
               <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-                <span className="text-xs font-bold text-gray-700">Score final</span>
+                <span className="text-xs font-bold text-white/70">Score final</span>
                 <span className={`text-sm font-extrabold px-2 py-0.5 rounded-lg ${scoreColor(totalScore)}`}>{totalScore} pts</span>
               </div>
             </div>
@@ -403,19 +403,19 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
           {/* ── Reviews ── */}
           {blogReviews.length > 0 && (
             <div className="px-5 py-4 border-b border-gray-100">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <BookOpen size={11} /> O que a mídia fala
               </p>
               <div className="space-y-2">
                 {blogReviews.map((r, i) => (
                   <a key={i} href={r.link} target="_blank" rel="noreferrer"
-                    className="block bg-gray-50 hover:bg-purple-50 rounded-xl p-3 border border-transparent hover:border-purple-100 transition-all group">
+                    className="block bg-[#0F0F16]/[0.03] hover:bg-purple-50 rounded-xl p-3 border border-transparent hover:border-purple-100 transition-all group">
                     <div className="flex items-center gap-1.5 mb-1">
                       {r.trusted && <span className="text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-full">✓ confiável</span>}
-                      <span className="text-[10px] font-semibold text-gray-500 truncate">{r.source}</span>
-                      <ExternalLink size={9} className="text-gray-300 group-hover:text-purple-500 shrink-0 ml-auto" />
+                      <span className="text-[10px] font-semibold text-white/40 truncate">{r.source}</span>
+                      <ExternalLink size={9} className="text-white/25 group-hover:text-purple-500 shrink-0 ml-auto" />
                     </div>
-                    <p className="text-[11px] text-gray-600 line-clamp-2 leading-relaxed">{r.snippet}</p>
+                    <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">{r.snippet}</p>
                   </a>
                 ))}
               </div>
@@ -424,7 +424,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
 
           {/* ── Links ── */}
           <div className="px-5 py-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <Link2 size={11} /> Links de Afiliado
             </p>
             <div className="space-y-2.5">
@@ -441,13 +441,13 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
               <AffiliateLinkEditor productId={product.id} label="Link geral"
                 placeholder="https://..."
                 initialValue={affiliateLink}
-                color="text-indigo-500"
+                color="text-violet-400"
                 onSave={(id, val) => onSaveAffiliateLink(id, 'affiliateLink', val)} />
               {productUrl && (
                 <div className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 w-20 shrink-0">Original</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/25 w-20 shrink-0">Original</span>
                   <a href={productUrl} target="_blank" rel="noreferrer"
-                    className="text-xs text-gray-400 hover:text-indigo-600 font-mono truncate flex-1 flex items-center gap-1 transition-colors">
+                    className="text-xs text-white/35 hover:text-violet-400 font-mono truncate flex-1 flex items-center gap-1 transition-colors">
                     {productUrl.length > 40 ? productUrl.slice(0, 40) + '…' : productUrl}
                     <ExternalLink size={9} className="shrink-0" />
                   </a>
@@ -480,20 +480,20 @@ function MineModal({ open, onClose, onRun, loading }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="relative bg-[#0F0F16] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-            <ShoppingBag size={16} className="text-indigo-600" /> Nova Sessão de Mineração
+          <h3 className="text-base font-bold text-white/80 flex items-center gap-2">
+            <ShoppingBag size={16} className="text-violet-400" /> Nova Sessão de Mineração
           </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} className="p-1.5 hover:bg-[#0F0F16]/[0.05] rounded-lg text-white/35 hover:text-white/70">
             <X size={16} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Marketplace</label>
+            <label className="block text-xs font-medium text-white/60 mb-1.5">Marketplace</label>
             <select value={marketplace} onChange={e => setMarketplace(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="input">
               <option value="mercadolivre_direct">🏆 Mercado Livre Direto (melhor dados)</option>
               <option value="google_shopping">Google Shopping</option>
               <option value="amazon">Amazon (SerpAPI)</option>
@@ -503,9 +503,9 @@ function MineModal({ open, onClose, onRun, loading }) {
 
           {marketplace === 'mercadolivre_direct' && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Ordenação</label>
+              <label className="block text-xs font-medium text-white/60 mb-1.5">Ordenação</label>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                className="input">
                 <option value="sold_quantity_desc">🔥 Mais Vendidos</option>
                 <option value="relevance">Relevância</option>
                 <option value="price_asc">💰 Menor Preço</option>
@@ -516,9 +516,9 @@ function MineModal({ open, onClose, onRun, loading }) {
 
           {marketplace === 'google_shopping' && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Filtro de sites</label>
+              <label className="block text-xs font-medium text-white/60 mb-1.5">Filtro de sites</label>
               <select value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                className="input">
                 <option value="ml_amazon">ML + Amazon</option>
                 <option value="mercadolivre">Só Mercado Livre</option>
                 <option value="amazon">Só Amazon</option>
@@ -528,20 +528,20 @@ function MineModal({ open, onClose, onRun, loading }) {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Produto / Categoria</label>
+            <label className="block text-xs font-medium text-white/60 mb-1.5">Produto / Categoria</label>
             <input type="text" value={category} onChange={e => setCategory(e.target.value)}
               placeholder="Ex: fone de ouvido, tênis running, air fryer…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="input"
               autoFocus />
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+              className="btn-secondary flex-1 justify-center">
               Cancelar
             </button>
             <button type="submit" disabled={loading || !category.trim()}
-              className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+              className="btn-primary flex-1 justify-center">
               {loading ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
               {loading ? 'Minerando…' : 'Iniciar'}
             </button>
@@ -554,25 +554,25 @@ function MineModal({ open, onClose, onRun, loading }) {
 
 // ── Niche cards (kept for intelligence section) ───────────────────────────────
 const satColors = {
-  baixa: 'bg-green-100 text-green-700',
+  baixa: 'bg-[#00FFB9]/12 text-[#00FFB9]',
   média: 'bg-yellow-100 text-yellow-700',
-  alta:  'bg-red-100 text-red-700',
+  alta:  'bg-red-100 text-[#FF3366]',
 }
 
 function NicheCard({ niche, onMine }) {
   const [expanded, setExpanded] = useState(false)
   const totalScore = Object.values(niche.scores ?? {}).reduce((a, b) => a + b, 0)
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-[#0F0F16] border border-white/[0.08] rounded-xl overflow-hidden">
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <span className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{niche.rank}</span>
-            <h4 className="font-semibold text-gray-800 text-sm leading-tight">{niche.category}</h4>
+            <h4 className="font-semibold text-white/80 text-sm leading-tight">{niche.category}</h4>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? 'bg-gray-100 text-gray-600'}`}>{niche.saturation}</span>
-            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{totalScore} pts</span>
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? 'bg-[#0F0F16]/[0.05] text-white/60'}`}>{niche.saturation}</span>
+            <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">{totalScore} pts</span>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-1.5 mb-3">
@@ -584,40 +584,40 @@ function NicheCard({ niche, onMine }) {
           ].map(({ key, label, icon: Icon }) => (
             <div key={key} className="text-center">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Icon size={9} className="text-gray-400" />
-                <span className="text-[9px] text-gray-400 uppercase tracking-wide">{label}</span>
+                <Icon size={9} className="text-white/35" />
+                <span className="text-[9px] text-white/35 uppercase tracking-wide">{label}</span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(niche.scores?.[key] ?? 0) * 10}%` }} />
+              <div className="h-1.5 bg-[#0F0F16]/[0.05] rounded-full overflow-hidden">
+                <div className="h-full bg-violet-500/100 rounded-full" style={{ width: `${(niche.scores?.[key] ?? 0) * 10}%` }} />
               </div>
-              <span className="text-[10px] font-semibold text-gray-600">{niche.scores?.[key]}/10</span>
+              <span className="text-[10px] font-semibold text-white/60">{niche.scores?.[key]}/10</span>
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-500 italic mb-3 line-clamp-1">"{niche.seoTitle}"</p>
+        <p className="text-xs text-white/40 italic mb-3 line-clamp-1">"{niche.seoTitle}"</p>
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+          <span className="flex items-center gap-1 text-xs text-[#00FFB9] bg-[#00FFB9]/8 px-2 py-0.5 rounded-full font-medium">
             <DollarSign size={10} /> {niche.commissionRange}
           </span>
-          <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">{niche.salesType}</span>
+          <span className="text-xs text-white/40 bg-[#0F0F16]/[0.03] px-2 py-0.5 rounded-full">{niche.salesType}</span>
         </div>
-        <button onClick={() => setExpanded(e => !e)} className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1 mb-3">
+        <button onClick={() => setExpanded(e => !e)} className="text-xs text-violet-400 hover:text-violet-400 flex items-center gap-1 mb-3">
           {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           {expanded ? 'Menos detalhes' : 'Ver análise completa'}
         </button>
         {expanded && (
-          <div className="space-y-3 mb-3 text-xs text-gray-600">
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Users size={11} /> Público-alvo</p><p>{niche.targetAudience}</p></div>
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Target size={11} /> Ângulo da review</p><p>{niche.reviewAngle}</p></div>
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que encaixa no canal</p><p>{niche.whyItFits}</p></div>
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-              <p className="font-semibold text-indigo-700 mb-1">🎣 Gancho de abertura</p>
-              <p className="italic text-indigo-800">"{niche.hook}"</p>
+          <div className="space-y-3 mb-3 text-xs text-white/60">
+            <div><p className="font-semibold text-white/70 flex items-center gap-1 mb-0.5"><Users size={11} /> Público-alvo</p><p>{niche.targetAudience}</p></div>
+            <div><p className="font-semibold text-white/70 flex items-center gap-1 mb-0.5"><Target size={11} /> Ângulo da review</p><p>{niche.reviewAngle}</p></div>
+            <div><p className="font-semibold text-white/70 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que encaixa no canal</p><p>{niche.whyItFits}</p></div>
+            <div style={{ background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 10, padding: '10px 12px' }}>
+              <p className="font-semibold mb-1" style={{ color: '#a78bfa' }}>🎣 Gancho de abertura</p>
+              <p className="italic" style={{ color: 'rgba(255,255,255,0.60)' }}>"{niche.hook}"</p>
             </div>
           </div>
         )}
         <button onClick={() => onMine(niche)}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+          className="btn-primary w-full justify-center text-xs">
           <Play size={12} /> Minerar produtos desta categoria
         </button>
       </div>
@@ -627,68 +627,131 @@ function NicheCard({ niche, onMine }) {
 
 function ShortNicheCard({ niche, onMine }) {
   const [expanded, setExpanded] = useState(false)
+  const [hovered, setHovered]   = useState(false)
   const totalScore = Object.values(niche.scores ?? {}).reduce((a, b) => a + b, 0)
-  const ticketColors = {
-    'baixo ticket impulso': 'bg-blue-100 text-blue-700',
-    'médio ticket considerado': 'bg-purple-100 text-purple-700',
-    'alto ticket considerado': 'bg-orange-100 text-orange-700',
+
+  // ticket type pill — inline styles to avoid purge
+  const ticketStyle = {
+    'baixo ticket impulso':    { background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)' },
+    'médio ticket considerado':{ background: 'rgba(255,184,0,0.12)',  color: '#FFB800', border: '1px solid rgba(255,184,0,0.25)'  },
+    'alto ticket considerado': { background: 'rgba(255,107,43,0.12)', color: '#FF6B2B', border: '1px solid rgba(255,107,43,0.25)' },
   }
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{
+      background: 'rgba(15,15,22,0.72)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      backdropFilter: 'blur(12px)',
+    }}>
       <div className="p-5">
+        {/* Header row */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full bg-pink-600 text-white text-xs font-bold flex items-center justify-center shrink-0">{niche.rank}</span>
-            <h4 className="font-semibold text-gray-800 text-sm leading-tight">{niche.category}</h4>
+            <span style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,51,102,0.18)', border: '1px solid rgba(255,51,102,0.40)',
+              color: '#FF3366', fontSize: 11, fontWeight: 800,
+            }}>{niche.rank}</span>
+            <h4 className="font-semibold text-sm leading-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>{niche.category}</h4>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? 'bg-gray-100 text-gray-600'}`}>{niche.saturation}</span>
-            <span className="text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">{totalScore} pts</span>
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${satColors[niche.saturation] ?? ''}`}
+              style={!satColors[niche.saturation] ? { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' } : {}}
+            >{niche.saturation}</span>
+            <span style={{
+              fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 100,
+              background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.28)', color: '#CCFF00',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>{totalScore} pts</span>
           </div>
         </div>
+
+        {/* Score bars */}
         <div className="grid grid-cols-4 gap-1.5 mb-3">
           {[
             { key: 'earningPotential', label: 'Comissão', icon: DollarSign },
-            { key: 'viralPotential', label: 'Viral', icon: TrendingUp },
-            { key: 'beginnerFriendly', label: 'Facilidade', icon: Zap },
-            { key: 'evergreen', label: 'Perenidade', icon: Target },
+            { key: 'viralPotential',   label: 'Viral',    icon: TrendingUp },
+            { key: 'beginnerFriendly', label: 'Fácil',    icon: Zap },
+            { key: 'evergreen',        label: 'Perene',   icon: Target },
           ].map(({ key, label, icon: Icon }) => (
             <div key={key} className="text-center">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Icon size={9} className="text-gray-400" />
-                <span className="text-[9px] text-gray-400 uppercase tracking-wide">{label}</span>
+                <Icon size={9} style={{ color: 'rgba(255,255,255,0.35)' }} />
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-pink-500 rounded-full" style={{ width: `${(niche.scores?.[key] ?? 0) * 10}%` }} />
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div className="h-full rounded-full" style={{
+                  width: `${(niche.scores?.[key] ?? 0) * 10}%`,
+                  background: 'linear-gradient(90deg, #8B5CF6, #CCFF00)',
+                }} />
               </div>
-              <span className="text-[10px] font-semibold text-gray-600">{niche.scores?.[key]}/10</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.55)', fontFamily: "'JetBrains Mono', monospace" }}>
+                {niche.scores?.[key]}/10
+              </span>
             </div>
           ))}
         </div>
+
+        {/* Tags row */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600,
+            padding: '2px 8px', borderRadius: 100,
+            background: 'rgba(0,255,185,0.10)', border: '1px solid rgba(0,255,185,0.22)', color: '#00FFB9',
+          }}>
             <DollarSign size={10} /> {niche.commissionRange}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ticketColors[niche.ticketType] ?? 'bg-gray-100 text-gray-600'}`}>{niche.ticketType}</span>
+          <span style={{
+            fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 100,
+            ...(ticketStyle[niche.ticketType] ?? { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.10)' }),
+          }}>{niche.ticketType}</span>
         </div>
-        <div className="bg-pink-50 border border-pink-100 rounded-lg p-3 mb-3">
-          <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider mb-1">⚡ Gancho — primeiros 3 segundos</p>
-          <p className="text-xs italic text-pink-900 font-medium">"{niche.hook}"</p>
+
+        {/* Hook box */}
+        <div style={{
+          background: 'rgba(255,51,102,0.07)', border: '1px solid rgba(255,51,102,0.20)',
+          borderRadius: 10, padding: '10px 12px', marginBottom: 12,
+        }}>
+          <p style={{ fontSize: 9, fontWeight: 800, color: '#FF3366', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>
+            ⚡ Gancho — primeiros 3 segundos
+          </p>
+          <p style={{ fontSize: 12, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}>"{niche.hook}"</p>
         </div>
-        <button onClick={() => setExpanded(e => !e)} className="text-xs text-pink-500 hover:text-pink-700 flex items-center gap-1 mb-3">
+
+        {/* Expand toggle */}
+        <button
+          onClick={() => setExpanded(e => !e)}
+          style={{ fontSize: 12, color: '#8B5CF6', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
           {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           {expanded ? 'Menos detalhes' : 'Ver análise completa'}
         </button>
+
+        {/* Expanded details */}
         {expanded && (
-          <div className="space-y-3 mb-3 text-xs text-gray-600">
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Clapperboard size={11} /> Melhor estilo de vídeo</p><p>{niche.bestVideoStyle}</p></div>
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Video size={11} /> Ângulo mais fácil</p><p>{niche.easiestContentAngle}</p></div>
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Users size={11} /> Público-alvo</p><p>{niche.targetAudience}</p></div>
-            <div><p className="font-semibold text-gray-700 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que funciona no short-form</p><p>{niche.whyItFitsShortForm}</p></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12, fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+            <div><p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.70)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}><Clapperboard size={11} /> Melhor estilo de vídeo</p><p>{niche.bestVideoStyle}</p></div>
+            <div><p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.70)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}><Video size={11} /> Ângulo mais fácil</p><p>{niche.easiestContentAngle}</p></div>
+            <div><p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.70)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}><Users size={11} /> Público-alvo</p><p>{niche.targetAudience}</p></div>
+            <div><p style={{ fontWeight: 600, color: 'rgba(255,255,255,0.70)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}><Zap size={11} /> Por que funciona no short-form</p><p>{niche.whyItFitsShortForm}</p></div>
           </div>
         )}
-        <button onClick={() => onMine(niche)}
-          className="w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+
+        {/* Mine button */}
+        <button
+          onClick={() => onMine(niche)}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            fontSize: 12, fontWeight: 700, padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+            border: 'none', transition: 'background 200ms ease, box-shadow 200ms ease',
+            background: hovered ? '#d4f500' : '#CCFF00',
+            color: '#07070B',
+            boxShadow: hovered ? '0 0 20px rgba(204,255,0,0.35)' : 'none',
+          }}
+        >
           <Play size={12} /> Minerar produtos desta categoria
         </button>
       </div>
@@ -836,15 +899,16 @@ export default function Mining() {
   const topProducts = useMemo(() => [...rawProducts].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5), [rawProducts])
 
   return (
-    <div>
+    <div className="animate-fade-up">
       <AILoadingOverlay show={running} steps={MINING_STEPS} title="Minerando Produtos" />
       <PageHeader
+        overline="Pipeline"
         title="Mineração de Produtos"
         description="Dashboard de produtos com analytics e filtros de nicho"
         action={
           <div className="flex items-center gap-2">
             <button onClick={() => setMineModalOpen(true)} disabled={running}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="btn-primary">
               {running ? <RefreshCw size={15} className="animate-spin" /> : <Play size={15} />}
               {running ? 'Minerando…' : 'Nova Mineração'}
             </button>
@@ -875,42 +939,49 @@ export default function Mining() {
       )}
 
       {error && !needsSetup && (
-        <div className="mb-4 flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+        <div className="mb-4 flex items-start gap-3 px-4 py-3 bg-[#FF3366]/8 border border-red-200 text-[#FF3366] text-sm rounded-lg">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <pre className="whitespace-pre-wrap font-sans">{error}</pre>
         </div>
       )}
 
       {needsSetup && (
-        <div className="mb-6 border border-amber-200 bg-amber-50 rounded-xl p-5">
+        <div className="mb-6 border border-amber-200 bg-[#FFB800]/8 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-            <p className="font-bold text-amber-800 text-sm">Configure o SerpAPI para Google Shopping / Amazon</p>
+            <AlertTriangle size={16} className="text-[#FFB800] shrink-0" />
+            <p className="font-bold text-[#FFB800] text-sm">Configure o SerpAPI para Google Shopping / Amazon</p>
           </div>
-          <p className="text-amber-700 text-xs">Para ML Direto não é necessário — use "Mercado Livre Direto" na nova mineração.</p>
+          <p className="text-[#FFB800] text-xs">Para ML Direto não é necessário — use "Mercado Livre Direto" na nova mineração.</p>
         </div>
       )}
 
       {/* ── Niche Intelligence ─────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 mb-6">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="card mb-6">
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex items-center gap-3">
             <button onClick={() => setNicheOpen(o => !o)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-              <Sparkles size={16} className="text-indigo-500" />
-              <h3 className="font-semibold text-gray-800">Inteligência de Nicho</h3>
+              <Sparkles size={16} style={{ color: '#8B5CF6' }} />
+              <h3 className="card-title">Inteligência de Nicho</h3>
             </button>
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            {/* Format tab strip */}
+            <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <button onClick={() => setNicheFormat('longform')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${nicheFormat === 'longform' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all"
+                style={nicheFormat === 'longform'
+                  ? { background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.40)', color: '#8B5CF6' }
+                  : { border: '1px solid transparent', color: 'rgba(255,255,255,0.38)' }}>
                 <Video size={11} /> Vídeos Longos
               </button>
               <button onClick={() => setNicheFormat('shortform')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${nicheFormat === 'shortform' ? 'bg-white text-pink-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all"
+                style={nicheFormat === 'shortform'
+                  ? { background: 'rgba(255,51,102,0.15)', border: '1px solid rgba(255,51,102,0.38)', color: '#FF3366' }
+                  : { border: '1px solid transparent', color: 'rgba(255,255,255,0.38)' }}>
                 <Clapperboard size={11} /> Vídeos Curtos
               </button>
             </div>
             {nicheReport && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-white/35">
                 {new Date(nicheReport.generatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             )}
@@ -920,11 +991,11 @@ export default function Mining() {
             {nicheReport && (
               <button onClick={handleGenerateNiches} disabled={nicheLoading}
                 title="Atualizar recomendações"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 transition-colors">
+                className="p-1.5 rounded-lg text-white/35 hover:text-violet-400 hover:bg-violet-500/10 disabled:opacity-40 transition-colors">
                 <RefreshCw size={14} className={nicheLoading ? 'animate-spin' : ''} />
               </button>
             )}
-            <button onClick={() => setNicheOpen(o => !o)} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => setNicheOpen(o => !o)} className="text-white/35 hover:text-white/60">
               {nicheOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
           </div>
@@ -932,47 +1003,69 @@ export default function Mining() {
         {nicheOpen && (
           <div className="p-5">
             {nicheError && (
-              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+              <div className="flex items-center gap-2 text-sm rounded-lg px-4 py-3 mb-4" style={{ color: '#FF3366', background: 'rgba(255,51,102,0.07)', border: '1px solid rgba(255,51,102,0.28)' }}>
                 <AlertTriangle size={14} className="shrink-0" /> {nicheError}
               </div>
             )}
             {!nicheReport && !nicheLoading && (
               <div className="flex flex-col md:flex-row items-center gap-6 py-6 px-2">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${nicheFormat === 'shortform' ? 'bg-pink-100' : 'bg-indigo-100'}`}>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={
+                  nicheFormat === 'shortform'
+                    ? { background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.25)' }
+                    : { background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)' }
+                }>
                   {nicheFormat === 'shortform'
-                    ? <Clapperboard size={28} className="text-pink-500" />
-                    : <Video size={28} className="text-indigo-500" />}
+                    ? <Clapperboard size={28} style={{ color: '#FF3366' }} />
+                    : <Video size={28} style={{ color: '#8B5CF6' }} />}
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <p className="text-sm font-semibold text-gray-700 mb-1">
+                  <p className="text-sm font-semibold text-white/70 mb-1">
                     {nicheFormat === 'shortform'
                       ? 'Descubra nichos virais para TikTok, Reels e Shorts'
                       : 'Descubra os nichos com maior potencial de monetização'}
                   </p>
-                  <p className="text-xs text-gray-400 mb-3 max-w-lg">
+                  <p className="text-xs text-white/35 mb-3 max-w-lg">
                     {nicheFormat === 'shortform'
                       ? 'A IA analisa tendências, potencial viral, facilidade de produção e comissão de afiliado para recomendar os melhores nichos para short-form content.'
                       : 'A IA analisa o mercado brasileiro de afiliados e aponta os nichos com maior potencial de comissão, retenção de audiência e oportunidade de conteúdo evergreen.'}
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                     {['Análise de mercado BR', 'Score de saturação', 'Ganchos prontos', 'Orientação de produto'].map(tag => (
-                      <span key={tag} className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${nicheFormat === 'shortform' ? 'bg-pink-50 text-pink-600' : 'bg-indigo-50 text-indigo-600'}`}>{tag}</span>
+                      <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={
+                        nicheFormat === 'shortform'
+                          ? { background: 'rgba(255,51,102,0.10)', border: '1px solid rgba(255,51,102,0.22)', color: '#FF3366' }
+                          : { background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)', color: '#8B5CF6' }
+                      }>{tag}</span>
                     ))}
                   </div>
                 </div>
                 <button
                   onClick={handleGenerateNiches}
                   disabled={nicheLoading}
-                  className={`shrink-0 flex items-center gap-2 disabled:opacity-60 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors shadow-sm ${nicheFormat === 'shortform' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                  className="btn-primary shrink-0 px-5 py-3">
                   <Sparkles size={15} /> Gerar Recomendações
                 </button>
               </div>
             )}
             {nicheLoading && (
-              <div className="flex flex-col items-center py-10 gap-3">
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" />
-                <p className="text-sm font-medium text-gray-600">Analisando o mercado brasileiro…</p>
-                <p className="text-xs text-gray-400">Isso leva alguns segundos</p>
+              <div className="flex flex-col items-center py-12 gap-4">
+                {/* Spinner: violet track + volt active arc */}
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 rounded-full animate-spin" style={{
+                    background: 'conic-gradient(from 0deg, #8B5CF6 0deg, #CCFF00 120deg, transparent 120deg)',
+                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
+                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
+                  }} />
+                  <div className="absolute inset-0 rounded-full" style={{
+                    background: 'conic-gradient(from 0deg, rgba(139,92,246,0.15) 0deg, rgba(139,92,246,0.15) 360deg)',
+                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
+                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
+                  }} />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: "'Space Grotesk', sans-serif" }}>Analisando o mercado brasileiro…</p>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>Isso leva alguns segundos</p>
+                </div>
               </div>
             )}
             {nicheReport && !nicheLoading && (
@@ -1002,19 +1095,47 @@ export default function Mining() {
 
       {/* ── Trending keywords ──────────────────────────────────────────────── */}
       {trendingKeywords.length > 0 && (
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl px-5 py-4 mb-6">
+        <div className="mb-6 rounded-xl px-5 py-4" style={{
+          background: 'rgba(15,15,22,0.72)',
+          border: '1px solid rgba(255,184,0,0.18)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}>
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp size={14} className="text-orange-600" />
-            <span className="text-xs font-bold text-orange-700 uppercase tracking-wider">Tendências no Mercado Livre agora</span>
+            <TrendingUp size={13} style={{ color: '#FFB800' }} />
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '10px', fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: '#FFB800',
+            }}>Tendências no Mercado Livre agora</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {trendingKeywords.slice(0, 20).map((kw, i) => (
               <button key={i}
                 onClick={() => handleRun({ marketplace: 'mercadolivre_direct', siteFilter: 'ml_amazon', category: kw, sortBy: 'sold_quantity_desc' })}
                 disabled={running}
-                className="flex items-center gap-1 text-xs bg-white border border-orange-200 text-orange-700 hover:bg-orange-600 hover:text-white hover:border-orange-600 px-3 py-1.5 rounded-full transition-all font-medium disabled:opacity-50">
-                <Flame size={10} /> {kw}
-                <ArrowUpRight size={10} />
+                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full transition-all font-medium disabled:opacity-40"
+                style={{
+                  background: 'rgba(255,184,0,0.08)',
+                  border: '1px solid rgba(255,184,0,0.22)',
+                  color: 'rgba(255,255,255,0.70)',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,184,0,0.18)'
+                  e.currentTarget.style.borderColor = 'rgba(255,184,0,0.50)'
+                  e.currentTarget.style.color = '#FFB800'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,184,0,0.08)'
+                  e.currentTarget.style.borderColor = 'rgba(255,184,0,0.22)'
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.70)'
+                }}
+              >
+                <Flame size={10} style={{ color: '#FFB800', flexShrink: 0 }} />
+                {kw}
+                <ArrowUpRight size={10} style={{ flexShrink: 0, opacity: 0.5 }} />
               </button>
             ))}
           </div>
@@ -1023,23 +1144,23 @@ export default function Mining() {
 
       {/* ── Top 5 best scored ─────────────────────────────────────────────── */}
       {topProducts.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl mb-6">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <Trophy size={14} className="text-yellow-500" />
-            <h3 className="text-sm font-bold text-gray-700">Top 5 Produtos por Score</h3>
+        <div className="bg-[#0F0F16] border border-white/[0.08] rounded-xl mb-6">
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Trophy size={14} style={{ color: '#FFB800' }} />
+            <h3 className="text-sm font-bold text-white/75">Top 5 Produtos por Score</h3>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div style={{ '--tw-divide-opacity': 1 }} className="divide-y divide-white/[0.05]">
             {topProducts.map((p, idx) => (
               <div key={p.id} onClick={() => setDrawerProduct(p)}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${idx === 0 ? 'bg-yellow-400 text-white' : idx === 1 ? 'bg-gray-300 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                className="flex items-center gap-3 px-5 py-3 hover:bg-[#0F0F16]/[0.03] cursor-pointer transition-colors">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${idx === 0 ? 'bg-yellow-400 text-white' : idx === 1 ? 'bg-white/25 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-[#0F0F16]/[0.05] text-white/40'}`}>
                   {idx + 1}
                 </span>
                 {p.imageUrl
-                  ? <img src={p.imageUrl} alt="" className="w-8 h-8 object-contain rounded bg-gray-50 shrink-0" />
-                  : <div className="w-8 h-8 bg-gray-100 rounded shrink-0" />
+                  ? <img src={p.imageUrl} alt="" className="w-8 h-8 object-contain rounded bg-[#0F0F16]/[0.03] shrink-0" />
+                  : <div className="w-8 h-8 bg-[#0F0F16]/[0.05] rounded shrink-0" />
                 }
-                <p className="text-xs text-gray-700 flex-1 truncate">{p.title}</p>
+                <p className="text-xs text-white/70 flex-1 truncate">{p.title}</p>
                 <div className="flex items-center gap-2 shrink-0">
                   {(p.soldQuantity ?? p.reviews ?? 0) > 0 && (
                     <span className="text-[11px] text-orange-500 font-medium"><Flame size={10} className="inline" /> {fmtNumber(p.soldQuantity ?? p.reviews)}</span>
@@ -1058,13 +1179,13 @@ export default function Mining() {
       )}
 
       {/* ── Filter bar ────────────────────────────────────────────────────── */}
-      <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-4">
+      <div className="bg-[#0F0F16] border border-white/[0.08] rounded-xl px-5 py-4 mb-4">
         {/* Niche presets */}
         <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-          <Filter size={13} className="text-gray-400 shrink-0" />
+          <Filter size={13} className="text-white/35 shrink-0" />
           {NICHES.map(n => (
             <button key={n.id} onClick={() => setNicheFilter(n.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${nicheFilter === n.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${nicheFilter === n.id ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={nicheFilter === n.id ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
               {n.label}
             </button>
           ))}
@@ -1073,21 +1194,21 @@ export default function Mining() {
         {/* Search + marketplace + sort */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar produto…"
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="w-full pl-9 pr-3 py-2 border border-white/[0.08] rounded-lg text-sm text-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
 
           {marketplaces.length > 1 && (
             <div className="flex gap-1">
               <button onClick={() => setMpFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${mpFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mpFilter === 'all' ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={mpFilter === 'all' ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
                 Todos
               </button>
               {marketplaces.map(mp => (
                 <button key={mp} onClick={() => setMpFilter(mp)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${mpFilter === mp ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${mpFilter === mp ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={mpFilter === mp ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
                   {mp.replace(/_/g, ' ')}
                 </button>
               ))}
@@ -1095,15 +1216,15 @@ export default function Mining() {
           )}
 
           <div className="flex items-center gap-1.5 ml-auto">
-            <SlidersHorizontal size={13} className="text-gray-400" />
+            <SlidersHorizontal size={13} className="text-white/35" />
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              className="border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-500">
               {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </div>
 
           {(search || mpFilter !== 'all' || nicheFilter !== 'all') && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-white/35">
               {products.length} de {rawProducts.length}
             </span>
           )}
@@ -1115,20 +1236,20 @@ export default function Mining() {
         <div className="mb-4">
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setSelectedSessionId(null)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedSessionId === null ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${selectedSessionId === null ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={selectedSessionId === null ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
               Todas as sessões
             </button>
             {sessions.map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id === selectedSessionId ? null : s.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${selectedSessionId === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedSessionId === s.id ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={selectedSessionId === s.id ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
                 {s.category}
-                <span className={`text-[10px] ${selectedSessionId === s.id ? 'text-indigo-200' : 'text-gray-400'}`}>{timeAgo(s.createdAt)}</span>
-                {s.status === 'failed' && <AlertTriangle size={10} className="text-red-400" />}
+                <span className={`text-[10px] ${selectedSessionId === s.id ? 'text-indigo-200' : 'text-white/35'}`}>{timeAgo(s.createdAt)}</span>
+                {s.status === 'failed' && <AlertTriangle size={10} className="text-[#FF3366]" />}
               </button>
             ))}
             {sessions.length > 0 && (
               <button onClick={handleClearSessions}
-                className="px-3 py-1.5 rounded-full text-xs text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1">
+                className="px-3 py-1.5 rounded-full text-xs text-[#FF3366] hover:text-[#FF3366] hover:bg-[#FF3366]/8 transition-colors flex items-center gap-1">
                 <Trash2 size={10} /> limpar
               </button>
             )}
@@ -1138,35 +1259,35 @@ export default function Mining() {
 
       {/* ── Product grid ──────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">
+        <h3 className="text-sm font-bold text-white/80">
           {selectedSession ? `Busca: "${selectedSession.category}"` : 'Catálogo de Produtos'}
-          {products.length > 0 && <span className="ml-2 text-gray-400 font-normal">{products.length} produto{products.length !== 1 ? 's' : ''}</span>}
+          {products.length > 0 && <span className="ml-2 text-white/35 font-normal">{products.length} produto{products.length !== 1 ? 's' : ''}</span>}
         </h3>
         {rawProducts.length > 0 && (
           <button onClick={handleClearAll}
-            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">
+            className="btn-danger">
             <Trash2 size={11} /> Limpar catálogo
           </button>
         )}
       </div>
 
       {catalogLoading ? (
-        <div className="py-16 text-center text-gray-400">
-          <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-indigo-400" />
+        <div className="py-16 text-center text-white/35">
+          <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-violet-400" />
           <p className="text-sm">Carregando produtos…</p>
         </div>
       ) : products.length === 0 ? (
-        <div className="py-16 text-center text-gray-400 bg-white border border-gray-200 rounded-xl">
-          <ShoppingBag size={32} className="mx-auto mb-3 text-gray-200" />
-          <p className="text-sm font-medium text-gray-500 mb-1">
+        <div className="py-16 text-center text-white/35 bg-[#0F0F16] border border-white/[0.08] rounded-xl">
+          <ShoppingBag size={32} className="mx-auto mb-3 text-white/20" />
+          <p className="text-sm font-medium text-white/40 mb-1">
             {rawProducts.length === 0 ? 'Nenhum produto ainda' : 'Nenhum produto corresponde ao filtro'}
           </p>
           {rawProducts.length === 0 && (
-            <p className="text-xs text-gray-400 mb-4">Clique em "Nova Mineração" ou use um trending acima</p>
+            <p className="text-xs text-white/35 mb-4">Clique em "Nova Mineração" ou use um trending acima</p>
           )}
           {rawProducts.length === 0 && (
             <button onClick={() => setMineModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700">
+              className="btn-primary">
               <Play size={14} /> Iniciar primeira mineração
             </button>
           )}

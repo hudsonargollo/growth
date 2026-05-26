@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Wand2, FileText, Plus, Trash2, ChevronUp, ChevronDown,
   Pencil, RefreshCw, Copy, Check, GripVertical, X,
@@ -26,7 +27,7 @@ export function friendlyError(raw = '') {
     return 'Erro de conexão. Verifique sua internet e tente novamente.'
   if (r.includes('timeout') || r.includes('timed out'))
     return 'A requisição demorou demais. Tente novamente em instantes.'
-  if (r.includes('roteiro') || r.includes('script') || r.includes('not found'))
+  if (r.includes('roteiro não encontrado') || r.includes('script not found') || r === 'not found')
     return 'Roteiro não encontrado. Selecione outro roteiro e tente novamente.'
   if (r.includes('supabase') || r.includes('database') || r.includes('db error'))
     return 'Erro ao salvar no banco de dados. Tente novamente.'
@@ -70,8 +71,8 @@ export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando 
 
   if (!show) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center"
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center"
       style={{ background: 'rgba(9, 9, 11, 0.88)', backdropFilter: 'blur(12px)' }}>
       <style>{`
         @keyframes floatUp {
@@ -103,7 +104,7 @@ export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando 
         .ai-step-in   { animation: stepIn 0.4s ease both; }
         .ai-bar       { animation: barFill 12s ease-out forwards; }
         .ai-shimmer   {
-          background: linear-gradient(90deg, #6366f1 0%, #a78bfa 40%, #6366f1 80%);
+          background: linear-gradient(90deg, #8B5CF6 0%, #CCFF00 40%, #8B5CF6 80%);
           background-size: 200% auto;
           animation: shimmer 2s linear infinite;
         }
@@ -135,7 +136,7 @@ export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando 
           <div className="absolute w-24 h-24 rounded-full border border-violet-500/20"
             style={{ animation: 'pulseRing 2s ease-out 0.6s infinite' }} />
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 40px rgba(99,102,241,0.5)' }}>
+            style={{ background: '#CCFF00', boxShadow: '0 0 40px rgba(204,255,0,0.35)' }}>
             🤖
           </div>
         </div>
@@ -143,14 +144,14 @@ export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando 
         {/* Title */}
         <div className="text-center space-y-1">
           <h2 className="text-white font-bold text-xl tracking-tight">{title}</h2>
-          <p className="text-gray-500 text-xs">Powered by IA · aguarde alguns segundos</p>
+          <p className="text-white/40 text-xs">Powered by IA · aguarde alguns segundos</p>
         </div>
 
         {/* Step indicator */}
         <div key={currentStep} className="ai-step-in flex items-center gap-3 px-4 py-3 rounded-xl w-full"
           style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
           <span className="text-xl shrink-0">{steps[currentStep].icon}</span>
-          <span className="text-sm text-gray-200">{steps[currentStep].label}<span className="text-violet-400">{dots}</span></span>
+          <span className="text-sm text-white/20">{steps[currentStep].label}<span className="text-violet-400">{dots}</span></span>
         </div>
 
         {/* Progress bar */}
@@ -158,29 +159,30 @@ export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando 
           <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
             <div className="ai-bar h-full rounded-full ai-shimmer" />
           </div>
-          <div className="flex justify-between text-[10px] text-gray-600">
+          <div className="flex justify-between text-[10px] text-white/60">
             {steps.map((s, i) => (
               <span key={i} className={`transition-colors duration-500 ${i <= currentStep ? 'text-violet-400' : ''}`}>●</span>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
 const SECTION_TYPES = [
-  { value: 'intro',      label: 'Abertura',     color: 'bg-violet-100 text-violet-700 border-violet-200' },
-  { value: 'product',    label: 'Produto',       color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { value: 'comparison', label: 'Comparação',    color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-  { value: 'pros_cons',  label: 'Prós/Contras',  color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { value: 'demo',       label: 'Demo',          color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { value: 'verdict',    label: 'Veredicto',     color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  { value: 'cta',        label: 'CTA',           color: 'bg-rose-100 text-rose-700 border-rose-200' },
+  { value: 'intro',      label: 'Abertura',     color: 'bg-violet-500/15 text-violet-400 border-violet-200' },
+  { value: 'product',    label: 'Produto',       color: 'bg-violet-500/12 text-violet-400 border-blue-200' },
+  { value: 'comparison', label: 'Comparação',    color: 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20' },
+  { value: 'pros_cons',  label: 'Prós/Contras',  color: 'bg-[#FFB800]/12 text-[#FFB800] border-[#FFB800]/20' },
+  { value: 'demo',       label: 'Demo',          color: 'bg-[#FF6B2B]/12 text-[#FF6B2B] border-[#FF6B2B]/20' },
+  { value: 'verdict',    label: 'Veredicto',     color: 'bg-[#00FFB9]/12 text-[#00FFB9] border-[#00FFB9]/20' },
+  { value: 'cta',        label: 'CTA',           color: 'bg-[#FF3366]/12 text-[#FF3366] border-[#FF3366]/20' },
 ]
 
 const typeColor = (type) =>
-  SECTION_TYPES.find((t) => t.value === type)?.color ?? 'bg-gray-100 text-gray-600 border-gray-200'
+  SECTION_TYPES.find((t) => t.value === type)?.color ?? 'bg-[#0F0F16]/[0.05] text-white/60 border-white/[0.08]'
 
 const typeLabel = (type) =>
   SECTION_TYPES.find((t) => t.value === type)?.label ?? type
@@ -198,20 +200,20 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
         <button
           onClick={() => onMove(index, -1)}
           disabled={index === 0}
-          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20"
+          className="p-0.5 text-white/25 hover:text-white/60 disabled:opacity-20"
         >
           <ChevronUp size={13} />
         </button>
         <button
           onClick={() => onMove(index, 1)}
           disabled={index === total - 1}
-          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20"
+          className="p-0.5 text-white/25 hover:text-white/60 disabled:opacity-20"
         >
           <ChevronDown size={13} />
         </button>
       </div>
 
-      <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white space-y-2 min-w-0">
+      <div className="flex-1 border border-white/[0.08] rounded-lg p-3 bg-[#0F0F16] space-y-2 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <select
             value={section.type}
@@ -225,16 +227,16 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
             type="text"
             value={section.label}
             onChange={(e) => onChange(index, { ...section, label: e.target.value })}
-            className="flex-1 min-w-0 text-sm font-medium text-gray-800 border-0 focus:outline-none bg-transparent truncate"
+            className="flex-1 min-w-0 text-sm font-medium text-white/80 border-0 focus:outline-none bg-transparent truncate"
             placeholder="Nome da seção"
           />
-          <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+          <div className="flex items-center gap-1 text-xs text-white/35 shrink-0">
             <Clock size={11} />
             <input
               type="number"
               value={section.duration}
               onChange={(e) => onChange(index, { ...section, duration: parseInt(e.target.value) || 60 })}
-              className="w-12 text-center border border-gray-200 rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-12 text-center border border-white/[0.08] rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
               min={10}
               max={600}
             />
@@ -245,14 +247,14 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
           type="text"
           value={section.instructions}
           onChange={(e) => onChange(index, { ...section, instructions: e.target.value })}
-          className="w-full text-xs text-gray-500 border-0 focus:outline-none bg-transparent"
+          className="w-full text-xs text-white/40 border-0 focus:outline-none bg-transparent"
           placeholder="Instruções específicas para a IA nesta seção (opcional)"
         />
       </div>
 
       <button
         onClick={() => onRemove(index)}
-        className="mt-2.5 p-1 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+        className="mt-2.5 p-1 text-white/25 hover:text-[#FF3366] transition-colors opacity-0 group-hover:opacity-100"
       >
         <X size={14} />
       </button>
@@ -301,18 +303,18 @@ function BlueprintEditor({ blueprint, onChange }) {
             type="text"
             value={blueprint.name}
             onChange={(e) => onChange({ ...blueprint, name: e.target.value })}
-            className="font-semibold text-gray-800 text-base border-0 focus:outline-none bg-transparent w-full"
+            className="font-semibold text-white/80 text-base border-0 focus:outline-none bg-transparent w-full"
             placeholder="Nome do blueprint"
           />
           <input
             type="text"
             value={blueprint.description}
             onChange={(e) => onChange({ ...blueprint, description: e.target.value })}
-            className="text-xs text-gray-400 border-0 focus:outline-none bg-transparent w-full"
+            className="text-xs text-white/35 border-0 focus:outline-none bg-transparent w-full"
             placeholder="Descrição (opcional)"
           />
         </div>
-        <div className="text-xs text-gray-400 whitespace-nowrap">
+        <div className="text-xs text-white/35 whitespace-nowrap">
           <Clock size={11} className="inline mr-1" />
           ~{Math.round(totalDuration / 60)} min · {sections.length} seções
         </div>
@@ -337,7 +339,7 @@ function BlueprintEditor({ blueprint, onChange }) {
           <button
             key={t.value}
             onClick={() => addSection(t.value)}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 border border-dashed border-gray-200 hover:border-indigo-300 px-2 py-1 rounded-lg transition-colors"
+            className="flex items-center gap-1 text-xs text-white/40 hover:text-violet-400 border border-dashed border-white/[0.08] hover:border-indigo-300 px-2 py-1 rounded-lg transition-colors"
           >
             <Plus size={11} />
             {t.label}
@@ -350,7 +352,7 @@ function BlueprintEditor({ blueprint, onChange }) {
 
 // ── Product Picker ─────────────────────────────────────────────────────────────
 
-function ProductPicker({ selected, onToggle }) {
+function ProductPicker({ selected, onToggle, maxSelect }) {
   const { data } = useApi('/mining/catalog')
   const products = data?.products ?? []
   const [search, setSearch] = useState('')
@@ -359,48 +361,95 @@ function ProductPicker({ selected, onToggle }) {
     !search || p.title.toLowerCase().includes(search.toLowerCase())
   )
 
+  const atLimit  = maxSelect != null && selected.length >= maxSelect
+  const progress = maxSelect ? Math.round((selected.length / maxSelect) * 100) : 0
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">{selected.length} produto{selected.length !== 1 ? 's' : ''} selecionado{selected.length !== 1 ? 's' : ''}</p>
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {maxSelect ? (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              atLimit
+                ? 'bg-indigo-600 text-white'
+                : 'bg-[#0F0F16]/[0.05] text-white/60'
+            }`}>
+              {selected.length}/{maxSelect}
+            </span>
+          ) : (
+            <span className="text-xs text-white/40">
+              {selected.length} selecionado{selected.length !== 1 ? 's' : ''}
+            </span>
+          )}
+          {atLimit && (
+            <span className="text-[10px] text-violet-400 font-medium">
+              ✓ Seleção completa
+            </span>
+          )}
+        </div>
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar produto…"
-          className="border border-gray-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
+          placeholder="Buscar…"
+          className="border border-white/[0.08] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36"
         />
       </div>
+
+      {/* Progress bar (only when maxSelect is defined) */}
+      {maxSelect && (
+        <div className="h-1 w-full rounded-full bg-[#0F0F16]/[0.05] overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${progress}%`,
+              background: atLimit
+                ? 'linear-gradient(90deg, #8B5CF6, #CCFF00)'
+                : '#c7d2fe',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Grid */}
       <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
         {filtered.length === 0 && (
-          <div className="col-span-2 text-center text-xs text-gray-400 py-6">
-            {products.length === 0 ? 'Nenhum produto no catálogo — execute uma mineração primeiro' : 'Nenhum produto encontrado'}
+          <div className="col-span-2 text-center text-xs text-white/35 py-6">
+            {products.length === 0
+              ? 'Nenhum produto no catálogo — execute uma mineração primeiro'
+              : 'Nenhum produto encontrado'}
           </div>
         )}
         {filtered.map((p) => {
-          const active = selected.includes(p.id)
+          const active   = selected.includes(p.id)
+          const disabled = !active && atLimit
           return (
             <button
               key={p.id}
-              onClick={() => onToggle(p.id)}
+              onClick={() => !disabled && onToggle(p.id)}
               className={`flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-colors ${
                 active
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:border-indigo-200 bg-white'
+                  ? 'border-indigo-500 bg-violet-500/10'
+                  : disabled
+                    ? 'border-gray-100 bg-[#0F0F16]/[0.03] opacity-40 cursor-not-allowed'
+                    : 'border-white/[0.08] hover:border-indigo-200 bg-[#0F0F16]'
               }`}
             >
               {p.imageUrl
                 ? <img src={p.imageUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
-                : <div className="w-8 h-8 rounded bg-gray-100 shrink-0 flex items-center justify-center"><Package size={14} className="text-gray-300" /></div>
+                : <div className="w-8 h-8 rounded bg-[#0F0F16]/[0.05] shrink-0 flex items-center justify-center">
+                    <Package size={14} className="text-white/25" />
+                  </div>
               }
-              <div className="overflow-hidden">
-                <p className="font-medium text-gray-700 truncate leading-tight">{p.title}</p>
-                <p className="text-gray-400">
+              <div className="overflow-hidden flex-1">
+                <p className="font-medium text-white/70 truncate leading-tight">{p.title}</p>
+                <p className="text-white/35">
                   {p.price ? `R$${Number(p.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
                   {p.rating ? ` · ${p.rating}★` : ''}
                 </p>
               </div>
-              {active && <Check size={12} className="ml-auto text-indigo-600 shrink-0" />}
+              {active && <Check size={12} className="ml-auto text-violet-400 shrink-0" />}
             </button>
           )
         })}
@@ -470,18 +519,18 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
   }
 
   return (
-    <div className={`border rounded-xl overflow-hidden ${open ? 'border-gray-200' : 'border-gray-100'}`}>
+    <div className={`border rounded-xl overflow-hidden ${open ? 'border-white/[0.08]' : 'border-gray-100'}`}>
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-white hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-[#0F0F16] hover:bg-violet-500/10/40 transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${typeColor(section.type)}`}>
           {typeLabel(section.type)}
         </span>
-        <span className="font-medium text-gray-800 text-sm flex-1">{section.label}</span>
+        <span className="font-medium text-white/80 text-sm flex-1">{section.label}</span>
         {section.duration && (
-          <span className="text-xs text-gray-400 flex items-center gap-1">
+          <span className="text-xs text-white/35 flex items-center gap-1">
             <Clock size={10} /> ~{Math.round(section.duration / 60 * 130)} palavras
           </span>
         )}
@@ -489,49 +538,49 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
           <button
             onClick={handleCopy}
             title="Copiar seção"
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 text-white/35 hover:text-white/60 hover:bg-[#0F0F16]/[0.05] rounded transition-colors"
           >
-            {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            {copied ? <Check size={13} className="text-[#00FFB9]" /> : <Copy size={13} />}
           </button>
           <button
             onClick={() => { setShowRegenInput((v) => !v); setOpen(true) }}
             title="Regenerar com IA"
-            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+            className="p-1.5 text-white/35 hover:text-violet-400 hover:bg-violet-500/10 rounded transition-colors"
           >
             {regen ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
           </button>
           <button
             onClick={() => { setEditing((e) => !e); setOpen(true) }}
             title="Editar manualmente"
-            className={`p-1.5 rounded transition-colors ${editing ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+            className={`p-1.5 rounded transition-colors ${editing ? 'text-violet-400 bg-violet-500/10' : 'text-white/35 hover:text-violet-400 hover:bg-violet-500/10'}`}
           >
             <Pencil size={13} />
           </button>
         </div>
-        <ChevronDown size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-white/35 transition-transform ${open ? 'rotate-180' : ''}`} />
       </div>
 
       {/* Regen bar */}
       {showRegenInput && (
-        <div className="px-4 pb-3 bg-indigo-50 border-b border-indigo-100 flex gap-2">
+        <div className="px-4 pb-3 bg-violet-500/10 border-b border-indigo-100 flex gap-2">
           <input
             type="text"
             value={regenInstr}
             onChange={(e) => setRegenInstr(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleRegenerate()}
             placeholder="Instruções para a IA (opcional)… ex: mais energia, adicionar emoji"
-            className="flex-1 text-xs border border-indigo-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            className="flex-1 text-xs border border-indigo-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-[#0F0F16]"
             autoFocus
           />
           <button
             onClick={handleRegenerate}
             disabled={regen}
-            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+            className="btn-primary"
           >
             {regen ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
             Regerar
           </button>
-          <button onClick={() => setShowRegenInput(false)} className="p-1.5 text-gray-400 hover:text-gray-600">
+          <button onClick={() => setShowRegenInput(false)} className="p-1.5 text-white/35 hover:text-white/60">
             <X size={13} />
           </button>
         </div>
@@ -539,28 +588,28 @@ function SectionCard({ section, index, scriptId, onUpdate }) {
 
       {/* Body */}
       {open && (
-        <div className="px-4 py-4 bg-gray-50 border-t border-gray-100">
+        <div className="px-4 py-4 bg-[#0F0F16]/[0.03] border-t border-gray-100">
           {editing ? (
             <div className="space-y-2">
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={8}
-                className="w-full text-sm text-gray-700 font-mono border border-indigo-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y"
+                className="w-full text-sm text-white/70 font-mono border border-indigo-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-[#0F0F16] resize-y"
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setEditing(false)} className="text-xs text-gray-500 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <button onClick={() => setEditing(false)} className="btn-ghost text-xs">
                   Cancelar
                 </button>
-                <button onClick={handleSaveEdit} disabled={saving} className="flex items-center gap-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg font-medium">
+                <button onClick={handleSaveEdit} disabled={saving} className="btn-primary py-1.5 px-3 text-xs">
                   {saving ? <Loader2 size={11} className="animate-spin" /> : null}
                   Salvar
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {(section.content ?? content) || <span className="text-gray-300 italic">Seção vazia — clique em regenerar para gerar com IA</span>}
+            <p className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed">
+              {(section.content ?? content) || <span className="text-white/25 italic">Seção vazia — clique em regenerar para gerar com IA</span>}
             </p>
           )}
         </div>
@@ -603,14 +652,14 @@ function InlineTitle({ scriptId, initialTitle, blueprintId, onRenamed }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-          className="font-semibold text-gray-800 text-sm border-b-2 border-indigo-400 focus:outline-none bg-transparent min-w-0 flex-1"
+          className="font-semibold text-white/80 text-sm border-b-2 border-indigo-400 focus:outline-none bg-transparent min-w-0 flex-1"
           autoFocus
         />
         <button onClick={handleSave} disabled={saving}
-          className="p-1 text-emerald-600 hover:text-emerald-700 shrink-0">
+          className="p-1 text-[#00FFB9] hover:text-[#00FFB9] shrink-0">
           {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
         </button>
-        <button onClick={() => setEditing(false)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
+        <button onClick={() => setEditing(false)} className="p-1 text-white/35 hover:text-white/60 shrink-0">
           <X size={13} />
         </button>
       </div>
@@ -623,8 +672,8 @@ function InlineTitle({ scriptId, initialTitle, blueprintId, onRenamed }) {
       className="group flex items-center gap-1.5 text-left min-w-0"
       title="Clique para renomear"
     >
-      <span className="font-semibold text-gray-800 truncate">{display}</span>
-      <Pencil size={11} className="text-gray-300 group-hover:text-indigo-400 shrink-0 transition-colors" />
+      <span className="font-semibold text-white/80 truncate">{display}</span>
+      <Pencil size={11} className="text-white/25 group-hover:text-violet-400 shrink-0 transition-colors" />
     </button>
   )
 }
@@ -684,7 +733,7 @@ function ScriptViewer({ script, onUpdate }) {
             blueprintId={script.blueprintId}
             onRenamed={(t) => { setTitle(t); onUpdate?.({ ...script, title: t }) }}
           />
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-white/35 mt-0.5">
             {sections.length} seções · {script.language?.toUpperCase()} · {timeAgo(script.createdAt)}
           </p>
         </div>
@@ -694,7 +743,7 @@ function ScriptViewer({ script, onUpdate }) {
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
               rawMode
                 ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'text-gray-500 hover:text-gray-700 border-gray-200 hover:border-gray-300'
+                : 'text-white/40 hover:text-white/70 border-white/[0.08] hover:border-gray-300'
             }`}
           >
             <Pencil size={12} />
@@ -702,9 +751,9 @@ function ScriptViewer({ script, onUpdate }) {
           </button>
           <button
             onClick={handleCopyAll}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 border border-white/[0.08] hover:border-gray-300 px-3 py-1.5 rounded-lg transition-colors"
           >
-            {copyAll ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            {copyAll ? <Check size={13} className="text-[#00FFB9]" /> : <Copy size={13} />}
             {copyAll ? 'Copiado!' : 'Copiar tudo'}
           </button>
         </div>
@@ -717,16 +766,16 @@ function ScriptViewer({ script, onUpdate }) {
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
             rows={20}
-            className="w-full text-sm text-gray-700 font-mono border border-indigo-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y leading-relaxed"
+            className="w-full text-sm text-white/70 font-mono border border-indigo-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-[#0F0F16] resize-y leading-relaxed"
             placeholder="Conteúdo do roteiro…"
           />
           <div className="flex items-center justify-end gap-2">
             <button onClick={() => setRawMode(false)}
-              className="text-xs text-gray-500 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
+              className="btn-ghost text-xs">
               Cancelar
             </button>
             <button onClick={handleSaveRaw} disabled={rawSaving}
-              className="flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 px-4 py-1.5 rounded-lg font-medium transition-colors">
+              className="btn-primary py-1.5 text-xs">
               {rawSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
               Salvar alterações
             </button>
@@ -743,7 +792,7 @@ function ScriptViewer({ script, onUpdate }) {
           />
         ))
       ) : (
-        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-auto">
+        <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono bg-[#0F0F16] border border-white/[0.08] rounded-lg p-4 max-h-96 overflow-auto">
           {script.text}
         </pre>
       )}
@@ -757,7 +806,7 @@ function ScriptListRow({ script, onSelect, isSelected, onRenamed }) {
   const sections = script.sections ?? []
   return (
     <tr
-      className={`border-b border-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+      className={`tr ${isSelected ? "bg-violet-500/10" : ""}`}
     >
       <td className="px-4 py-3 cursor-pointer" onClick={() => onSelect(script)}>
         <div className="max-w-xs" onClick={(e) => e.stopPropagation()}>
@@ -768,22 +817,29 @@ function ScriptListRow({ script, onSelect, isSelected, onRenamed }) {
             onRenamed={(t) => onRenamed?.(script.id, t)}
           />
         </div>
-        <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
+        <div className="text-xs text-white/35 mt-0.5 flex items-center gap-1.5">
           <Layers size={10} />
           {sections.length > 0 ? `${sections.length} seções` : 'roteiro completo'}
         </div>
       </td>
-      <td className="px-4 py-3 text-xs text-gray-500 uppercase">{script.language}</td>
-      <td className="px-4 py-3 text-xs font-semibold text-indigo-600">{script.confidence}%</td>
-      <td className="px-4 py-3 text-xs text-gray-400">{timeAgo(script.createdAt)}</td>
+      <td className="px-4 py-3 text-xs text-white/40 uppercase">{script.language}</td>
+      <td className="px-4 py-3 text-xs font-semibold text-violet-400">{script.confidence}%</td>
+      <td className="px-4 py-3 text-xs text-white/35">{timeAgo(script.createdAt)}</td>
       <td className="px-4 py-3">
-        <ChevronRight size={14} className={`text-gray-300 transition-transform ${isSelected ? 'rotate-90 text-indigo-500' : ''}`} />
+        <ChevronRight size={14} className={`text-white/25 transition-transform ${isSelected ? 'rotate-90 text-violet-400' : ''}`} />
       </td>
     </tr>
   )
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+
+// ── How many products each template type requires ─────────────────────────────
+const PRODUCT_LIMITS = {
+  'top-5-custo-beneficio': 5,
+  'comparacao-1x1':        2,
+  'review-detalhado':      1,
+}
 
 const STANDARD_TYPES = [
   {
@@ -792,13 +848,13 @@ const STANDARD_TYPES = [
     icon:  '🏆',
     desc:  '5 produtos ranqueados do pior ao melhor custo-benefício',
     sections: [
-      { id: uid(), type: 'intro',   label: 'Abertura',                    duration: 60,  instructions: 'Hook forte com a promessa de revelar os 5 melhores produtos custo-benefício. Inclua aviso de afiliado.' },
+      { id: uid(), type: 'intro',   label: 'Abertura',                    duration: 60,  instructions: 'Hook forte com a promessa de revelar os 5 melhores produtos custo-benefício.' },
       { id: uid(), type: 'product', label: 'Critérios de Seleção',        duration: 45,  instructions: 'Explique brevemente os critérios usados para ranquear os produtos.' },
       { id: uid(), type: 'product', label: 'Produto #5',                  duration: 90,  instructions: 'Apresente o produto, preço, pontos positivos e para quem vale.' },
       { id: uid(), type: 'product', label: 'Produto #4',                  duration: 90,  instructions: 'Apresente o produto, destaque o diferencial em relação ao #5.' },
       { id: uid(), type: 'product', label: 'Produto #3',                  duration: 120, instructions: 'Análise mais detalhada, prós e contras principais.' },
       { id: uid(), type: 'product', label: 'Produto #2',                  duration: 120, instructions: 'Análise detalhada, por que quase chegou ao topo.' },
-      { id: uid(), type: 'product', label: 'Produto #1 — Melhor Escolha', duration: 150, instructions: 'O campeão: análise completa, por que é o melhor custo-benefício, link afiliado com destaque.' },
+      { id: uid(), type: 'product', label: 'Produto #1 — Melhor Escolha', duration: 150, instructions: 'O campeão: análise completa, por que é o melhor custo-benefício.' },
       { id: uid(), type: 'cta',     label: 'CTA Final',                   duration: 45,  instructions: 'Convite para se inscrever, ativar notificações e acessar os links na descrição.' },
     ],
   },
@@ -808,12 +864,12 @@ const STANDARD_TYPES = [
     icon:  '⚔️',
     desc:  'Dois produtos frente a frente com veredicto final',
     sections: [
-      { id: uid(), type: 'intro',      label: 'Abertura',               duration: 60,  instructions: 'Hook: qual dos dois você escolheria? Crie suspense. Aviso de afiliado.' },
+      { id: uid(), type: 'intro',      label: 'Abertura',               duration: 60,  instructions: 'Hook: qual dos dois você escolheria? Crie suspense.' },
       { id: uid(), type: 'product',    label: 'Apresentação dos Dois',  duration: 90,  instructions: 'Apresente ambos os produtos, preços e posicionamento de mercado.' },
       { id: uid(), type: 'comparison', label: 'Design e Construção',    duration: 90,  instructions: 'Compare qualidade de materiais, ergonomia e acabamento.' },
       { id: uid(), type: 'comparison', label: 'Performance e Recursos', duration: 120, instructions: 'Compare funcionalidades, testes práticos e resultados.' },
       { id: uid(), type: 'pros_cons',  label: 'Custo-Benefício',        duration: 90,  instructions: 'Compare preço vs valor entregue por cada um.' },
-      { id: uid(), type: 'verdict',    label: 'Veredicto Final',        duration: 75,  instructions: 'Declare o vencedor, para quem cada um é indicado e os links afiliados.' },
+      { id: uid(), type: 'verdict',    label: 'Veredicto Final',        duration: 75,  instructions: 'Declare o vencedor e para quem cada um é indicado.' },
       { id: uid(), type: 'cta',        label: 'CTA Final',              duration: 45,  instructions: 'Inscrição, notificações e links na descrição.' },
     ],
   },
@@ -823,13 +879,13 @@ const STANDARD_TYPES = [
     icon:  '🔍',
     desc:  'Análise aprofundada de um único produto',
     sections: [
-      { id: uid(), type: 'intro',    label: 'Abertura',                 duration: 60,  instructions: 'Hook com a principal dor que o produto resolve. Aviso de afiliado.' },
+      { id: uid(), type: 'intro',    label: 'Abertura',                 duration: 60,  instructions: 'Hook com a principal dor que o produto resolve.' },
       { id: uid(), type: 'product',  label: 'Visão Geral',              duration: 90,  instructions: 'O que é, para quem é, posicionamento de preço no mercado.' },
       { id: uid(), type: 'product',  label: 'Unboxing e Design',        duration: 90,  instructions: 'Materiais, acabamento, o que vem na caixa, primeiras impressões.' },
       { id: uid(), type: 'demo',     label: 'Funcionalidades e Testes', duration: 150, instructions: 'Teste prático de cada função principal, resultados reais.' },
       { id: uid(), type: 'pros_cons', label: 'Prós e Contras',          duration: 90,  instructions: 'Lista honesta de pontos positivos e negativos.' },
       { id: uid(), type: 'verdict',  label: 'Para Quem Vale a Pena?',   duration: 60,  instructions: 'Perfil do comprador ideal, alternativas e faixa de preço justa.' },
-      { id: uid(), type: 'cta',      label: 'CTA Final',                duration: 45,  instructions: 'Link afiliado com urgência, inscrição e notificações.' },
+      { id: uid(), type: 'cta',      label: 'CTA Final',                duration: 45,  instructions: 'Inscrição, notificações e links na descrição.' },
     ],
   },
 ]
@@ -858,19 +914,25 @@ export default function Scripts() {
   const [error, setError]             = useState(null)
   const [activeDbBp, setActiveDbBp]   = useState(null)
 
+  // Max products allowed for the active blueprint type
+  const productLimit = activeTypeId ? (PRODUCT_LIMITS[activeTypeId] ?? null) : null
+
   function selectType(typeId) {
     const t = STANDARD_TYPES.find(t => t.id === typeId)
     if (!t) return
     setActiveTypeId(typeId)
     setActiveDbBp(null)
+    setSelectedProducts([])   // clear selection when type changes
     // refresh section ids so they're unique
     setBlueprint({ id: null, name: t.name, desc: t.desc, sections: t.sections.map(s => ({ ...s, id: uid() })) })
   }
 
   function toggleProduct(id) {
-    setSelectedProducts((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    )
+    setSelectedProducts((prev) => {
+      if (prev.includes(id)) return prev.filter((p) => p !== id)
+      if (productLimit != null && prev.length >= productLimit) return prev  // enforce limit
+      return [...prev, id]
+    })
   }
 
   async function handleGenerate() {
@@ -943,10 +1005,16 @@ export default function Scripts() {
 
   const totalDuration = blueprint.sections?.reduce((s, sec) => s + (sec.duration ?? 60), 0) ?? 0
 
+  // Generate is only allowed when the right number of products are selected
+  const canGenerate = productLimit == null
+    ? true
+    : selectedProducts.length === productLimit
+
   return (
-    <div>
+    <div className="animate-fade-up">
       <AILoadingOverlay show={generating} title="Gerando Roteiro" />
       <PageHeader
+        overline="Pipeline"
         title="Roteiros"
         description="Crie roteiros estruturados com blueprints personalizados e edição por seção"
         action={
@@ -955,27 +1023,35 @@ export default function Scripts() {
               onClick={() => setView(view === 'blueprints' ? 'generate' : 'blueprints')}
               className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
                 view === 'blueprints'
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
+                  ? 'bg-[#0F0F16] text-white border-white/[0.06]'
+                  : 'border-white/[0.08] text-white/60 hover:border-gray-300 bg-[#0F0F16]'
               }`}
             >
               <BookTemplate size={15} />
               Blueprints
             </button>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              {generating ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />}
-              {generating ? 'Gerando…' : 'Gerar Roteiro'}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={handleGenerate}
+                disabled={generating || !canGenerate}
+                className="btn-primary"
+                title={!canGenerate ? `Selecione ${productLimit} produto${productLimit !== 1 ? 's' : ''} para continuar` : ''}
+              >
+                {generating ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />}
+                {generating ? 'Gerando…' : 'Gerar Roteiro'}
+              </button>
+              {!canGenerate && productLimit != null && (
+                <p className="text-[10px] text-[#FFB800] font-medium">
+                  {selectedProducts.length}/{productLimit} produto{productLimit !== 1 ? 's' : ''} selecionado{selectedProducts.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
           </div>
         }
       />
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
+        <div className="alert-error mb-4">{error}</div>
       )}
 
       <div className="grid grid-cols-5 gap-6">
@@ -988,21 +1064,21 @@ export default function Scripts() {
               <button key={t.id} onClick={() => selectType(t.id)}
                 className={`text-left p-3 rounded-xl border-2 transition-all ${
                   activeTypeId === t.id && !activeDbBp
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                    ? 'border-indigo-500 bg-violet-500/10'
+                    : 'border-white/[0.08] bg-[#0F0F16] hover:border-indigo-300'
                 }`}>
                 <div className="text-lg mb-1">{t.icon}</div>
-                <div className="text-xs font-semibold text-gray-800 leading-tight">{t.name}</div>
-                <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">{t.desc}</div>
+                <div className="text-xs font-semibold text-white/80 leading-tight">{t.name}</div>
+                <div className="text-[10px] text-white/35 mt-0.5 leading-tight">{t.desc}</div>
               </button>
             ))}
           </div>
 
           {/* Blueprint panel */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
-                <Layers size={14} className="text-indigo-500" />
+              <h3 className="card-title flex items-center gap-2">
+                <Layers size={14} className="text-violet-400" />
                 Blueprint
               </h3>
               <div className="flex gap-2 items-center">
@@ -1014,7 +1090,7 @@ export default function Scripts() {
                       if (bp) { setBlueprint(bp); setActiveDbBp(bp.id); setActiveTypeId(null) }
                       else { selectType(STANDARD_TYPES[0].id) }
                     }}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-600"
+                    className="text-xs border border-white/[0.08] rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white/60"
                   >
                     <option value="">Padrão</option>
                     {dbBlueprints.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1023,7 +1099,7 @@ export default function Scripts() {
                 <button
                   onClick={handleSaveBlueprint}
                   disabled={savingBp}
-                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
+                  className="text-xs text-violet-400 hover:text-violet-400 font-medium flex items-center gap-1"
                 >
                   {savingBp ? <Loader2 size={11} className="animate-spin" /> : null}
                   Salvar
@@ -1036,8 +1112,8 @@ export default function Scripts() {
           </div>
 
           {/* Language */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-            <h3 className="font-semibold text-gray-800 text-sm">Idioma</h3>
+          <div className="card p-4 space-y-3">
+            <h3 className="card-title">Idioma</h3>
             <div className="flex gap-2">
               {[{ v: 'pt', l: 'Português' }, { v: 'en', l: 'English' }, { v: 'es', l: 'Español' }].map((lang) => (
                 <button
@@ -1046,7 +1122,7 @@ export default function Scripts() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     language === lang.v
                       ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-200 text-gray-600 hover:border-indigo-300'
+                      : 'border-white/[0.08] text-white/60 hover:border-indigo-300'
                   }`}
                 >
                   {lang.l}
@@ -1056,17 +1132,21 @@ export default function Scripts() {
           </div>
 
           {/* Product picker */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-            <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
-              <Package size={14} className="text-indigo-500" />
-              Produtos
-              {selectedProducts.length > 0 && (
-                <span className="ml-auto text-xs bg-indigo-100 text-indigo-600 rounded-full px-2 py-0.5 font-medium">
-                  {selectedProducts.length} selecionados
+          <div className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Package size={14} className="text-violet-400" />
+              <h3 className="card-title">Produtos</h3>
+              {productLimit && (
+                <span className="ml-auto text-[10px] text-white/35 font-medium">
+                  Selecione exatamente {productLimit} produto{productLimit !== 1 ? 's' : ''}
                 </span>
               )}
-            </h3>
-            <ProductPicker selected={selectedProducts} onToggle={toggleProduct} />
+            </div>
+            <ProductPicker
+              selected={selectedProducts}
+              onToggle={toggleProduct}
+              maxSelect={productLimit}
+            />
           </div>
         </div>
 
@@ -1074,31 +1154,31 @@ export default function Scripts() {
         <div className="col-span-3 space-y-4">
           {view === 'blueprints' ? (
             /* ── Blueprints panel ── */
-            <div className="bg-white rounded-xl border border-gray-200">
+            <div className="card">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-                <BookTemplate size={15} className="text-indigo-500" />
-                <h3 className="font-semibold text-gray-800 text-sm">Blueprints Salvos</h3>
-                <span className="ml-auto text-xs text-gray-400">{dbBlueprints.length} total</span>
+                <BookTemplate size={15} className="text-violet-400" />
+                <h3 className="card-title">Blueprints Salvos</h3>
+                <span className="ml-auto text-xs text-white/35">{dbBlueprints.length} total</span>
               </div>
               {dbBlueprints.length === 0 ? (
                 <div className="px-5 py-12 text-center">
-                  <BookTemplate size={32} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-sm font-medium text-gray-500">Nenhum blueprint salvo ainda</p>
-                  <p className="text-xs text-gray-400 mt-1">Configure um blueprint e clique em <strong>Salvar</strong> para reutilizá-lo depois.</p>
-                  <button onClick={() => setView('generate')} className="mt-4 text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                  <BookTemplate size={32} className="mx-auto text-white/20 mb-3" />
+                  <p className="text-sm font-medium text-white/40">Nenhum blueprint salvo ainda</p>
+                  <p className="text-xs text-white/35 mt-1">Configure um blueprint e clique em <strong>Salvar</strong> para reutilizá-lo depois.</p>
+                  <button onClick={() => setView('generate')} className="mt-4 text-xs text-violet-400 hover:text-violet-400 font-medium">
                     ← Voltar para Geração
                   </button>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {dbBlueprints.map((bp) => (
-                    <div key={bp.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                        <Layers size={15} className="text-indigo-500" />
+                    <div key={bp.id} className="flex items-center gap-4 px-5 py-4 hover:bg-violet-500/10/40 transition-colors group">
+                      <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                        <Layers size={15} className="text-violet-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm truncate">{bp.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="font-medium text-white/80 text-sm truncate">{bp.name}</p>
+                        <p className="text-xs text-white/35 mt-0.5">
                           {bp.sections?.length ?? 0} seções
                           {bp.description ? ` · ${bp.description}` : ''}
                         </p>
@@ -1106,13 +1186,13 @@ export default function Scripts() {
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => { setBlueprint(bp); setActiveDbBp(bp.id); setActiveTypeId(null); setView('generate') }}
-                          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 rounded-lg border border-indigo-200 hover:bg-indigo-50 transition-colors"
+                          className="text-xs text-violet-400 hover:text-violet-400 font-medium px-3 py-1.5 rounded-lg border border-indigo-200 hover:bg-violet-500/10 transition-colors"
                         >
                           Usar
                         </button>
                         <button
                           onClick={() => handleDeleteBlueprint(bp.id)}
-                          className="p-1.5 text-gray-300 hover:text-red-400 rounded-lg hover:bg-red-50 transition-colors"
+                          className="p-1.5 text-white/25 hover:text-[#FF3366] rounded-lg hover:bg-[#FF3366]/8 transition-colors"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -1126,32 +1206,32 @@ export default function Scripts() {
             <>
               {/* Selected script viewer */}
               {selectedScript && (
-                <div className="bg-white rounded-xl border border-indigo-200 p-5">
+                <div className="card p-5 border-indigo-200">
                   <ScriptViewer script={selectedScript} onUpdate={handleScriptUpdate} />
                 </div>
               )}
 
               {/* Scripts list */}
-              <div className="bg-white rounded-xl border border-gray-200">
+              <div className="card">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-                  <FileText size={15} className="text-gray-400" />
-                  <h3 className="font-semibold text-gray-800 text-sm">Roteiros</h3>
-                  <span className="ml-auto text-xs text-gray-400">{scripts.length} total</span>
+                  <FileText size={15} className="text-white/35" />
+                  <h3 className="card-title">Roteiros</h3>
+                  <span className="ml-auto text-xs text-white/35">{scripts.length} total</span>
                 </div>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-400 border-b border-gray-100 text-xs">
-                      <th className="px-4 py-2 font-medium">Título / Blueprint</th>
-                      <th className="px-4 py-2 font-medium">Idioma</th>
-                      <th className="px-4 py-2 font-medium">Score</th>
-                      <th className="px-4 py-2 font-medium">Criado</th>
+                    <tr className="border-b border-gray-100">
+                      <th className="th">Título / Blueprint</th>
+                      <th className="th">Idioma</th>
+                      <th className="th">Score</th>
+                      <th className="th">Criado</th>
                       <th className="px-4 py-2"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {scripts.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
+                        <td colSpan={5} className="px-4 py-8 text-center text-white/35 text-sm">
                           Nenhum roteiro ainda — configure o blueprint e gere o primeiro acima.
                         </td>
                       </tr>
