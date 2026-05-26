@@ -82,6 +82,14 @@ const SHORTFORM_BLUEPRINTS = [
   },
 ]
 
+// ── Fallback trending topics (shown when ML trends API returns empty) ─────────
+
+const FALLBACK_TRENDS = [
+  'Cadeira Gamer', 'Fone Bluetooth', 'Monitor Gamer', 'Teclado Mecânico',
+  'Headset sem fio', 'Mesa de Escritório', 'Webcam Full HD', 'SSD Externo',
+  'Aspirador Robô', 'Fritadeira Air Fryer', 'Purificador de Água', 'Câmera de Segurança',
+]
+
 // ── Voice options (mirrors voiceoverService) ──────────────────────────────────
 
 const OPENAI_VOICES = [
@@ -208,11 +216,20 @@ function ExecRow({ icon: Icon, label, status, detail }) {
 
 // ── Chat bubble ───────────────────────────────────────────────────────────────
 
-function Bubble({ role, text, choices, onPick, picked }) {
+function Bubble({ role, text, choices, allowCustom, onPick, picked }) {
+  const [customVal, setCustomVal] = useState('')
   const isAI = role === 'ai'
+
+  function submitCustom() {
+    const v = customVal.trim()
+    if (!v) return
+    onPick({ label: v, value: v })
+    setCustomVal('')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isAI ? 'flex-start' : 'flex-end', gap: 8, marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, maxWidth: '80%', flexDirection: isAI ? 'row' : 'row-reverse' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, maxWidth: '85%', flexDirection: isAI ? 'row' : 'row-reverse' }}>
         {isAI && (
           <div style={{
             width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
@@ -228,7 +245,6 @@ function Bubble({ role, text, choices, onPick, picked }) {
           fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)',
           whiteSpace: 'pre-wrap',
         }}>
-          {/* Render **bold** text */}
           {text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
             part.startsWith('**') && part.endsWith('**')
               ? <strong key={i} style={{ color: '#CCFF00' }}>{part.slice(2, -2)}</strong>
@@ -237,23 +253,54 @@ function Bubble({ role, text, choices, onPick, picked }) {
         </div>
       </div>
 
-      {/* Choice chips (only on last AI message when awaiting pick) */}
+      {/* Choice chips */}
       {isAI && choices && !picked && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginLeft: 40 }}>
-          {choices.map((c) => (
-            <button key={c.value} onClick={() => onPick(c)} style={{
-              padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(204,255,0,0.30)',
-              background: 'rgba(204,255,0,0.08)', color: '#CCFF00',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(204,255,0,0.18)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(204,255,0,0.20)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(204,255,0,0.08)'; e.currentTarget.style.boxShadow = 'none' }}
-            >
-              {c.label}
-              {c.sub && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.65 }}>{c.sub}</span>}
-            </button>
-          ))}
+        <div style={{ marginLeft: 40, width: 'calc(100% - 40px)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: allowCustom ? 10 : 0 }}>
+            {choices.map((c) => (
+              <button key={c.value} onClick={() => onPick(c)} style={{
+                padding: '6px 14px', borderRadius: 100, border: '1px solid rgba(204,255,0,0.30)',
+                background: 'rgba(204,255,0,0.08)', color: '#CCFF00',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 150ms ease',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(204,255,0,0.18)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(204,255,0,0.20)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(204,255,0,0.08)'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                {c.label}
+                {c.sub && <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.65 }}>{c.sub}</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom topic input */}
+          {allowCustom && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                value={customVal}
+                onChange={e => setCustomVal(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submitCustom()}
+                placeholder="Ou digite seu próprio tema…"
+                style={{
+                  flex: 1, padding: '8px 14px', borderRadius: 100,
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.80)', fontSize: 12, outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <button
+                onClick={submitCustom}
+                disabled={!customVal.trim()}
+                style={{
+                  padding: '8px 16px', borderRadius: 100, border: 'none', cursor: customVal.trim() ? 'pointer' : 'not-allowed',
+                  background: customVal.trim() ? '#CCFF00' : 'rgba(255,255,255,0.08)',
+                  color: customVal.trim() ? '#07070B' : 'rgba(255,255,255,0.25)',
+                  fontSize: 12, fontWeight: 700, transition: 'all 150ms ease',
+                }}
+              >
+                Usar →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -434,18 +481,15 @@ export default function Wizard() {
 
   const chatBottom = useRef(null)
 
-  // ── Seed first AI message once trends load ──
+  // ── Seed first AI message (runs once; re-runs if API trends arrive later) ──
   useEffect(() => {
-    if (messages.length > 0) return
-    const topicChoices = trends.length > 0
-      ? trends.slice(0, 8).map(t => ({ label: t.keyword ?? t, value: t.keyword ?? t }))
-      : null
-
-    setMessages([{
-      role: 'ai',
-      text: 'Olá! 👋 Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um desses tópicos em alta no Mercado Livre:',
-      choices: topicChoices,
-    }])
+    if (messages.length > 0 && chatStep > 0) return // already past topic step
+    const apiChoices  = trends.map(t => ({ label: t.keyword ?? t, value: t.keyword ?? t }))
+    const allChoices  = apiChoices.length > 0 ? apiChoices.slice(0, 8) : FALLBACK_TRENDS.map(t => ({ label: t, value: t }))
+    const text = apiChoices.length > 0
+      ? 'Olá! 👋 Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um desses tópicos em alta no Mercado Livre:'
+      : 'Olá! 👋 Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um nicho popular ou digite o seu próprio tema:'
+    setMessages([{ role: 'ai', text, choices: allChoices, allowCustom: true }])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trends])
 
@@ -665,6 +709,7 @@ export default function Wizard() {
                   role={msg.role}
                   text={msg.text}
                   choices={i === messages.length - 1 ? msg.choices : null}
+                  allowCustom={i === messages.length - 1 ? (msg.allowCustom ?? false) : false}
                   picked={chatStep > (i === 0 ? 0 : 1)}
                   onPick={handlePick}
                 />
