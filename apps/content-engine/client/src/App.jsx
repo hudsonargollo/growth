@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, FileText, Mic, Send,
-  MessageSquare, Settings, LogOut, Loader2, Zap, Wand2,
+  MessageSquare, Settings, LogOut, Loader2, Zap,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
@@ -18,7 +18,6 @@ import Wizard       from './pages/Wizard.jsx'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard',   icon: LayoutDashboard },
-  { to: '/wizard',    label: 'Wizard',      icon: Wand2,           highlight: true },
   { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
   { to: '/scripts',   label: 'Roteiros',    icon: FileText },
   { to: '/voiceover', label: 'Narração',    icon: Mic },
