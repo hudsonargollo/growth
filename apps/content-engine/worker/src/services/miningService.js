@@ -73,11 +73,10 @@ function scoreBlogReviews(reviews = []) {
 }
 
 // ── Blog review fetcher ───────────────────────────────────────────────────────
-// Returns up to 5 review snippets from editorial/blog sources (not marketplace pages)
-async function fetchBlogReviews(env, productTitle) {
+// Returns up to 5 review snippets from editorial/blog sources (not marketplace pages).
+// Accepts a pre-resolved serpKey so the caller can resolve it once for all products.
+async function fetchBlogReviews(env, productTitle, serpKey) {
   try {
-    const { resolveKey } = await import('../lib/resolveKey.js')
-    const serpKey = await resolveKey(env, 'SERPAPI_KEY')
     if (!serpKey) return []
 
     // Strip brand noise to get a cleaner model query (first 60 chars)
@@ -228,6 +227,8 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
       officialStore:   !!item.official_store_id,
       catalogListing:  !!item.catalog_listing,
       affiliateLink,
+      mlAffiliateLink: affiliateLink,   // permalink IS the direct ML URL (affiliate tag appended if configured)
+      amazonAffiliateLink: null,
       productUrl:      permalink,
       imageUrl:        item.thumbnail ?? '',
       currency:        'BRL',
@@ -242,32 +243,106 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
 // ── ML Trending topics ────────────────────────────────────────────────────────
 // /trends/MLB requires auth. With a valid token we get live data; without auth we return
 // a curated list of evergreen BR categories so the UI always has something to show.
-const FALLBACK_TRENDS = [
+const STATIC_FALLBACK_TRENDS = [
   'fone de ouvido bluetooth', 'air fryer', 'tênis masculino', 'notebook', 'cadeira gamer',
   'câmera de segurança', 'kit churrasco', 'smart tv', 'whey protein', 'suporte para celular',
   'mouse gamer', 'carregador portátil', 'aspirador robô', 'fritadeira elétrica', 'relógio smartwatch',
   'estabilizador de tensão', 'cama box casal', 'kit skincare', 'console ps5', 'impressora multifuncional',
 ]
 
+// Broad queries that reliably surface what's trending on Google Shopping Brazil
+const SERP_TREND_SEEDS = [
+  'mais vendidos eletrônicos', 'mais vendidos casa', 'mais vendidos esportes', 'mais vendidos beleza',
+]
+
+// ── Fetch trending topics via Google Shopping (SerpAPI fallback) ──────────────
+async function fetchSerpTrends(env) {
+  try {
+    const { resolveKey } = await import('../lib/resolveKey.js')
+    const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+    if (!serpKey) return null
+
+    // Rotate through seed queries to get diverse results
+    const seed = SERP_TREND_SEEDS[Math.floor(Math.random() * SERP_TREND_SEEDS.length)]
+    const params = new URLSearchParams({
+      engine:  'google_shopping',
+      api_key: serpKey,
+      q:       seed,
+      hl:      'pt',
+      gl:      'br',
+      num:     '40',
+    })
+
+    const res = await fetch(`https://serpapi.com/search?${params}`)
+    if (!res.ok) return null
+    const data = await res.json()
+
+    const items = (data.shopping_results ?? []).slice(0, 30)
+    if (!items.length) return null
+
+    // Extract 2-3 word product-type keywords from titles.
+    // Strategy: strip numbers/symbols, take first meaningful noun phrase.
+    const seen = new Set()
+    const topics = []
+    for (const item of items) {
+      const raw = (item.title ?? '').trim()
+      // Remove parenthetical specs, sizes, colours, numbers
+      const cleaned = raw
+        .replace(/\(.*?\)/g, '')
+        .replace(/\b\d+(\.\d+)?\s*(gb|tb|mb|hz|w|v|cm|mm|polegadas?|ml|l|kg|g|k|fps)\b/gi, '')
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+
+      // Take first 2-3 words as the topic label
+      const words = cleaned.split(/\s+/).filter(w => w.length > 2)
+      if (words.length < 2) continue
+      const topic = words.slice(0, 3).join(' ').toLowerCase()
+      const key   = topic.slice(0, 20)
+      if (seen.has(key)) continue
+      seen.add(key)
+      topics.push(topic)
+      if (topics.length >= 12) break
+    }
+
+    return topics.length >= 4 ? topics : null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchMLTrends(env) {
+  // 1️⃣ Try Mercado Livre live trends (requires ML token)
   try {
     const { token } = await getMLToken(env)
-    if (!token) return FALLBACK_TRENDS
+    if (token) {
+      const res = await mlFetch(env, '/trends/MLB', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const trends = await res.json()
+        const live = (trends ?? []).slice(0, 20).map(t => t.keyword ?? t).filter(Boolean)
+        if (live.length > 0) return live.map(k => ({ keyword: k }))
+      }
+    }
+  } catch { /* fall through */ }
 
-    const res = await mlFetch(env, '/trends/MLB', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) return FALLBACK_TRENDS
-    const trends = await res.json()
-    const live = (trends ?? []).slice(0, 20).map(t => t.keyword ?? t).filter(Boolean)
-    return live.length > 0 ? live : FALLBACK_TRENDS
-  } catch { return FALLBACK_TRENDS }
+  // 2️⃣ Fallback: Google Shopping via SerpAPI
+  const serpTrends = await fetchSerpTrends(env)
+  if (serpTrends) return serpTrends.map(k => ({ keyword: k }))
+
+  // 3️⃣ Last resort: static curated list
+  return STATIC_FALLBACK_TRENDS.map(k => ({ keyword: k }))
 }
 
 // ── SerpAPI — Google Shopping ─────────────────────────────────────────────────
-async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all', siteRestrict = '' }) {
-  const { resolveKey } = await import('../lib/resolveKey.js')
-  const serpKey = await resolveKey(env, 'SERPAPI_KEY')
+// serpKey can be pre-resolved by the caller to avoid redundant Supabase fetches.
+async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all', siteRestrict = '', serpKey: preResolvedKey } = {}) {
+  let serpKey = preResolvedKey
+  if (!serpKey) {
+    const { resolveKey } = await import('../lib/resolveKey.js')
+    serpKey = await resolveKey(env, 'SERPAPI_KEY')
+  }
   if (!serpKey) throw new Error('SERPAPI_KEY não configurada — adicione em Configurações')
 
   // Always fetch 100 results from Google Shopping so post-filtering (ML/Amazon only)
@@ -338,6 +413,8 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
         rating:     item.rating ?? 0,
         reviews:    item.reviews ?? 0,
         affiliateLink,
+        mlAffiliateLink:      mlItem  ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId) : null,
+        amazonAffiliateLink:  amzItem ? buildAmazonAffiliateLink(rawLink, '', amazonTag)        : null,
         productUrl: rawLink,
         imageUrl:   item.thumbnail ?? '',
         currency: 'BRL', sourceApi: 'serpapi_google', lastSeen: new Date().toISOString(),
@@ -354,7 +431,9 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
       price:      parsePrice(item.price?.value ?? item.price),
       rating:     item.rating ?? 0,
       reviews:    item.reviews ?? 0,
-      affiliateLink: buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag),
+      affiliateLink:       buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag),
+      amazonAffiliateLink: buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag),
+      mlAffiliateLink:     null,
       productUrl: item.link ?? (item.asin ? `https://www.amazon.com.br/dp/${item.asin}` : ''),
       imageUrl:   item.thumbnail ?? '',
       currency: 'BRL', sourceApi: 'serpapi_amazon', lastSeen: new Date().toISOString(),
@@ -394,6 +473,9 @@ async function loadAffiliateIds(env) {
   return { amazonTag: amazonTag ?? '', mlAffiliateId: mlAffiliateTag ?? '' }
 }
 
+// Root tenant UUID — pinned in migration 002
+const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
+
 // ── Main session runner ───────────────────────────────────────────────────────
 export async function runMiningSession(env, { marketplace, category, siteFilter = 'all', sortBy = 'relevance' }) {
   const db        = getDb(env)
@@ -401,7 +483,10 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
 
   const { amazonTag, mlAffiliateId } = await loadAffiliateIds(env)
 
-  await db.from('mining_sessions').insert({ id: sessionId, marketplace, category, status: 'in_progress' })
+  await db.from('mining_sessions').insert({
+    id: sessionId, marketplace, category, status: 'in_progress',
+    tenant_id: ROOT_TENANT_ID,
+  })
 
   const rawProducts  = []
   const errors       = []
@@ -427,21 +512,35 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     }
 
     // ML Direct failed OR returned 0 results → fall back to SerpAPI.
-    // NOTE: site:mercadolivre.com.br doesn't work as a Google Shopping operator,
-    // so we fetch 100 results without a site restriction and post-filter to ML only.
+    // Pass 1: ML-only filter (preferred — affiliate links available).
+    // Pass 2: if ML filter yields 0, retry with siteFilter='all' so niche products
+    //         that aren't indexed under a ML URL on Google Shopping still surface.
     if (!mlDirectOk) {
       try {
-        const items = await fetchSerpApi(env, {
+        // Resolve SERPAPI_KEY once for all SerpAPI fallback calls
+        const { resolveKey: rk } = await import('../lib/resolveKey.js')
+        const fallbackSerpKey = serpApiKey ?? await rk(env, 'SERPAPI_KEY')
+
+        let items = await fetchSerpApi(env, {
           category, engine: 'google_shopping',
           mlAffiliateId, amazonTag,
-          siteRestrict: '',          // no site: operator — it breaks Google Shopping
-          siteFilter: 'mercadolivre', // post-filter: keep only ML results from the 100 fetched
-          limit: 20,
+          siteRestrict: '', siteFilter: 'mercadolivre', limit: 20,
+          serpKey: fallbackSerpKey,
         })
-        console.log(`[ML-serp] SerpAPI fallback returned ${items.length} ML items`)
+        console.log(`[ML-serp] SerpAPI ML-only returned ${items.length} items`)
+
+        if (items.length === 0) {
+          items = await fetchSerpApi(env, {
+            category, engine: 'google_shopping',
+            mlAffiliateId, amazonTag,
+            siteRestrict: '', siteFilter: 'all', limit: 20,
+            serpKey: fallbackSerpKey,
+          })
+          console.log(`[ML-serp] SerpAPI all-stores fallback returned ${items.length} items`)
+        }
+
         rawProducts.push(...items)
       } catch (e2) {
-        // Both sources failed — now worth showing the user
         errors.push(`MercadoLivre: ${e2.message}`)
       }
     }
@@ -449,14 +548,14 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
 
   if (marketplace === 'google_shopping' || marketplace === 'both') {
     try {
-      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter })
+      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter, serpKey: serpApiKey })
       rawProducts.push(...items)
     } catch (e) { errors.push(`Google Shopping: ${e.message || e.toString()}`) }
   }
 
   if (marketplace === 'amazon' || marketplace === 'both') {
     try {
-      const items = await fetchSerpApi(env, { category, engine: 'amazon', amazonTag, mlAffiliateId })
+      const items = await fetchSerpApi(env, { category, engine: 'amazon', amazonTag, mlAffiliateId, serpKey: serpApiKey })
       rawProducts.push(...items)
     } catch (e) { errors.push(`Amazon: ${e.message}`) }
   }
@@ -475,18 +574,19 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     score: p.sourceApi === 'ml_direct' ? scoreMLProduct(p) : scoreProduct(p),
   }))
 
-  // ── Phase 2: fetch blog reviews for top 10 (parallel, concurrency ≤ 5) ─────
-  const top10 = [...phase1].sort((a, b) => b.score - a.score).slice(0, 10)
+  // ── Phase 2: fetch blog reviews for top 5 (parallel) ────────────────────────
+  // Resolve SERPAPI_KEY once here — avoids one Supabase fetch per product.
+  // Cap at 5 products to stay well under the 50 subrequest-per-invocation limit.
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const serpApiKey = await resolveKey(env, 'SERPAPI_KEY')
+
+  const top5 = [...phase1].sort((a, b) => b.score - a.score).slice(0, 5)
   const blogById = {}
 
-  // Batch into groups of 5 to avoid hammering SerpAPI
-  for (let i = 0; i < top10.length; i += 5) {
-    const batch = top10.slice(i, i + 5)
-    await Promise.allSettled(batch.map(async (p) => {
-      const reviews = await fetchBlogReviews(env, p.title)
-      blogById[p.id] = reviews
-    }))
-  }
+  await Promise.allSettled(top5.map(async (p) => {
+    const reviews = await fetchBlogReviews(env, p.title, serpApiKey)
+    blogById[p.id] = reviews
+  }))
 
   // ── Phase 3: rescore with blog bonus + assemble final products ───────────────
   const finalScored = phase1.map(p => {
@@ -496,14 +596,9 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     return { ...p, blogReviews, blogReviewScore, score: baseScore + blogReviewScore }
   })
 
-  // Shorten affiliate links
-  const { shortenUrl } = await import('./shortLinkService.js')
-  const withShortLinks = await Promise.all(finalScored.map(async (p) => {
-    const shortLink = p.affiliateLink
-      ? await shortenUrl(env, { url: p.affiliateLink, productId: p.id, marketplace: p.marketplace }).catch(() => p.affiliateLink)
-      : p.affiliateLink
-    return { ...p, affiliateLink: shortLink }
-  }))
+  // Use raw affiliate links directly — shortening each link costs one Supabase write
+  // per product and would push the total subrequest count over Cloudflare's 50 limit.
+  const withShortLinks = finalScored
 
   // Strip fields that may not be in the DB schema yet ─────────────────────────
   // Tier 1: remove blog-only computed fields (blogReviews + blogReviewScore).
@@ -538,18 +633,21 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
       e.message.includes('does not exist')
     )
 
+  // Inject tenant_id into every product row (required NOT NULL after migration 002)
+  const addTenant = (rows) => rows.map(r => ({ ...r, tenant_id: ROOT_TENANT_ID }))
+
   // Attempt 1: full insert with all fields
   let saved, pErr
-  ;({ data: saved, error: pErr } = await db.from('products').insert(withShortLinks).select())
+  ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(withShortLinks)).select())
 
   // Attempt 2: strip blog fields
   if (isSchemaErr(pErr)) {
-    ;({ data: saved, error: pErr } = await db.from('products').insert(forDbT1).select())
+    ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT1)).select())
   }
 
   // Attempt 3: strip all potentially new columns
   if (isSchemaErr(pErr)) {
-    ;({ data: saved, error: pErr } = await db.from('products').insert(forDbT2).select())
+    ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT2)).select())
   }
 
   // Re-attach any stripped fields from memory so the session response stays complete
@@ -566,6 +664,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const entries = saved.map((p) => ({
     id: uid(), productId: p.id, market: marketplace,
     freshnessScore: 1.0, provenance: `session-${sessionId}`,
+    tenant_id: ROOT_TENANT_ID,
   }))
   const { error: eErr } = await db.from('catalog_entries').insert(entries)
   if (eErr) throw new Error(eErr.message)
