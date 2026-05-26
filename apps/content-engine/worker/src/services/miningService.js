@@ -481,7 +481,41 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const db        = getDb(env)
   const sessionId = uid()
 
+  // ── Resolve all keys upfront so every branch can reuse them ─────────────────
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const serpApiKey = await resolveKey(env, 'SERPAPI_KEY')
+
   const { amazonTag, mlAffiliateId } = await loadAffiliateIds(env)
+
+  // ── Auto-downgrade marketplace when credentials are missing ──────────────────
+  // Mirrors the same tiered fallback pattern used in fetchMLTrends:
+  //   1. ML direct (best data)  →  requires ML token
+  //   2. google_shopping (SERP) →  requires SERPAPI_KEY
+  //   3. If NEITHER is available, surface a clear error with guidance
+  const needsML   = marketplace === 'mercadolivre_direct'
+  const needsSerp = marketplace === 'google_shopping' || marketplace === 'amazon' || marketplace === 'both'
+
+  if (needsML) {
+    // Check if an ML token is actually obtainable
+    let mlAvailable = false
+    try {
+      const { token } = await getMLToken(env)
+      mlAvailable = !!token
+    } catch { /* treat as unavailable */ }
+
+    if (!mlAvailable) {
+      // No ML credentials → silently fall back to Google Shopping via SerpAPI
+      console.warn(`[mining] ML credentials unavailable for "${category}" — falling back to google_shopping`)
+      marketplace = 'google_shopping'
+    }
+  }
+
+  if ((marketplace === 'google_shopping' || marketplace === 'amazon' || marketplace === 'both') && !serpApiKey) {
+    // Neither ML nor SerpAPI — surface a clear actionable error
+    throw new Error(
+      'Nenhuma chave de API configurada. Adicione SERPAPI_KEY em Configurações → API Keys para ativar a mineração.'
+    )
+  }
 
   await db.from('mining_sessions').insert({
     id: sessionId, marketplace, category, status: 'in_progress',
@@ -518,8 +552,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     if (!mlDirectOk) {
       try {
         // Resolve SERPAPI_KEY once for all SerpAPI fallback calls
-        const { resolveKey: rk } = await import('../lib/resolveKey.js')
-        const fallbackSerpKey = serpApiKey ?? await rk(env, 'SERPAPI_KEY')
+        const fallbackSerpKey = serpApiKey  // already resolved at function start
 
         let items = await fetchSerpApi(env, {
           category, engine: 'google_shopping',
@@ -575,10 +608,8 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   }))
 
   // ── Phase 2: fetch blog reviews for top 5 (parallel) ────────────────────────
-  // Resolve SERPAPI_KEY once here — avoids one Supabase fetch per product.
+  // serpApiKey already resolved at function start — reused here.
   // Cap at 5 products to stay well under the 50 subrequest-per-invocation limit.
-  const { resolveKey } = await import('../lib/resolveKey.js')
-  const serpApiKey = await resolveKey(env, 'SERPAPI_KEY')
 
   const top5 = [...phase1].sort((a, b) => b.score - a.score).slice(0, 5)
   const blogById = {}
