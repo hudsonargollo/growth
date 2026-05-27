@@ -440,6 +440,37 @@ app.delete('/api/comments', async (c) => {
   return c.json({ ok: true })
 })
 
+// ── Niche thumbnail preview ───────────────────────────────────────────────────
+// GET /api/mining/thumbnails?q=<category>&limit=6
+// Returns a small set of product thumbnails for a niche category using the
+// same ML proxy pattern as miningService (avoids CF Worker IP blocks).
+app.get('/api/mining/thumbnails', async (c) => {
+  const q     = (c.req.query('q') ?? '').trim()
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '6', 10), 12)
+  if (!q) return c.json({ items: [] })
+
+  const proxyBase   = (c.env.ML_PROXY_URL ?? '').replace(/\/$/, '') || 'https://api.mercadolibre.com'
+  const proxySecret = c.env.ML_PROXY_SECRET ?? ''
+  const headers     = new Headers({ 'User-Agent': 'FabricaDeConteudo/1.0', Accept: 'application/json' })
+  if (proxySecret && proxyBase !== 'https://api.mercadolibre.com') headers.set('X-Proxy-Secret', proxySecret)
+
+  const url = `${proxyBase}/sites/MLB/search?q=${encodeURIComponent(q)}&limit=${limit}&sort=sold_quantity_desc`
+  const res = await fetch(url, { headers })
+  if (!res.ok) return c.json({ items: [] })
+
+  const data  = await res.json()
+  const items = (data.results ?? []).slice(0, limit).map(item => ({
+    id:        item.id,
+    title:     item.title,
+    price:     item.price,
+    currency:  item.currency_id ?? 'BRL',
+    // Upgrade to medium-quality image (replace -I. with -O.)
+    thumbnail: (item.thumbnail ?? '').replace(/-[A-Z]\.jpg$/, '-O.jpg') || item.thumbnail,
+    permalink: item.permalink ?? '',
+  }))
+  return c.json({ items })
+})
+
 // ── Affiliate link builder ────────────────────────────────────────────────────
 // POST /api/affiliate/ml
 // body: { itemId | url }   (client just sends the raw ID or full ML URL)
