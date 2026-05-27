@@ -15,6 +15,7 @@ import credentialsRouter                                      from './routes/cre
 import apikeysRouter                                          from './routes/apikeys.js'
 import financeRouter                                          from './routes/finance.js'
 import youtubeRouter                                          from './routes/youtube.js'
+import migrateRouter                                         from './routes/migrate.js'
 import { uid }                                               from './lib/uid.js'
 
 const app = new Hono()
@@ -645,6 +646,7 @@ app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
 app.route('/api/finance',     financeRouter)
 app.route('/api/youtube',     youtubeRouter)
+app.route('/api/admin',       migrateRouter)
 
 // ── Voiceover preview (streams 3-second TTS sample for voice selection UI) ────
 app.get('/api/voiceover/preview/:voiceId', async (c) => {
