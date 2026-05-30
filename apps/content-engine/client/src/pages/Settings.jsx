@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Save,
-  Terminal, Copy, Check, Key, Radio, Globe, Youtube, Link2, Unlink,
+  Copy, Check, Key, Radio, Globe, Youtube, Link2, Unlink, ShoppingCart,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import { apiPut, apiDelete } from '../hooks/useApi.js'
@@ -16,6 +16,8 @@ const KEY_GROUPS = [
     keys: [
       { key: 'YOUTUBE_API_KEY',    label: 'YouTube Data API Key', placeholder: 'AIza…',   required: true },
       { key: 'YOUTUBE_CHANNEL_ID', label: 'YouTube Channel ID',   placeholder: 'UCxxxx…', required: true },
+      { key: 'GOOGLE_CLIENT_ID',     label: 'Google OAuth Client ID',     placeholder: '265158…apps.googleusercontent.com', required: false, hint: 'Google Cloud Console → OAuth 2.0 Credentials → Client ID' },
+      { key: 'GOOGLE_CLIENT_SECRET', label: 'Google OAuth Client Secret', placeholder: 'GOCSPX-…',                          required: false, hint: 'Google Cloud Console → OAuth 2.0 Credentials → Client Secret' },
     ],
   },
   {
@@ -250,6 +252,224 @@ function YouTubeOAuthCard({ onStatusChange }) {
   )
 }
 
+// ── Mercado Livre OAuth connect card ─────────────────────────────────────────
+function MLOAuthCard() {
+  const [status,     setStatus]     = useState(null)   // null | 'connected' | 'disconnected'
+  const [updatedAt,  setUpdatedAt]  = useState(null)
+  const [connecting, setConnecting] = useState(false)
+  const [removing,   setRemoving]   = useState(false)
+  const [hovered,    setHovered]    = useState(false)
+
+  useEffect(() => {
+    fetch('/api/ml/oauth/status')
+      .then((r) => r.json())
+      .then(({ connected, updated_at }) => {
+        setStatus(connected ? 'connected' : 'disconnected')
+        setUpdatedAt(updated_at)
+      })
+      .catch(() => setStatus('disconnected'))
+  }, [])
+
+  async function handleConnect() {
+    setConnecting(true)
+    try {
+      const res = await fetch('/api/ml/oauth/url')
+      const { url, error } = await res.json()
+      if (error || !url) throw new Error(error ?? 'Failed to get auth URL')
+      window.location.href = url
+    } catch (e) {
+      console.error('[ml/oauth]', e)
+      setConnecting(false)
+    }
+  }
+
+  async function handleDisconnect() {
+    setRemoving(true)
+    try {
+      await fetch('/api/ml/oauth', { method: 'DELETE' })
+      setStatus('disconnected')
+      setUpdatedAt(null)
+    } catch {}
+    finally { setRemoving(false) }
+  }
+
+  const isConnected = status === 'connected'
+
+  return (
+    <div className="card overflow-hidden">
+      <div
+        className="card-header"
+        style={isConnected
+          ? { background: 'rgba(255,184,0,0.05)', borderBottom: '1px solid rgba(255,184,0,0.20)' }
+          : undefined}
+      >
+        <div
+          className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-sm"
+          style={isConnected
+            ? { background: 'rgba(255,184,0,0.15)', border: '1px solid rgba(255,184,0,0.35)' }
+            : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+        >
+          🟡
+        </div>
+        <h3 className="card-title">Mercado Livre — OAuth</h3>
+        {status === null && <Loader2 size={13} className="animate-spin ml-auto" style={{ color: 'rgba(255,255,255,0.30)' }} />}
+        {isConnected && (
+          <span className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: '#FFB800' }}>
+            <CheckCircle size={11} /> Conectado
+            {updatedAt && (
+              <span className="font-normal" style={{ color: 'rgba(255,255,255,0.30)' }}>
+                · {new Date(updatedAt).toLocaleDateString('pt-BR')}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+
+      <div className="p-6 space-y-4">
+        <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          Conecte sua conta Mercado Livre para que a Mineração possa buscar produtos com dados completos de vendas.
+          O token é armazenado de forma criptografada e renovado automaticamente.
+        </p>
+
+        {!isConnected && status !== null && (
+          <div className="rounded-xl p-4" style={{ background: 'rgba(255,184,0,0.06)', border: '1px solid rgba(255,184,0,0.20)' }}>
+            <p className="text-[11px]" style={{ color: 'rgba(255,184,0,0.80)' }}>
+              Sem conexão OAuth, a busca de produtos usa credenciais de app com escopo limitado e pode retornar 0 resultados.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          {!isConnected ? (
+            <button
+              onClick={handleConnect}
+              disabled={connecting || status === null}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 18px', borderRadius: 12,
+                background: hovered ? '#FFB800' : 'rgba(255,184,0,0.10)',
+                border: '1px solid rgba(255,184,0,0.40)',
+                color: hovered ? '#07070B' : '#FFB800',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                transition: 'all 200ms ease',
+                boxShadow: hovered ? '0 0 24px rgba(255,184,0,0.25)' : 'none',
+              }}
+            >
+              {connecting
+                ? <Loader2 size={14} className="animate-spin" />
+                : <Link2 size={14} />}
+              {connecting ? 'Redirecionando…' : 'Conectar conta Mercado Livre'}
+            </button>
+          ) : (
+            <button
+              onClick={handleDisconnect}
+              disabled={removing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-colors"
+              style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.25)', color: '#FF3366' }}
+            >
+              {removing ? <Loader2 size={13} className="animate-spin" /> : <Unlink size={13} />}
+              Desconectar
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Marketplace config card ───────────────────────────────────────────────────
+const MARKETPLACE_OPTIONS = [
+  { id: 'mercadolivre', label: 'Mercado Livre', emoji: '🟡', desc: 'ML Direto — melhor dados de vendas' },
+  { id: 'amazon',       label: 'Amazon',        emoji: '🟠', desc: 'Via SerpAPI — requer SERPAPI_KEY' },
+  { id: 'google_shopping', label: 'Google Shopping', emoji: '🔵', desc: 'Via SerpAPI — produtos variados' },
+]
+
+function MarketplaceConfigCard() {
+  const [marketplaces, setMarketplaces] = useState(['mercadolivre', 'amazon'])
+  const [saving,       setSaving]       = useState(false)
+  const [saved,        setSaved]        = useState(false)
+
+  useEffect(() => {
+    fetch('/api/mining/config')
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.marketplaces)) setMarketplaces(d.marketplaces) })
+      .catch(() => {})
+  }, [])
+
+  function toggle(id) {
+    setMarketplaces(prev =>
+      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+    )
+  }
+
+  async function handleSave() {
+    setSaving(true); setSaved(false)
+    try {
+      await fetch('/api/mining/config', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketplaces }),
+      })
+      setSaved(true); setTimeout(() => setSaved(false), 2500)
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="card-header">
+        <ShoppingCart size={15} style={{ color: '#FFB800' }} />
+        <h3 className="card-title">Marketplaces Ativos</h3>
+        <span className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {marketplaces.length} ativo{marketplaces.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="p-6 space-y-3">
+        <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.40)' }}>
+          Selecione de quais marketplaces buscar produtos na Mineração. Padrão: Mercado Livre + Amazon.
+        </p>
+        <div className="space-y-2">
+          {MARKETPLACE_OPTIONS.map(mp => (
+            <label key={mp.id}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all"
+              style={{
+                background: marketplaces.includes(mp.id) ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${marketplaces.includes(mp.id) ? 'rgba(139,92,246,0.30)' : 'rgba(255,255,255,0.07)'}`,
+              }}>
+              <input
+                type="checkbox"
+                checked={marketplaces.includes(mp.id)}
+                onChange={() => toggle(mp.id)}
+                className="w-4 h-4 rounded accent-violet-500"
+              />
+              <span className="text-lg leading-none">{mp.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>{mp.label}</p>
+                <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.38)' }}>{mp.desc}</p>
+              </div>
+              {marketplaces.includes(mp.id) && (
+                <Check size={13} style={{ color: '#8B5CF6', flexShrink: 0 }} />
+              )}
+            </label>
+          ))}
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving || marketplaces.length === 0}
+          className="flex items-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-40"
+          style={{
+            background: saved ? 'rgba(0,255,185,0.10)' : 'rgba(139,92,246,0.15)',
+            border: `1px solid ${saved ? 'rgba(0,255,185,0.30)' : 'rgba(139,92,246,0.30)'}`,
+            color: saved ? '#00FFB9' : '#8B5CF6',
+          }}>
+          {saving ? <Loader2 size={12} className="animate-spin" /> : saved ? <Check size={12} /> : <Save size={12} />}
+          {saving ? 'Salvando…' : saved ? 'Salvo!' : 'Salvar preferências'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ApiKeysTab() {
   const location    = useLocation()
   const [keyStates, setKeyStates]   = useState({})
@@ -266,13 +486,14 @@ function ApiKeysTab() {
       setOauthMsg({ type: 'success', text: 'YouTube conectado com sucesso! O agente agora pode postar respostas automaticamente.' })
     } else if (yt === 'error') {
       const reason = params.get('reason') ?? 'unknown'
+      const detail = params.get('detail') ?? ''
       const msgs   = {
         no_refresh_token: 'Nenhum refresh_token retornado. Acesse myaccount.google.com/permissions, remova o app e tente novamente.',
         token_exchange:   'Falha ao trocar o código por token. Verifique o GOOGLE_CLIENT_SECRET.',
         server_config:    'Configuração do servidor incompleta. Execute: npx wrangler secret put GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET.',
-        db_error:         'Erro ao salvar credencial no banco de dados.',
+        db_error:         `Erro ao salvar credencial no banco de dados.${detail ? ` Detalhe: ${detail}` : ''}`,
       }
-      setOauthMsg({ type: 'error', text: msgs[reason] ?? `Erro OAuth: ${reason}` })
+      setOauthMsg({ type: 'error', text: msgs[reason] ?? `Erro OAuth: ${reason}${detail ? ` — ${detail}` : ''}` })
     }
 
     // Clean the URL params without a reload
@@ -346,27 +567,32 @@ function ApiKeysTab() {
 
       {/* YouTube OAuth card — rendered first in the YouTube group */}
       <YouTubeOAuthCard />
+      <MLOAuthCard />
 
       {KEY_GROUPS.map((group) => (
-        <div key={group.title} className="card overflow-hidden">
-          <div className="card-header">
-            <span className="text-base">{group.icon}</span>
-            <h3 className="card-title">{group.title}</h3>
-            <span className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>
-              {group.keys.filter((k) => keyStates[k.key]?.isSet).length}/{group.keys.length} configuradas
-            </span>
+        <div key={group.title}>
+          <div className="card overflow-hidden">
+            <div className="card-header">
+              <span className="text-base">{group.icon}</span>
+              <h3 className="card-title">{group.title}</h3>
+              <span className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>
+                {group.keys.filter((k) => keyStates[k.key]?.isSet).length}/{group.keys.length} configuradas
+              </span>
+            </div>
+            <div className="p-6 grid grid-cols-1 gap-5">
+              {group.keys.map((keyDef) => (
+                <KeyField
+                  key={keyDef.key}
+                  keyDef={keyDef}
+                  savedState={keyStates[keyDef.key]}
+                  onSaved={handleSaved}
+                  onDeleted={handleDeleted}
+                />
+              ))}
+            </div>
           </div>
-          <div className="p-6 grid grid-cols-1 gap-5">
-            {group.keys.map((keyDef) => (
-              <KeyField
-                key={keyDef.key}
-                keyDef={keyDef}
-                savedState={keyStates[keyDef.key]}
-                onSaved={handleSaved}
-                onDeleted={handleDeleted}
-              />
-            ))}
-          </div>
+          {/* Marketplace config shown right after Mineração group */}
+          {group.title === 'Mineração' && <div className="mt-4"><MarketplaceConfigCard /></div>}
         </div>
       ))}
     </div>
@@ -397,22 +623,6 @@ const PLATFORM_OPTIONS  = [
   { value: 'instagram_reels', label: 'Instagram Reels' },
   { value: 'multi',           label: 'Multi-plataforma' },
 ]
-
-const CHANNEL_PROFILE_SQL = `CREATE TABLE IF NOT EXISTS channel_profiles (
-  id                   text PRIMARY KEY,
-  "channelName"        text NOT NULL DEFAULT '',
-  niche                text NOT NULL DEFAULT '',
-  "platformFocus"      text NOT NULL DEFAULT 'youtube',
-  "targetAudience"     text NOT NULL DEFAULT '',
-  tone                 text NOT NULL DEFAULT 'energético e informativo',
-  "affiliatePlatforms" jsonb NOT NULL DEFAULT '[]',
-  "ctaStyle"           text NOT NULL DEFAULT '',
-  "signaturePhrases"   text NOT NULL DEFAULT '',
-  "introStyle"         text NOT NULL DEFAULT 'hook_question',
-  "createdAt"          timestamptz NOT NULL DEFAULT now(),
-  "updatedAt"          timestamptz NOT NULL DEFAULT now()
-);
-NOTIFY pgrst, 'reload schema';`
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false)
@@ -450,9 +660,8 @@ function ChannelProfileTab() {
   const [profile,      setProfile]      = useState(defaultProfile)
   const [loading,      setLoading]      = useState(true)
   const [saving,       setSaving]       = useState(false)
-  const [saved,        setSaved]        = useState(false)
-  const [error,        setError]        = useState(null)
-  const [tableMissing, setTableMissing] = useState(false)
+  const [saved,  setSaved]  = useState(false)
+  const [error,  setError]  = useState(null)
 
   useEffect(() => {
     fetch('/api/channel-profile')
@@ -472,19 +681,14 @@ function ChannelProfileTab() {
   }
 
   async function handleSave() {
-    setSaving(true); setError(null); setTableMissing(false)
+    setSaving(true); setError(null)
     try {
       const res  = await fetch('/api/channel-profile', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       })
       const data = await res.json()
-      if (!res.ok) {
-        if (data.error === 'TABLE_MISSING' || data.error?.includes('channel_profiles')) {
-          setTableMissing(true); return
-        }
-        throw new Error(data.error ?? res.statusText)
-      }
+      if (!res.ok) throw new Error(data.error ?? res.statusText)
       setProfile(data); setSaved(true); setTimeout(() => setSaved(false), 3000)
     } catch (e) { setError(e.message) }
     finally { setSaving(false) }
@@ -498,30 +702,6 @@ function ChannelProfileTab() {
 
   return (
     <div className="space-y-5">
-      {tableMissing && (
-        <div className="card overflow-hidden">
-          <div className="card-header" style={{ background: 'rgba(255,184,0,0.06)', borderBottom: '1px solid rgba(255,184,0,0.20)' }}>
-            <Terminal size={14} className="shrink-0" style={{ color: '#FFB800' }} />
-            <div>
-              <p className="text-[13px] font-bold" style={{ color: '#FFB800' }}>Tabela não encontrada — setup rápido necessário</p>
-              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,184,0,0.70)' }}>Execute o SQL abaixo no Supabase → SQL Editor</p>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="rounded-xl overflow-hidden" style={{ background: '#0a0a12' }}>
-              <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06]">
-                <span className="text-[11px] font-mono" style={{ color: 'rgba(255,255,255,0.30)' }}>SQL Editor → New query</span>
-                <CopyBtn text={CHANNEL_PROFILE_SQL} />
-              </div>
-              <pre className="p-4 text-[12px] text-emerald-300 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                {CHANNEL_PROFILE_SQL}
-              </pre>
-            </div>
-            <p className="text-xs mt-3" style={{ color: 'rgba(255,184,0,0.70)' }}>Após executar, clique em <strong>Salvar Perfil</strong> novamente.</p>
-          </div>
-        </div>
-      )}
-
       {error && <div className="alert-error"><AlertCircle size={15} className="shrink-0" />{error}</div>}
 
       {/* Identity */}
