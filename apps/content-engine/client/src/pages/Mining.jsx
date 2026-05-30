@@ -1,10 +1,13 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Play, RefreshCw, ShoppingBag, AlertTriangle, CheckCircle2,
   ExternalLink, Link2, Check, X, Pencil, Search, ChevronDown, ChevronUp,
   Sparkles, TrendingUp, Users, DollarSign, Target, Zap, Video, Clapperboard,
   Trash2, BarChart2, Star, Truck, Award, Filter, SlidersHorizontal, Tag,
   Package, Flame, Trophy, ArrowUpRight, ChevronRight, XCircle, BookOpen, Layers,
+  LayoutGrid, List, Database, Loader2, FolderOpen, Tag as TagIcon, Save, FolderPlus,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
@@ -59,7 +62,11 @@ const SELLER_LEVEL_COLORS = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtPrice(price, currency = 'BRL') {
   if (!price) return '—'
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(price)
+  try {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency || 'BRL' }).format(price)
+  } catch {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price)
+  }
 }
 
 function fmtNumber(n) {
@@ -69,10 +76,10 @@ function fmtNumber(n) {
 }
 
 function scoreColor(score) {
-  if (score >= 80) return 'bg-[#00FFB9]/12 text-[#00FFB9]'
-  if (score >= 60) return 'bg-violet-500/12 text-violet-400'
-  if (score >= 40) return 'bg-yellow-100 text-yellow-700'
-  return 'bg-[#0F0F16]/[0.05] text-white/40'
+  if (score >= 80) return { bg: 'rgba(0,255,185,0.15)',   border: 'rgba(0,255,185,0.35)',   color: '#00FFB9' }
+  if (score >= 60) return { bg: 'rgba(139,92,246,0.18)',  border: 'rgba(139,92,246,0.35)',  color: '#a78bfa' }
+  if (score >= 40) return { bg: 'rgba(255,184,0,0.15)',   border: 'rgba(255,184,0,0.35)',   color: '#FFB800' }
+  return              { bg: 'rgba(255,255,255,0.06)',  border: 'rgba(255,255,255,0.12)',  color: 'rgba(255,255,255,0.45)' }
 }
 
 function discountPct(original, current) {
@@ -108,7 +115,7 @@ function AffiliateLinkEditor({ productId, label, placeholder, initialValue, colo
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
             placeholder={placeholder} autoComplete="off"
-            className="flex-1 min-w-0 text-xs border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono" />
+            className="input flex-1 min-w-0 text-xs py-1 font-mono" />
           <button onMouseDown={e => e.preventDefault()} onClick={handleSave}
             className="p-1 text-green-600 hover:bg-green-50 rounded shrink-0"><Check size={11} /></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => setEditing(false)}
@@ -139,11 +146,18 @@ function AffiliateLinkEditor({ productId, label, placeholder, initialValue, colo
 
 // ── Score badge ───────────────────────────────────────────────────────────────
 function ScoreBadge({ score, blogBonus }) {
+  const c = scoreColor(score)
   return (
-    <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${scoreColor(score)}`}
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      padding: '2px 7px', borderRadius: 100,
+      fontSize: 11, fontWeight: 800,
+      fontFamily: "'JetBrains Mono', monospace",
+      background: c.bg, border: `1px solid ${c.border}`, color: c.color,
+    }}
       title={blogBonus > 0 ? `Plataforma: ${score - blogBonus} + Blog: +${blogBonus}` : undefined}>
       <Trophy size={9} /> {score}
-      {blogBonus > 0 && <span className="text-[9px] opacity-70">+{blogBonus}</span>}
+      {blogBonus > 0 && <span style={{ fontSize: 9, opacity: 0.75 }}>+{blogBonus}</span>}
     </span>
   )
 }
@@ -155,14 +169,61 @@ const COMPETITION_META = {
   high:   { label: 'Alta Concorrência',  color: 'bg-red-100 text-[#FF3366]',      desc: 'Mercado saturado — diferenciação necessária' },
 }
 
+// ── Circular SVG progress ring ────────────────────────────────────────────────
+// Uses the r=15.9155 trick so circumference === 100 exactly.
+function CircleProgress({ pct = 0, size = 44, strokeWidth = 3.5, color = '#C1FF2F', label, value }) {
+  const r = 15.9155
+  const circumference = 100
+  const offset = circumference - Math.min(Math.max(pct, 0), 100)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      <div style={{ position: 'relative', width: size, height: size }}>
+        <svg width={size} height={size} viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+          {/* Track */}
+          <circle cx="18" cy="18" r={r} fill="none"
+            stroke="rgba(255,255,255,0.07)" strokeWidth={strokeWidth} />
+          {/* Progress */}
+          <circle cx="18" cy="18" r={r} fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+          />
+        </svg>
+        {/* Center value */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{
+            fontSize: size < 44 ? 8 : 10,
+            fontWeight: 800,
+            color,
+            fontFamily: "'JetBrains Mono', monospace",
+            lineHeight: 1,
+          }}>{value}</span>
+        </div>
+      </div>
+      {label && (
+        <span style={{
+          fontSize: 8, fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.08em', color: 'rgba(255,255,255,0.30)',
+        }}>{label}</span>
+      )}
+    </div>
+  )
+}
+
 // ── Product card (grid) ───────────────────────────────────────────────────────
-function ProductCard({ product, onOpen }) {
+function ProductCard({ product, onOpen, onMine }) {
   const soldQty         = product.soldQuantity ?? product.reviews ?? 0
   const discount        = discountPct(product.originalPrice, product.price)
   const listing         = LISTING_COLORS[product.listingType ?? product.listingTypeId]
   const hasFreeShipping = product.freeShipping
   const blogCount       = product.blogReviews?.length ?? 0
-  const trustedCount    = product.blogReviews?.filter(r => r.trusted)?.length ?? 0
+  const trustedCount    = product.blogReviews?.filter(r => r?.trusted)?.length ?? 0
   const blogBonus       = product.blogReviewScore ?? 0
 
   return (
@@ -200,44 +261,76 @@ function ProductCard({ product, onOpen }) {
       </div>
 
       {/* Body */}
-      <div className="p-3">
-        <p className="text-xs font-medium text-white/80 line-clamp-2 leading-snug mb-2">{product.title}</p>
+      <div className="p-3" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Title */}
+        <p className="text-xs font-medium text-white/80 line-clamp-2 leading-snug">{product.title}</p>
 
-        <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-sm font-bold text-white/90">{fmtPrice(product.price)}</span>
-          {discount > 0 && (
-            <span className="text-[11px] text-white/35 line-through">{fmtPrice(product.originalPrice)}</span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {soldQty > 0 && (
-            <span className="flex items-center gap-0.5 text-[11px] text-[#FFB800] font-medium">
-              <Flame size={10} /> {fmtNumber(soldQty)} vendidos
-            </span>
-          )}
-          {product.rating > 0 && (
-            <span className="flex items-center gap-0.5 text-[11px] text-yellow-600">
-              <Star size={9} fill="currentColor" /> {product.rating}
-            </span>
-          )}
-          {hasFreeShipping && (
-            <span className="flex items-center gap-0.5 text-[11px] text-green-600">
-              <Truck size={9} /> Grátis
-            </span>
-          )}
-          {product.fulfillment && (
-            <span className="flex items-center gap-0.5 text-[11px] text-blue-600">
-              <Package size={9} /> Full
-            </span>
-          )}
-        </div>
-
-        <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
-          <span className="text-[10px] text-white/35 capitalize bg-[#0F0F16]/[0.03] px-1.5 py-0.5 rounded">
-            {product.marketplace?.replace(/_/g, ' ')}
+        {/* Price */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#C1FF2F', letterSpacing: '-0.02em' }}>
+            {fmtPrice(product.price)}
           </span>
-          <ChevronRight size={12} className="text-white/25 group-hover:text-violet-400 transition-colors" />
+          {discount > 0 && (
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', textDecoration: 'line-through' }}>
+              {fmtPrice(product.originalPrice)}
+            </span>
+          )}
+        </div>
+
+        {/* Visual metric rings */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+          padding: '8px 4px 4px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          {/* Score ring */}
+          <CircleProgress
+            pct={product.score ?? 0}
+            value={product.score ?? 0}
+            label="Score"
+            color={
+              (product.score ?? 0) >= 80 ? '#00FFB9' :
+              (product.score ?? 0) >= 60 ? '#C1FF2F' :
+              (product.score ?? 0) >= 40 ? '#FFB800' :
+              'rgba(255,255,255,0.35)'
+            }
+          />
+          {/* Rating ring (0-5 → 0-100%) */}
+          <CircleProgress
+            pct={(product.rating ?? 0) / 5 * 100}
+            value={product.rating > 0 ? product.rating.toFixed(1) : '—'}
+            label="Nota"
+            color="#FFB800"
+          />
+          {/* Demand ring: soldQty normalized (cap at 5000) */}
+          <CircleProgress
+            pct={Math.min((product.soldQuantity ?? product.reviews ?? 0) / 5000 * 100, 100)}
+            value={fmtNumber(product.soldQuantity ?? product.reviews ?? 0)}
+            label="Vendas"
+            color="#818cf8"
+          />
+        </div>
+
+        {/* Marketplace pill + "Minerar" CTA */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingTop: 2 }}>
+          <MpPill marketplace={product.marketplace} />
+          <button
+            onClick={e => { e.stopPropagation(); onMine?.(product) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', borderRadius: 8,
+              background: 'rgba(193,255,47,0.12)',
+              border: '1px solid rgba(193,255,47,0.28)',
+              color: '#C1FF2F',
+              fontSize: 10, fontWeight: 800,
+              cursor: 'pointer', letterSpacing: '0.04em',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#C1FF2F'; e.currentTarget.style.color = '#07070B'; e.currentTarget.style.boxShadow = '0 0 14px rgba(193,255,47,0.35)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(193,255,47,0.12)'; e.currentTarget.style.color = '#C1FF2F'; e.currentTarget.style.boxShadow = 'none' }}
+          >
+            <Zap size={9} strokeWidth={2.5} /> Minerar
+          </button>
         </div>
       </div>
     </div>
@@ -246,11 +339,27 @@ function ProductCard({ product, onOpen }) {
 
 // ── Product drawer ─────────────────────────────────────────────────────────────
 function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affiliateOverrides }) {
+  const [generatingLinks, setGeneratingLinks] = useState(false)
+  const [linksGenerated,  setLinksGenerated]  = useState(false)
+
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
+
+  async function handleGenerateLinks() {
+    setGeneratingLinks(true); setLinksGenerated(false)
+    try {
+      const res  = await fetch(`/api/products/${product.id}/affiliate-links`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Erro ao gerar links')
+      if (data.amazonAffiliateLink) onSaveAffiliateLink(product.id, 'amazonAffiliateLink', data.amazonAffiliateLink)
+      if (data.mlAffiliateLink)     onSaveAffiliateLink(product.id, 'mlAffiliateLink',     data.mlAffiliateLink)
+      if (data.affiliateLink)       onSaveAffiliateLink(product.id, 'affiliateLink',        data.affiliateLink)
+      setLinksGenerated(true); setTimeout(() => setLinksGenerated(false), 3000)
+    } catch (e) { alert(e.message) } finally { setGeneratingLinks(false) }
+  }
 
   if (!product) return null
 
@@ -258,7 +367,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
   const discount      = discountPct(product.originalPrice, product.price)
   const listing       = LISTING_COLORS[product.listingType ?? product.listingTypeId]
   const overrides     = affiliateOverrides[product.id] ?? {}
-  const blogReviews   = product.blogReviews ?? []
+  const blogReviews   = Array.isArray(product.blogReviews) ? product.blogReviews : []
   const blogBonus     = product.blogReviewScore ?? 0
   const platformScore = (product.score ?? 0) - blogBonus
   const totalScore    = product.score ?? 0
@@ -266,44 +375,77 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
   const productUrl    = product.productUrl ?? ''
   const primaryLink   = affiliateLink || productUrl
 
-  const mpLabel = product.marketplace === 'amazon' ? 'Amazon' : product.marketplace === 'mercadolivre' ? 'Mercado Livre' : product.marketplace?.replace(/_/g, ' ') ?? ''
+  const mpLabel = product.marketplace === 'amazon' ? 'Amazon'
+    : product.marketplace === 'mercadolivre' ? 'Mercado Livre'
+    : product.marketplace?.replace(/_/g, ' ') ?? ''
 
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+  const mpColor = product.marketplace === 'amazon' ? '#FF9900'
+    : product.marketplace === 'mercadolivre' ? '#FFE600'
+    : 'rgba(255,255,255,0.3)'
 
-      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] bg-[#0F0F16] shadow-2xl flex flex-col overflow-hidden">
+  const drawer = (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex' }}>
+      {/* Backdrop */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+
+      {/* Panel */}
+      <div style={{
+        position: 'absolute', right: 0, top: 0, height: '100%',
+        width: '100%', maxWidth: 440,
+        background: '#0F0F16',
+        borderLeft: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '-24px 0 80px rgba(0,0,0,0.6)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+
         {/* ── Header ── */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 shrink-0">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#0F0F16]/[0.05] text-white/35 hover:text-white/60 transition-colors">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: 6, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <X size={15} />
           </button>
-          <span className="text-xs text-white/35 flex-1 truncate">{mpLabel}</span>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: mpColor, flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 500, truncate: true }}>{mpLabel}</span>
+          </div>
+          {primaryLink && (
+            <a href={primaryLink} target="_blank" rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 8, background: 'rgba(0,255,185,0.10)', color: '#00FFB9', border: '1px solid rgba(0,255,185,0.20)', textDecoration: 'none' }}>
+              Ver produto <ExternalLink size={10} />
+            </a>
+          )}
           <button onClick={() => { onDelete(product.id); onClose() }}
-            className="p-1.5 rounded-lg hover:bg-[#FF3366]/8 text-white/25 hover:text-[#FF3366] transition-colors">
+            style={{ padding: 6, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,51,102,0.10)'; e.currentTarget.style.color = '#FF3366' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.25)' }}>
             <Trash2 size={13} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* ── Scrollable body ── */}
+        <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}>
 
           {/* ── Hero ── */}
-          <div className="p-5 pb-4">
-            <div className="flex gap-4 items-start mb-4">
-              <div className="w-20 h-20 bg-[#0F0F16]/[0.03] rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+          <div style={{ padding: '20px 20px 16px' }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ width: 80, height: 80, borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {product.imageUrl
-                  ? <img src={product.imageUrl} alt="" className="w-full h-full object-contain p-1" />
-                  : <ShoppingBag size={22} className="text-white/20" />}
+                  ? <img src={product.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
+                  : <ShoppingBag size={22} color="rgba(255,255,255,0.18)" />}
               </div>
-              <div className="flex-1 min-w-0 pt-0.5">
-                <h2 className="text-sm font-bold text-white/90 leading-snug mb-2 line-clamp-3">{product.title}</h2>
-                <div className="flex flex-wrap items-center gap-1.5">
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                <h2 style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.90)', lineHeight: 1.4, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {product.title}
+                </h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}>
                   <ScoreBadge score={totalScore} blogBonus={blogBonus} />
                   {listing && (
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${listing.bg} ${listing.text}`}>{listing.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999 }}
+                      className={`${listing.bg} ${listing.text}`}>{listing.label}</span>
                   )}
                   {blogBonus > 0 && (
-                    <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium">
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: 'rgba(168,85,247,0.15)', color: '#c084fc', display: 'flex', alignItems: 'center', gap: 3 }}>
                       <BookOpen size={9} /> +{blogBonus} blog
                     </span>
                   )}
@@ -312,131 +454,147 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
             </div>
 
             {/* Price row */}
-            <div className="flex items-center gap-3 bg-[#0F0F16]/[0.03] rounded-xl px-4 py-3">
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-extrabold text-white/90">{fmtPrice(product.price)}</span>
-                  {discount > 0 && <span className="text-sm text-white/35 line-through">{fmtPrice(product.originalPrice)}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.92)' }}>{fmtPrice(product.price)}</span>
+                  {discount > 0 && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.30)', textDecoration: 'line-through' }}>{fmtPrice(product.originalPrice)}</span>}
                 </div>
                 {discount > 0 && (
-                  <span className="text-xs font-bold text-[#00FFB9] bg-[#00FFB9]/12 px-1.5 py-0.5 rounded-full">{discount}% off</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#00FFB9', background: 'rgba(0,255,185,0.12)', padding: '2px 8px', borderRadius: 999 }}>{discount}% off</span>
                 )}
               </div>
-              {primaryLink && (
-                <a href={primaryLink} target="_blank" rel="noreferrer"
-                  className="btn-primary text-xs shrink-0">
-                  Ver produto <ExternalLink size={11} />
-                </a>
-              )}
             </div>
           </div>
 
           {/* ── Métricas ── */}
-          <div className="px-5 pb-4 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+          <div style={{ padding: '0 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
               <BarChart2 size={11} /> Métricas de Mercado
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
-                { icon: Flame,   label: 'Vendas confirmadas', value: soldQty > 0 ? soldQty.toLocaleString('pt-BR') : '—', color: 'text-orange-500', bg: 'bg-[#FFB800]/8' },
-                { icon: Star,    label: 'Avaliação média',    value: product.rating > 0 ? `${product.rating} ★` : '—',      color: 'text-yellow-500', bg: 'bg-yellow-50' },
-                { icon: Truck,   label: 'Frete',              value: product.freeShipping ? 'Grátis ✓' : 'Cobrado',          color: product.freeShipping ? 'text-green-600' : 'text-white/35', bg: product.freeShipping ? 'bg-green-50' : 'bg-[#0F0F16]/[0.03]' },
-                { icon: Package, label: 'Logística',          value: product.fulfillment  ? 'Full (ML)' : 'Vendedor',        color: product.fulfillment  ? 'text-blue-600'  : 'text-white/35', bg: product.fulfillment  ? 'bg-violet-500/8'  : 'bg-[#0F0F16]/[0.03]' },
+                { icon: Flame,   label: 'Vendas',      value: soldQty > 0 ? soldQty.toLocaleString('pt-BR') : '—',     color: '#fb923c', bg: 'rgba(251,146,60,0.10)' },
+                { icon: Star,    label: 'Avaliação',   value: product.rating > 0 ? `${product.rating} ★` : '—',         color: '#fbbf24', bg: 'rgba(251,191,36,0.10)' },
+                { icon: Truck,   label: 'Frete',       value: product.freeShipping ? 'Grátis ✓' : 'Cobrado',             color: product.freeShipping ? '#4ade80' : 'rgba(255,255,255,0.30)', bg: product.freeShipping ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.04)' },
+                { icon: Package, label: 'Logística',   value: product.fulfillment ? 'Full ✓' : 'Vendedor',               color: product.fulfillment  ? '#818cf8' : 'rgba(255,255,255,0.30)', bg: product.fulfillment  ? 'rgba(129,140,248,0.10)' : 'rgba(255,255,255,0.04)' },
               ].map(({ icon: Icon, label, value, color, bg }) => (
-                <div key={label} className={`${bg} rounded-xl px-3 py-2.5`}>
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <Icon size={10} className={color} />
-                    <span className="text-[9px] text-white/35 uppercase tracking-wide font-medium">{label}</span>
+                <div key={label} style={{ background: bg, borderRadius: 12, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                    <Icon size={10} color={color} />
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 }}>{label}</span>
                   </div>
-                  <span className="text-sm font-bold text-white/80">{value}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.82)' }}>{value}</span>
                 </div>
               ))}
             </div>
             {product.sellerLevel && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs bg-[#0F0F16]/[0.03] rounded-lg px-3 py-2">
-                <Award size={11} className="text-white/35 shrink-0" />
-                <span className="text-white/40">Vendedor</span>
-                <span className={`font-bold ml-auto ${SELLER_LEVEL_COLORS[product.sellerLevel] ?? 'text-white/60'}`}>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '8px 12px' }}>
+                <Award size={11} color="rgba(255,255,255,0.30)" />
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)' }}>Vendedor</span>
+                <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 'auto' }} className={SELLER_LEVEL_COLORS[product.sellerLevel] ?? 'text-white/60'}>
                   {product.sellerLevel?.replace(/_/g, ' ')}
                 </span>
               </div>
             )}
           </div>
 
-          {/* ── Score ── */}
-          <div className="px-5 py-4 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+          {/* ── Score breakdown ── */}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
               <Trophy size={11} /> Como o Score foi calculado
             </p>
-            <div className="space-y-2.5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-white/60 font-medium">📦 Dados da plataforma</span>
-                  <span className="font-bold text-violet-400">{platformScore}<span className="text-white/35 font-normal">/100</span></span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>📦 Dados da plataforma</span>
+                  <span style={{ fontWeight: 700, color: '#a78bfa' }}>{platformScore}<span style={{ color: 'rgba(255,255,255,0.30)', fontWeight: 400 }}>/100</span></span>
                 </div>
-                <div className="h-2 bg-[#0F0F16]/[0.05] rounded-full overflow-hidden">
-                  <div className="h-full bg-violet-500/100 rounded-full" style={{ width: `${Math.min(100, platformScore)}%` }} />
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg,#7c3aed,#a78bfa)', borderRadius: 999, width: `${Math.min(100, platformScore)}%`, transition: 'width 0.6s ease' }} />
                 </div>
-                <p className="text-[10px] text-white/35 mt-0.5">Baseado em vendas, tipo de anúncio e reputação do vendedor</p>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>Vendas, tipo de anúncio e reputação do vendedor</p>
               </div>
               <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-white/60 font-medium">📰 Reviews editoriais</span>
-                  <span className={`font-bold ${blogBonus > 0 ? 'text-purple-600' : 'text-white/35'}`}>+{blogBonus}<span className="text-white/35 font-normal">/15</span></span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>📰 Reviews editoriais</span>
+                  <span style={{ fontWeight: 700, color: blogBonus > 0 ? '#c084fc' : 'rgba(255,255,255,0.30)' }}>+{blogBonus}<span style={{ color: 'rgba(255,255,255,0.30)', fontWeight: 400 }}>/15</span></span>
                 </div>
-                <div className="h-2 bg-[#0F0F16]/[0.05] rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-400 rounded-full" style={{ width: `${Math.min(100, (blogBonus / 15) * 100)}%` }} />
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg,#9333ea,#c084fc)', borderRadius: 999, width: `${Math.min(100, (blogBonus / 15) * 100)}%`, transition: 'width 0.6s ease' }} />
                 </div>
-                <p className="text-[10px] text-white/35 mt-0.5">
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>
                   {blogReviews.length === 0
                     ? 'Nenhuma review encontrada em blogs especializados'
-                    : `${blogReviews.length} review${blogReviews.length > 1 ? 's' : ''} encontrada${blogReviews.length > 1 ? 's' : ''} — ${blogReviews.filter(r => r.trusted).length} de fontes confiáveis`}
+                    : `${blogReviews.length} review${blogReviews.length > 1 ? 's' : ''} — ${blogReviews.filter(r => r.trusted).length} de fontes confiáveis`}
                 </p>
               </div>
-              <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-                <span className="text-xs font-bold text-white/70">Score final</span>
-                <span className={`text-sm font-extrabold px-2 py-0.5 rounded-lg ${scoreColor(totalScore)}`}>{totalScore} pts</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.70)' }}>Score final</span>
+                <span style={{ fontSize: 13, fontWeight: 800, padding: '3px 10px', borderRadius: 8 }} className={scoreColor(totalScore)}>{totalScore} pts</span>
               </div>
             </div>
           </div>
 
-          {/* ── Reviews ── */}
+          {/* ── Blog reviews ── */}
           {blogReviews.length > 0 && (
-            <div className="px-5 py-4 border-b border-gray-100">
-              <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <BookOpen size={11} /> O que a mídia fala
               </p>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {blogReviews.map((r, i) => (
                   <a key={i} href={r.link} target="_blank" rel="noreferrer"
-                    className="block bg-[#0F0F16]/[0.03] hover:bg-purple-50 rounded-xl p-3 border border-transparent hover:border-purple-100 transition-all group">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {r.trusted && <span className="text-[9px] bg-purple-100 text-purple-700 font-bold px-1.5 py-0.5 rounded-full">✓ confiável</span>}
-                      <span className="text-[10px] font-semibold text-white/40 truncate">{r.source}</span>
-                      <ExternalLink size={9} className="text-white/25 group-hover:text-purple-500 shrink-0 ml-auto" />
+                    style={{ display: 'block', background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.06)', textDecoration: 'none', transition: 'border-color 0.2s, background 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(168,85,247,0.08)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,0.25)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      {r.trusted && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: 'rgba(168,85,247,0.20)', color: '#c084fc' }}>✓ confiável</span>}
+                      <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{r.source}</span>
+                      <ExternalLink size={9} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
                     </div>
-                    <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">{r.snippet}</p>
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.snippet}</p>
                   </a>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ── Links ── */}
-          <div className="px-5 py-4">
-            <p className="text-[10px] font-bold text-white/35 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Link2 size={11} /> Links de Afiliado
-            </p>
-            <div className="space-y-2.5">
+          {/* ── Links de Afiliado ── */}
+          <div style={{ padding: '16px 20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Link2 size={11} /> Links de Afiliado
+              </p>
+              <button
+                onClick={handleGenerateLinks}
+                disabled={generatingLinks || !product.productUrl}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600,
+                  padding: '5px 10px', borderRadius: 8, border: `1px solid ${linksGenerated ? 'rgba(0,255,185,0.30)' : 'rgba(255,255,255,0.10)'}`,
+                  color: linksGenerated ? '#00FFB9' : generatingLinks ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.50)',
+                  background: linksGenerated ? 'rgba(0,255,185,0.06)' : 'transparent',
+                  cursor: generatingLinks || !product.productUrl ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                }}>
+                {generatingLinks
+                  ? <><Loader2 size={9} className="animate-spin" /> Gerando…</>
+                  : linksGenerated
+                    ? <><Check size={9} /> Gerado!</>
+                    : <><RefreshCw size={9} /> Gerar links</>
+                }
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <AffiliateLinkEditor productId={product.id} label="Amazon"
                 placeholder="https://amzn.to/xxxxxxx"
                 initialValue={overrides.amazonAffiliateLink ?? product.amazonAffiliateLink ?? ''}
-                color="text-orange-500"
+                color="text-orange-400"
                 onSave={(id, val) => onSaveAffiliateLink(id, 'amazonAffiliateLink', val)} />
               <AffiliateLinkEditor productId={product.id} label="Mercado Livre"
                 placeholder="https://mercadolivre.com/sec/xxxxxxx"
                 initialValue={overrides.mlAffiliateLink ?? product.mlAffiliateLink ?? ''}
-                color="text-yellow-600"
+                color="text-yellow-400"
                 onSave={(id, val) => onSaveAffiliateLink(id, 'mlAffiliateLink', val)} />
               <AffiliateLinkEditor productId={product.id} label="Link geral"
                 placeholder="https://..."
@@ -444,12 +602,14 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
                 color="text-violet-400"
                 onSave={(id, val) => onSaveAffiliateLink(id, 'affiliateLink', val)} />
               {productUrl && (
-                <div className="flex items-center gap-2 pt-1 border-t border-gray-100 mt-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/25 w-20 shrink-0">Original</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(255,255,255,0.22)', width: 56, flexShrink: 0 }}>Original</span>
                   <a href={productUrl} target="_blank" rel="noreferrer"
-                    className="text-xs text-white/35 hover:text-violet-400 font-mono truncate flex-1 flex items-center gap-1 transition-colors">
-                    {productUrl.length > 40 ? productUrl.slice(0, 40) + '…' : productUrl}
-                    <ExternalLink size={9} className="shrink-0" />
+                    style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.30)'}>
+                    {productUrl.length > 42 ? productUrl.slice(0, 42) + '…' : productUrl}
+                    <ExternalLink size={9} style={{ flexShrink: 0 }} />
                   </a>
                 </div>
               )}
@@ -460,14 +620,21 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
       </div>
     </div>
   )
+
+  return createPortal(drawer, document.body)
 }
 
 // ── Mine modal ────────────────────────────────────────────────────────────────
-function MineModal({ open, onClose, onRun, loading }) {
-  const [marketplace, setMarketplace] = useState('mercadolivre_direct')
+function MineModal({ open, onClose, onRun, loading, defaultMarketplace }) {
+  const [marketplace, setMarketplace] = useState(defaultMarketplace ?? 'mercadolivre_direct')
   const [siteFilter,  setSiteFilter]  = useState('ml_amazon')
   const [category,    setCategory]    = useState('')
   const [sortBy,      setSortBy]      = useState('sold_quantity_desc')
+
+  // Sync when parent resolves the config default
+  useEffect(() => {
+    if (defaultMarketplace) setMarketplace(defaultMarketplace)
+  }, [defaultMarketplace])
 
   if (!open) return null
 
@@ -478,14 +645,26 @@ function MineModal({ open, onClose, onRun, loading }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-[#0F0F16] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-white/80 flex items-center gap-2">
-            <ShoppingBag size={16} className="text-violet-400" /> Nova Sessão de Mineração
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(10px)' }}>
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        style={{
+          background: '#16161F',
+          border: '1px solid rgba(193,255,47,0.18)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.70), 0 0 40px rgba(193,255,47,0.06)',
+        }}>
+        {/* Lime top accent bar */}
+        <div style={{ height: 2, background: 'linear-gradient(90deg, #C1FF2F 0%, rgba(0,255,185,0.60) 60%, transparent 100%)' }} />
+        <div className="px-6 py-5 border-b flex items-center justify-between"
+          style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <ShoppingBag size={16} style={{ color: '#C1FF2F' }} /> Nova Sessão de Mineração
           </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-[#0F0F16]/[0.05] rounded-lg text-white/35 hover:text-white/70">
+          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'rgba(255,255,255,0.35)' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.70)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
             <X size={16} />
           </button>
         </div>
@@ -759,16 +938,325 @@ function ShortNicheCard({ niche, onMine }) {
   )
 }
 
+// ── Top Products Slider ───────────────────────────────────────────────────────
+const RANK_STYLES = [
+  { badge: '#FFB800', badgeBg: 'rgba(255,184,0,0.18)', label: '🥇' },
+  { badge: 'rgba(255,255,255,0.70)', badgeBg: 'rgba(255,255,255,0.10)', label: '🥈' },
+  { badge: '#FF6B2B', badgeBg: 'rgba(255,107,43,0.18)', label: '🥉' },
+  { badge: 'rgba(255,255,255,0.35)', badgeBg: 'rgba(255,255,255,0.06)', label: '4' },
+  { badge: 'rgba(255,255,255,0.35)', badgeBg: 'rgba(255,255,255,0.06)', label: '5' },
+]
+
+// Resolve the best affiliate link and its marketplace label for a product
+function resolveAffiliateLink(p) {
+  // Prefer the link that matches the product's own marketplace
+  if (p.marketplace === 'amazon' && p.amazonAffiliateLink)
+    return { href: p.amazonAffiliateLink, label: 'Amazon' }
+  if ((p.marketplace === 'mercadolivre' || p.marketplace === 'mercadolivre_direct') && p.mlAffiliateLink)
+    return { href: p.mlAffiliateLink, label: 'Mercado Livre' }
+  // Fall back to whichever is set
+  if (p.mlAffiliateLink)      return { href: p.mlAffiliateLink,      label: 'Mercado Livre' }
+  if (p.amazonAffiliateLink)  return { href: p.amazonAffiliateLink,  label: 'Amazon' }
+  if (p.affiliateLink)        return { href: p.affiliateLink,        label: 'Link afiliado' }
+  return null
+}
+
+const CARD_WIDTH   = 220  // px per card
+const CARD_GAP     = 12   // px gap
+const VISIBLE      = 3    // cards visible at once
+
+function TopProductsSlider({ products, onSelect }) {
+  const [offset, setOffset] = useState(0)   // index of first visible card
+  const total   = products.length
+  const maxOff  = Math.max(0, total - VISIBLE)
+
+  const prev = () => setOffset(o => Math.max(0, o - 1))
+  const next = () => setOffset(o => Math.min(maxOff, o + 1))
+
+  const fmtPrice = (p) => {
+    if (!p.price) return null
+    try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency || 'BRL', maximumFractionDigits: 0 }).format(p.price) }
+    catch { return `R$ ${p.price}` }
+  }
+
+  return (
+    <div className="mb-6" style={{ background: 'rgba(15,15,22,0.80)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' }}>
+
+      {/* Header */}
+      <div style={{ padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Trophy size={13} style={{ color: '#FFB800' }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.70)', letterSpacing: '0.02em' }}>
+            Top {total} Produtos por Score
+          </span>
+        </div>
+        {/* Prev / Next */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={prev} disabled={offset === 0}
+            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: offset === 0 ? 'not-allowed' : 'pointer', opacity: offset === 0 ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
+            <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+          <button onClick={next} disabled={offset >= maxOff}
+            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: offset >= maxOff ? 'not-allowed' : 'pointer', opacity: offset >= maxOff ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
+            <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Sliding track — clips to show VISIBLE cards */}
+      <div style={{ overflow: 'hidden', padding: '14px 16px' }}>
+        <div style={{
+          display: 'flex', gap: CARD_GAP,
+          transform: `translateX(-${offset * (CARD_WIDTH + CARD_GAP)}px)`,
+          transition: 'transform 300ms ease',
+        }}>
+          {products.map((p, i) => {
+            const rank      = RANK_STYLES[i] ?? RANK_STYLES[4]
+            const price     = fmtPrice(p)
+            const affLink   = resolveAffiliateLink(p)
+            const isVisible = i >= offset && i < offset + VISIBLE
+
+            return (
+              <div key={p.id ?? i} style={{
+                width: CARD_WIDTH, flexShrink: 0, borderRadius: 12, overflow: 'hidden',
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isVisible ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+                display: 'flex', flexDirection: 'column',
+                opacity: isVisible ? 1 : 0.4,
+                transition: 'opacity 300ms ease',
+              }}>
+
+                {/* Image */}
+                <div style={{ position: 'relative', height: 140, background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'absolute', top: 7, left: 7, width: 22, height: 22, borderRadius: '50%', background: rank.badgeBg, border: `2px solid ${rank.badge}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: i < 3 ? 12 : 10, fontWeight: 800, color: rank.badge }}>
+                    {i < 3 ? rank.label : i + 1}
+                  </div>
+                  {p.imageUrl
+                    ? <img src={p.imageUrl} alt="" style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 6 }} />
+                    : <Package size={32} style={{ color: 'rgba(255,255,255,0.12)' }} />
+                  }
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1, padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Marketplace chip */}
+                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', padding: '2px 6px', borderRadius: 100, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.22)', color: '#a78bfa', alignSelf: 'flex-start' }}>
+                    {p.marketplace === 'mercadolivre' || p.marketplace === 'mercadolivre_direct' ? 'Mercado Livre'
+                      : p.marketplace === 'amazon' ? 'Amazon'
+                      : p.marketplace ?? '—'}
+                  </span>
+
+                  {/* Title */}
+                  <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.88)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
+                    {p.title}
+                  </p>
+
+                  {/* Price + rating */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {price && <span style={{ fontSize: 14, fontWeight: 800, color: '#CCFF00' }}>{price}</span>}
+                    {(p.rating ?? 0) > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 600, color: '#FFB800' }}>
+                        <Star size={10} fill="#FFB800" /> {Number(p.rating).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Score bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ flex: 1, height: 4, borderRadius: 100, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(p.score ?? 0, 100)}%`, height: '100%', borderRadius: 100, background: 'linear-gradient(90deg, #8B5CF6, #CCFF00)' }} />
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#CCFF00', width: 22, textAlign: 'right', flexShrink: 0 }}>{p.score ?? 0}</span>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+                    <button onClick={() => onSelect(p)} style={{ flex: 1, padding: '6px 0', borderRadius: 7, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.28)', color: '#a78bfa', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                      <Layers size={10} /> Detalhes
+                    </button>
+                    {affLink && (
+                      <a href={affLink.href} target="_blank" rel="noopener noreferrer"
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 7, background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.22)', color: '#CCFF00', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, textDecoration: 'none' }}>
+                        <ExternalLink size={10} /> {affLink.label}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Marketplace pill — color-coded per platform ───────────────────────────────
+const MP_STYLES = {
+  mercadolivre:        { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: '🟡 Mercado Livre' },
+  mercadolivre_direct: { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: '🟡 ML Direto' },
+  amazon:              { bg: 'rgba(255,107,43,0.14)', border: 'rgba(255,107,43,0.35)', color: '#FF6B2B',  label: '🟠 Amazon' },
+  google_shopping:     { bg: 'rgba(66,133,244,0.14)', border: 'rgba(66,133,244,0.35)', color: '#4285F4',  label: '🔵 Google Shopping' },
+}
+function MpPill({ marketplace }) {
+  const s = MP_STYLES[marketplace] ?? { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.28)', color: '#a78bfa', label: marketplace?.replace(/_/g, ' ') ?? '—' }
+  return (
+    <span style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color,
+      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100,
+      fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
+      {s.label}
+    </span>
+  )
+}
+
+// ── SessionGroup — collapsible section of products from one mining run ────────
+function SessionGroup({ session, products, onOpen, onMine, defaultOpen, onRename, onDelete }) {
+  const [open,       setOpen]       = useState(defaultOpen ?? true)
+  const [renaming,   setRenaming]   = useState(false)
+  const [deleting,   setDeleting]   = useState(false)
+  const [nameDraft,  setNameDraft]  = useState('')
+  const [saving,     setSaving]     = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (renaming) {
+      setNameDraft(session?.name ?? session?.category ?? '')
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [renaming])
+
+  async function handleSaveName(e) {
+    e?.stopPropagation()
+    if (!session?.id || !nameDraft.trim()) { setRenaming(false); return }
+    setSaving(true)
+    try {
+      await fetch(`/api/mining/sessions/${session.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameDraft.trim() }),
+      })
+      onRename?.()
+    } finally { setSaving(false); setRenaming(false) }
+  }
+
+  async function handleDelete(e) {
+    e.stopPropagation()
+    if (!session?.id) return
+    if (!window.confirm(`Apagar a sessão "${displayName}" e seus ${products.length} produto(s)? Esta ação não pode ser desfeita.`)) return
+    setDeleting(true)
+    try {
+      await fetch(`/api/mining/sessions/${session.id}`, { method: 'DELETE' })
+      onDelete?.(session.id)
+    } finally { setDeleting(false) }
+  }
+
+  const displayName = session?.name || session?.category || 'Sessão sem nome'
+
+  return (
+    <div className="mb-3 rounded-xl overflow-hidden"
+      style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,15,22,0.60)' }}>
+
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 hover:bg-white/[0.015] transition-colors">
+        {/* Collapse toggle */}
+        <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+          <Database size={13} style={{ color: '#8B5CF6', flexShrink: 0 }} />
+          {renaming ? null : (
+            <span className="font-semibold text-sm truncate" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              {displayName}
+            </span>
+          )}
+        </button>
+
+        {/* Inline rename input */}
+        {renaming && (
+          <div className="flex items-center gap-1.5 flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+            <input ref={inputRef} type="text" value={nameDraft}
+              onChange={e => setNameDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setRenaming(false) }}
+              placeholder="Nome da sessão…"
+              className="input flex-1 min-w-0 text-xs py-1"
+              autoComplete="off" />
+            <button onClick={handleSaveName} disabled={saving}
+              className="p-1 rounded text-[#00FFB9] hover:bg-[#00FFB9]/10 disabled:opacity-40">
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+            </button>
+            <button onClick={() => setRenaming(false)}
+              className="p-1 rounded text-white/35 hover:bg-white/5">
+              <X size={11} />
+            </button>
+          </div>
+        )}
+
+        {/* Badges row */}
+        {!renaming && (
+          <>
+            {session?.marketplace && <MpPill marketplace={session.marketplace} />}
+            {session?.createdAt && (
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', whiteSpace: 'nowrap' }}>
+                {timeAgo(session.createdAt)}
+              </span>
+            )}
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.50)', whiteSpace: 'nowrap',
+              fontFamily: "'JetBrains Mono', monospace" }}>
+              {products.length} produto{products.length !== 1 ? 's' : ''}
+            </span>
+            {session?.status === 'failed' && <AlertTriangle size={12} style={{ color: '#FF3366', flexShrink: 0 }} />}
+          </>
+        )}
+
+        {/* Rename + Delete buttons */}
+        {!renaming && session?.id && (
+          <>
+            <button onClick={() => setRenaming(true)} title="Renomear sessão"
+              className="p-1 rounded hover:bg-white/5 text-white/25 hover:text-white/55 transition-colors shrink-0">
+              <Pencil size={11} />
+            </button>
+            <button onClick={handleDelete} disabled={deleting} title="Apagar sessão"
+              className="p-1 rounded transition-colors shrink-0 disabled:opacity-40"
+              style={{ color: 'rgba(255,255,255,0.20)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,51,102,0.12)'; e.currentTarget.style.color = '#FF3366' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.20)' }}>
+              {deleting ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+            </button>
+          </>
+        )}
+
+        {/* Chevron */}
+        <button onClick={() => setOpen(o => !o)} className="shrink-0 text-white/30 hover:text-white/55">
+          <ChevronDown size={14} className="transition-transform"
+            style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }} />
+        </button>
+      </div>
+
+      {/* Product grid */}
+      {open && (
+        <div className="border-t px-4 pt-4 pb-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+            {products.map(p => (
+              <ProductCard key={p.id} product={p} onOpen={onOpen} onMine={onMine} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Mining() {
+  const location   = useLocation()
+  const navigate   = useNavigate()
   const { data: sessionsData, refetch: refetchSessions } = useApi('/mining/sessions')
   const { data: statsData, refetch: refetchStats } = useApi('/mining/catalog/stats')
   const { data: trendsData } = useApi('/mining/trends')
   const sessions = sessionsData?.sessions ?? []
   const catalogStats = statsData ?? {}
-  const trendingKeywords = trendsData?.trends ?? []
+  const trendingKeywords = (trendsData?.trends ?? []).map(t => t?.keyword ?? t).filter(Boolean)
 
   const [selectedSessionId, setSelectedSessionId] = useState(null)
+  const [viewMode,           setViewMode]          = useState('grouped') // 'grouped' | 'flat'
   const [search,             setSearch]            = useState('')
   const [nicheFilter,        setNicheFilter]       = useState('all')
   const [sortBy,             setSortBy]            = useState('score')
@@ -779,21 +1267,27 @@ export default function Mining() {
   const [affiliateOverrides, setAffiliateOverrides] = useState({})
   const [mineModalOpen,      setMineModalOpen]      = useState(false)
   const [drawerProduct,      setDrawerProduct]      = useState(null)
+  const [miningConfig,       setMiningConfig]       = useState(null)
 
-  // Niche intelligence
-  const [nicheFormat,    setNicheFormat]    = useState('longform')
-  const [nicheReports,   setNicheReports]   = useState({})
-  const [nicheLoading,   setNicheLoading]   = useState(false)
-  const [nicheError,     setNicheError]     = useState(null)
-  const [nicheOpen,      setNicheOpen]      = useState(true)
+  // Fetch mining config (marketplace selection) on mount
+  useEffect(() => {
+    fetch('/api/mining/config').then(r => r.json()).then(setMiningConfig).catch(() => {})
+  }, [])
 
-  const nicheReport = nicheReports[nicheFormat] ?? null
+  // Session naming — shown after a successful mining run
+  const [nameModalOpen,      setNameModalOpen]      = useState(false)
+  const [nameModalSessionId, setNameModalSessionId] = useState(null)
+  const [nameModalDraft,     setNameModalDraft]     = useState('')
+  const [nameSaving,         setNameSaving]         = useState(false)
+  const [nameProjectId,      setNameProjectId]      = useState('')
 
-  const catalogPath = selectedSessionId
-    ? `/mining/catalog?sessionId=${selectedSessionId}`
-    : '/mining/catalog'
 
-  const { data: catalogData, loading: catalogLoading, refetch: refetchCatalog } = useApi(catalogPath)
+  // Projects list for session assignment modal
+  const { data: projectsData, refetch: refetchProjects } = useApi('/projects')
+  const projects = projectsData?.projects ?? []
+
+  // Always fetch full catalog — products now include sessionId for grouping
+  const { data: catalogData, loading: catalogLoading, refetch: refetchCatalog } = useApi('/mining/catalog')
   const rawProducts = catalogData?.products ?? []
 
   // Filtered & sorted products
@@ -835,36 +1329,128 @@ export default function Mining() {
     return list
   }, [rawProducts, search, mpFilter, nicheFilter, sortBy, affiliateOverrides])
 
+  // Group filtered products by sessionId for the 'grouped' view
+  const groupedProducts = useMemo(() => {
+    const map = new Map()  // sessionId → product[]
+    for (const p of products) {
+      const key = p.sessionId ?? '__ungrouped'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(p)
+    }
+    // Sort groups: most-recent session first, ungrouped last
+    return [...map.entries()].sort(([aKey], [bKey]) => {
+      if (aKey === '__ungrouped') return 1
+      if (bKey === '__ungrouped') return -1
+      const aSession = sessions.find(s => s.id === aKey)
+      const bSession = sessions.find(s => s.id === bKey)
+      return new Date(bSession?.createdAt ?? 0) - new Date(aSession?.createdAt ?? 0)
+    })
+  }, [products, sessions])
+
   const marketplaces = useMemo(() => [...new Set(rawProducts.map(p => p.marketplace).filter(Boolean))], [rawProducts])
   const needsSetup = error?.includes('SERPAPI_KEY') || error?.includes('serpapi')
+
+  // Auto-trigger a mining run when navigated from Radar de Nichos
+  useEffect(() => {
+    const autoCategory = location.state?.autoCategory
+    if (!autoCategory) return
+    // Clear the state so a page refresh doesn't re-trigger
+    window.history.replaceState({}, '')
+    handleRun({ marketplace: 'mercadolivre_direct', siteFilter: 'ml_amazon', category: autoCategory, sortBy: 'sold_quantity_desc' })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleRun({ marketplace, siteFilter, category, sortBy: runSortBy }) {
     setRunning(true); setError(null); setLastResult(null); setMineModalOpen(false)
     try {
-      const result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+      let result
+
+      if (marketplace === 'mercadolivre_direct') {
+        // ── Browser-side ML fetch (bypasses Cloudflare IP block) ──────────────
+        const tokenRes = await fetch('/api/ml/oauth/token')
+        const { token } = await tokenRes.json()
+
+        if (!token) throw new Error('Conta Mercado Livre não conectada. Vá em Configurações → Mercado Livre — OAuth e clique em Conectar.')
+
+        const sortMap = {
+          best_sellers:     'sold_quantity_desc',
+          price_asc:        'price_asc',
+          price_desc:       'price_desc',
+          relevance:        'relevance',
+          sold_quantity_desc: 'sold_quantity_desc',
+        }
+        const mlSort = sortMap[runSortBy] ?? 'relevance'
+        const params = new URLSearchParams({ q: category, limit: '20', sort: mlSort })
+
+        const mlRes = await fetch(`https://api.mercadolibre.com/sites/MLB/search?${params}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+
+        if (!mlRes.ok) {
+          const err = await mlRes.json().catch(() => ({}))
+          // Token expired — fall through to worker (will use SerpAPI fallback)
+          if (mlRes.status === 401) {
+            console.warn('[mining] ML token expired, falling back to worker')
+            result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+          } else {
+            throw new Error(`Mercado Livre retornou ${mlRes.status}: ${err.message ?? 'erro desconhecido'}`)
+          }
+        } else {
+          const mlData = await mlRes.json()
+          const results = mlData.results ?? []
+
+          if (results.length === 0) {
+            // No results from ML — fall back to worker SerpAPI path
+            console.warn('[mining] ML returned 0 results, falling back to worker')
+            result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+          } else {
+            // Send raw results to worker to score + save
+            result = await apiPost('/mining/ingest', { category, sortBy: runSortBy, results })
+          }
+        }
+      } else {
+        result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+      }
+
       setLastResult({ count: result.count, warnings: result.warnings, competitionLevel: result.competitionLevel, listingTotal: result.listingTotal })
       await Promise.all([refetchCatalog(), refetchSessions(), refetchStats()])
+      if (result.sessionId && result.count > 0) {
+        setNameModalSessionId(result.sessionId)
+        setNameModalDraft(category ?? '')
+        setNameProjectId('')
+        setNameModalOpen(true)
+      }
     } catch (e) { console.error("[mining]", e.message); setError(friendlyError(e.message)) }
     finally { setRunning(false) }
   }
 
-  async function handleGenerateNiches() {
-    setNicheLoading(true); setNicheError(null)
+  async function handleSaveSessionName() {
+    if (!nameModalSessionId) { setNameModalOpen(false); return }
+    setNameSaving(true)
     try {
-      const res = await fetch('/api/mining/niches/generate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ format: nicheFormat }),
+      // Always send the name (even if unchanged) so the session is never left unnamed
+      const body = { name: nameModalDraft.trim() || (sessions.find(s => s.id === nameModalSessionId)?.category ?? 'Sessão') }
+      if (nameProjectId) body.projectId = nameProjectId
+      const res = await fetch(`/api/mining/sessions/${nameModalSessionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Erro ao gerar recomendações')
-      setNicheReports(prev => ({ ...prev, [nicheFormat]: data }))
-      setNicheOpen(true)
-    } catch (e) { setNicheError(e.message) }
-    finally { setNicheLoading(false) }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        console.error('[mining] session rename failed:', d.error ?? res.statusText)
+      }
+      await refetchSessions()
+    } catch (e) {
+      console.error('[mining] handleSaveSessionName error:', e.message)
+    } finally {
+      setNameSaving(false); setNameModalOpen(false)
+    }
   }
 
-  function handleMineNiche(niche) {
-    handleRun({ marketplace: 'mercadolivre_direct', siteFilter: 'ml_amazon', category: niche.category, sortBy: 'sold_quantity_desc' })
+
+  async function handleDeleteSession(sessionId) {
+    if (selectedSessionId === sessionId) setSelectedSessionId(null)
+    await Promise.all([refetchSessions(), refetchCatalog(), refetchStats()])
   }
 
   async function handleClearSessions() {
@@ -955,131 +1541,6 @@ export default function Mining() {
         </div>
       )}
 
-      {/* ── Niche Intelligence ─────────────────────────────────────────────── */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setNicheOpen(o => !o)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-              <Sparkles size={16} style={{ color: '#8B5CF6' }} />
-              <h3 className="card-title">Inteligência de Nicho</h3>
-            </button>
-            {/* Format tab strip */}
-            <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <button onClick={() => setNicheFormat('longform')}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all"
-                style={nicheFormat === 'longform'
-                  ? { background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.40)', color: '#8B5CF6' }
-                  : { border: '1px solid transparent', color: 'rgba(255,255,255,0.38)' }}>
-                <Video size={11} /> Vídeos Longos
-              </button>
-              <button onClick={() => setNicheFormat('shortform')}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all"
-                style={nicheFormat === 'shortform'
-                  ? { background: 'rgba(255,51,102,0.15)', border: '1px solid rgba(255,51,102,0.38)', color: '#FF3366' }
-                  : { border: '1px solid transparent', color: 'rgba(255,255,255,0.38)' }}>
-                <Clapperboard size={11} /> Vídeos Curtos
-              </button>
-            </div>
-            {nicheReport && (
-              <span className="text-xs text-white/35">
-                {new Date(nicheReport.generatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Show refresh icon only when report exists, no button when empty */}
-            {nicheReport && (
-              <button onClick={handleGenerateNiches} disabled={nicheLoading}
-                title="Atualizar recomendações"
-                className="p-1.5 rounded-lg text-white/35 hover:text-violet-400 hover:bg-violet-500/10 disabled:opacity-40 transition-colors">
-                <RefreshCw size={14} className={nicheLoading ? 'animate-spin' : ''} />
-              </button>
-            )}
-            <button onClick={() => setNicheOpen(o => !o)} className="text-white/35 hover:text-white/60">
-              {nicheOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-          </div>
-        </div>
-        {nicheOpen && (
-          <div className="p-5">
-            {nicheError && (
-              <div className="flex items-center gap-2 text-sm rounded-lg px-4 py-3 mb-4" style={{ color: '#FF3366', background: 'rgba(255,51,102,0.07)', border: '1px solid rgba(255,51,102,0.28)' }}>
-                <AlertTriangle size={14} className="shrink-0" /> {nicheError}
-              </div>
-            )}
-            {!nicheReport && !nicheLoading && (
-              <div className="flex flex-col md:flex-row items-center gap-6 py-6 px-2">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={
-                  nicheFormat === 'shortform'
-                    ? { background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.25)' }
-                    : { background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)' }
-                }>
-                  {nicheFormat === 'shortform'
-                    ? <Clapperboard size={28} style={{ color: '#FF3366' }} />
-                    : <Video size={28} style={{ color: '#8B5CF6' }} />}
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <p className="text-sm font-semibold text-white/70 mb-1">
-                    {nicheFormat === 'shortform'
-                      ? 'Descubra nichos virais para TikTok, Reels e Shorts'
-                      : 'Descubra os nichos com maior potencial de monetização'}
-                  </p>
-                  <p className="text-xs text-white/35 mb-3 max-w-lg">
-                    {nicheFormat === 'shortform'
-                      ? 'A IA analisa tendências, potencial viral, facilidade de produção e comissão de afiliado para recomendar os melhores nichos para short-form content.'
-                      : 'A IA analisa o mercado brasileiro de afiliados e aponta os nichos com maior potencial de comissão, retenção de audiência e oportunidade de conteúdo evergreen.'}
-                  </p>
-                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                    {['Análise de mercado BR', 'Score de saturação', 'Ganchos prontos', 'Orientação de produto'].map(tag => (
-                      <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={
-                        nicheFormat === 'shortform'
-                          ? { background: 'rgba(255,51,102,0.10)', border: '1px solid rgba(255,51,102,0.22)', color: '#FF3366' }
-                          : { background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)', color: '#8B5CF6' }
-                      }>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  onClick={handleGenerateNiches}
-                  disabled={nicheLoading}
-                  className="btn-primary shrink-0 px-5 py-3">
-                  <Sparkles size={15} /> Gerar Recomendações
-                </button>
-              </div>
-            )}
-            {nicheLoading && (
-              <div className="flex flex-col items-center py-12 gap-4">
-                {/* Spinner: violet track + volt active arc */}
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full animate-spin" style={{
-                    background: 'conic-gradient(from 0deg, #8B5CF6 0deg, #CCFF00 120deg, transparent 120deg)',
-                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
-                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
-                  }} />
-                  <div className="absolute inset-0 rounded-full" style={{
-                    background: 'conic-gradient(from 0deg, rgba(139,92,246,0.15) 0deg, rgba(139,92,246,0.15) 360deg)',
-                    WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
-                    mask: 'radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)',
-                  }} />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: "'Space Grotesk', sans-serif" }}>Analisando o mercado brasileiro…</p>
-                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>Isso leva alguns segundos</p>
-                </div>
-              </div>
-            )}
-            {nicheReport && !nicheLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {(nicheReport.niches ?? []).map(niche =>
-                  nicheFormat === 'shortform'
-                    ? <ShortNicheCard key={niche.rank} niche={niche} onMine={handleMineNiche} />
-                    : <NicheCard key={niche.rank} niche={niche} onMine={handleMineNiche} />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* ── Stats dashboard ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -1142,41 +1603,8 @@ export default function Mining() {
         </div>
       )}
 
-      {/* ── Top 5 best scored ─────────────────────────────────────────────── */}
-      {topProducts.length > 0 && (
-        <div className="bg-[#0F0F16] border border-white/[0.08] rounded-xl mb-6">
-          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Trophy size={14} style={{ color: '#FFB800' }} />
-            <h3 className="text-sm font-bold text-white/75">Top 5 Produtos por Score</h3>
-          </div>
-          <div style={{ '--tw-divide-opacity': 1 }} className="divide-y divide-white/[0.05]">
-            {topProducts.map((p, idx) => (
-              <div key={p.id} onClick={() => setDrawerProduct(p)}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-[#0F0F16]/[0.03] cursor-pointer transition-colors">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${idx === 0 ? 'bg-yellow-400 text-white' : idx === 1 ? 'bg-white/25 text-white' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-[#0F0F16]/[0.05] text-white/40'}`}>
-                  {idx + 1}
-                </span>
-                {p.imageUrl
-                  ? <img src={p.imageUrl} alt="" className="w-8 h-8 object-contain rounded bg-[#0F0F16]/[0.03] shrink-0" />
-                  : <div className="w-8 h-8 bg-[#0F0F16]/[0.05] rounded shrink-0" />
-                }
-                <p className="text-xs text-white/70 flex-1 truncate">{p.title}</p>
-                <div className="flex items-center gap-2 shrink-0">
-                  {(p.soldQuantity ?? p.reviews ?? 0) > 0 && (
-                    <span className="text-[11px] text-orange-500 font-medium"><Flame size={10} className="inline" /> {fmtNumber(p.soldQuantity ?? p.reviews)}</span>
-                  )}
-                  {(p.blogReviews?.length ?? 0) > 0 && (
-                    <span className="text-[11px] text-purple-600 font-medium flex items-center gap-0.5">
-                      <BookOpen size={9} /> {p.blogReviews.length}
-                    </span>
-                  )}
-                  <ScoreBadge score={p.score ?? 0} blogBonus={p.blogReviewScore ?? 0} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Top 5 best scored — card slider ───────────────────────────────── */}
+      {topProducts.length > 0 && <TopProductsSlider products={topProducts} onSelect={setDrawerProduct} />}
 
       {/* ── Filter bar ────────────────────────────────────────────────────── */}
       <div className="bg-[#0F0F16] border border-white/[0.08] rounded-xl px-5 py-4 mb-4">
@@ -1197,28 +1625,48 @@ export default function Mining() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar produto…"
-              className="w-full pl-9 pr-3 py-2 border border-white/[0.08] rounded-lg text-sm text-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="input pl-9" />
           </div>
 
-          {marketplaces.length > 1 && (
+          {/* Marketplace filter — chips when ≤3, dropdown when more */}
+          {marketplaces.length === 1 && null}
+          {marketplaces.length > 1 && marketplaces.length <= 3 && (
             <div className="flex gap-1">
               <button onClick={() => setMpFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mpFilter === 'all' ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={mpFilter === 'all' ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mpFilter === 'all' ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`}
+                style={mpFilter === 'all' ? {background:'#CCFF00'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
                 Todos
               </button>
               {marketplaces.map(mp => (
                 <button key={mp} onClick={() => setMpFilter(mp)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${mpFilter === mp ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={mpFilter === mp ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${mpFilter === mp ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`}
+                  style={mpFilter === mp ? {background:'#CCFF00'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
                   {mp.replace(/_/g, ' ')}
                 </button>
               ))}
             </div>
           )}
+          {marketplaces.length > 3 && (
+            <select
+              value={mpFilter}
+              onChange={e => setMpFilter(e.target.value)}
+              className="input text-xs py-1.5 min-w-[160px]"
+              style={{ backgroundImage: 'none' }}
+            >
+              <option value="all">🛒 Todas as lojas ({marketplaces.length})</option>
+              {marketplaces.map(mp => (
+                <option key={mp} value={mp}>
+                  {mp === 'mercadolivre' || mp === 'mercadolivre_direct' ? '🟡 Mercado Livre'
+                   : mp === 'amazon' ? '🟠 Amazon'
+                   : `🏪 ${mp.replace(/_/g, ' ')}`}
+                </option>
+              ))}
+            </select>
+          )}
 
           <div className="flex items-center gap-1.5 ml-auto">
             <SlidersHorizontal size={13} className="text-white/35" />
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input text-xs py-1.5">
               {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </div>
@@ -1231,46 +1679,50 @@ export default function Mining() {
         </div>
       </div>
 
-      {/* ── Session chips ─────────────────────────────────────────────────── */}
-      {sessions.length > 0 && (
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => setSelectedSessionId(null)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${selectedSessionId === null ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={selectedSessionId === null ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
-              Todas as sessões
-            </button>
-            {sessions.map(s => (
-              <button key={s.id} onClick={() => setSelectedSessionId(s.id === selectedSessionId ? null : s.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${selectedSessionId === s.id ? 'text-[#07070B] font-bold' : 'text-white/55 hover:text-white/80'}`} style={selectedSessionId === s.id ? {background:'#CCFF00',boxShadow:'0 0 14px rgba(204,255,0,0.25)'} : {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}>
-                {s.category}
-                <span className={`text-[10px] ${selectedSessionId === s.id ? 'text-indigo-200' : 'text-white/35'}`}>{timeAgo(s.createdAt)}</span>
-                {s.status === 'failed' && <AlertTriangle size={10} className="text-[#FF3366]" />}
-              </button>
-            ))}
-            {sessions.length > 0 && (
-              <button onClick={handleClearSessions}
-                className="px-3 py-1.5 rounded-full text-xs text-[#FF3366] hover:text-[#FF3366] hover:bg-[#FF3366]/8 transition-colors flex items-center gap-1">
-                <Trash2 size={10} /> limpar
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Product grid ──────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-white/80">
-          {selectedSession ? `Busca: "${selectedSession.category}"` : 'Catálogo de Produtos'}
-          {products.length > 0 && <span className="ml-2 text-white/35 font-normal">{products.length} produto{products.length !== 1 ? 's' : ''}</span>}
+      {/* ── Catalog header — title, view toggle, clear ────────────────────── */}
+      <div className="mb-3 flex items-center gap-3">
+        <h3 className="text-sm font-bold text-white/80 flex-1">
+          Catálogo de Produtos
+          {products.length > 0 && (
+            <span className="ml-2 text-white/35 font-normal">
+              {products.length} produto{products.length !== 1 ? 's' : ''}
+              {products.length < rawProducts.length && ` de ${rawProducts.length}`}
+            </span>
+          )}
         </h3>
+
+        {/* View mode toggle */}
         {rawProducts.length > 0 && (
-          <button onClick={handleClearAll}
-            className="btn-danger">
-            <Trash2 size={11} /> Limpar catálogo
+          <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <button
+              onClick={() => setViewMode('grouped')}
+              title="Por sessão"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all"
+              style={viewMode === 'grouped'
+                ? { background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.35)', color: '#a78bfa' }
+                : { border: '1px solid transparent', color: 'rgba(255,255,255,0.35)' }}>
+              <Database size={11} /> Por sessão
+            </button>
+            <button
+              onClick={() => setViewMode('flat')}
+              title="Grade plana"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all"
+              style={viewMode === 'flat'
+                ? { background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.35)', color: '#a78bfa' }
+                : { border: '1px solid transparent', color: 'rgba(255,255,255,0.35)' }}>
+              <LayoutGrid size={11} /> Grade
+            </button>
+          </div>
+        )}
+
+        {rawProducts.length > 0 && (
+          <button onClick={handleClearAll} className="btn-danger">
+            <Trash2 size={11} /> Limpar
           </button>
         )}
       </div>
 
+      {/* ── Catalog body ──────────────────────────────────────────────────── */}
       {catalogLoading ? (
         <div className="py-16 text-center text-white/35">
           <RefreshCw size={24} className="animate-spin mx-auto mb-3 text-violet-400" />
@@ -1286,16 +1738,35 @@ export default function Mining() {
             <p className="text-xs text-white/35 mb-4">Clique em "Nova Mineração" ou use um trending acima</p>
           )}
           {rawProducts.length === 0 && (
-            <button onClick={() => setMineModalOpen(true)}
-              className="btn-primary">
+            <button onClick={() => setMineModalOpen(true)} className="btn-primary">
               <Play size={14} /> Iniciar primeira mineração
             </button>
           )}
         </div>
+      ) : viewMode === 'grouped' ? (
+        /* ── Grouped by session ── */
+        <div>
+          {groupedProducts.map(([sessionId, sessionProds], idx) => (
+            <SessionGroup
+              key={sessionId}
+              session={sessions.find(s => s.id === sessionId) ?? null}
+              products={sessionProds}
+              onOpen={setDrawerProduct}
+              onMine={p => navigate('/wizard', { state: { autoTopic: p.title ?? '' } })}
+              defaultOpen={idx === 0}
+              onRename={refetchSessions}
+              onDelete={handleDeleteSession}
+            />
+          ))}
+        </div>
       ) : (
+        /* ── Flat grid ── */
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {products.map(p => (
-            <ProductCard key={p.id} product={p} onOpen={setDrawerProduct} />
+            <ProductCard
+              key={p.id} product={p} onOpen={setDrawerProduct}
+              onMine={p => navigate('/wizard', { state: { autoTopic: p.title ?? '' } })}
+            />
           ))}
         </div>
       )}
@@ -1317,7 +1788,91 @@ export default function Mining() {
         onClose={() => setMineModalOpen(false)}
         onRun={handleRun}
         loading={running}
+        defaultMarketplace="mercadolivre_direct"
       />
+
+      {/* ── Session naming modal ───────────────────────────────────────────── */}
+      {nameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(10px)' }}>
+          <div className="absolute inset-0" onClick={() => setNameModalOpen(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{
+              background: '#16161F',
+              border: '1px solid rgba(0,255,185,0.20)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.70), 0 0 40px rgba(0,255,185,0.06)',
+            }}>
+          <div style={{ height: 2, background: 'linear-gradient(90deg, #00FFB9 0%, rgba(193,255,47,0.50) 60%, transparent 100%)' }} />
+          <div className="p-6">
+
+            {/* Icon + title */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(0,255,185,0.12)', border: '1px solid rgba(0,255,185,0.28)' }}>
+                <Save size={18} style={{ color: '#00FFB9' }} />
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ color: 'rgba(255,255,255,0.90)' }}>Nomear sessão</p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.38)' }}>
+                  {lastResult?.count} produto{lastResult?.count !== 1 ? 's' : ''} salvos
+                </p>
+              </div>
+              <button onClick={() => setNameModalOpen(false)}
+                className="ml-auto p-1 rounded-lg text-white/35 hover:text-white/60 hover:bg-white/5">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Session name input */}
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              Nome da sessão
+            </label>
+            <input
+              type="text"
+              value={nameModalDraft}
+              onChange={e => setNameModalDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveSessionName() }}
+              placeholder="Ex: Power Banks Mai 26, Fones Bluetooth…"
+              className="input w-full mb-4"
+              autoFocus
+            />
+
+            {/* Project assignment */}
+            {projects.length > 0 && (
+              <>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  Adicionar a projeto <span style={{ color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>(opcional)</span>
+                </label>
+                <select
+                  value={nameProjectId}
+                  onChange={e => setNameProjectId(e.target.value)}
+                  className="input w-full mb-5"
+                >
+                  <option value="">— Nenhum projeto —</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button onClick={() => setNameModalOpen(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-colors"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.50)' }}>
+                Pular
+              </button>
+              <button onClick={handleSaveSessionName} disabled={nameSaving}
+                className="flex-1 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                style={{ background: '#00FFB9', color: '#07070B' }}>
+                {nameSaving ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Salvar nome'}
+              </button>
+            </div>
+          </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -108,26 +108,48 @@ router.get('/oauth/callback', async (c) => {
     return c.redirect(`${FRONTEND_BASE}/settings?ml=error&reason=token_exchange`)
   }
 
-  const { access_token, refresh_token } = await tokenRes.json()
+  const tokenData = await tokenRes.json()
+  const { access_token, refresh_token } = tokenData
 
-  if (!refresh_token) {
-    return c.redirect(`${FRONTEND_BASE}/settings?ml=error&reason=no_refresh_token`)
+  if (!access_token) {
+    return c.redirect(`${FRONTEND_BASE}/settings?ml=error&reason=no_access_token`)
   }
 
-  const { ciphertext: rc, iv: ri } = await encrypt(refresh_token, secret)
-  const { ciphertext: ac, iv: ai } = await encrypt(access_token,  secret)
+  const now = new Date().toISOString()
+  const { ciphertext: ac, iv: ai } = await encrypt(access_token, secret)
+  await c.env.KV1.put('apikey:ML_USER_ACCESS_TOKEN', JSON.stringify({ ciphertext: ac, iv: ai, updated_at: now }))
 
-  await c.env.KV1.put('apikey:ML_USER_REFRESH_TOKEN', JSON.stringify({ ciphertext: rc, iv: ri, updated_at: new Date().toISOString() }))
-  await c.env.KV1.put('apikey:ML_USER_ACCESS_TOKEN',  JSON.stringify({ ciphertext: ac, iv: ai, updated_at: new Date().toISOString() }))
+  // refresh_token only returned on first authorization — store if present, keep existing if not
+  if (refresh_token) {
+    const { ciphertext: rc, iv: ri } = await encrypt(refresh_token, secret)
+    await c.env.KV1.put('apikey:ML_USER_REFRESH_TOKEN', JSON.stringify({ ciphertext: rc, iv: ri, updated_at: now }))
+  }
 
   console.log('[ml/oauth] User tokens stored successfully')
   return c.redirect(`${FRONTEND_BASE}/settings?ml=connected`)
 })
 
+// GET /api/ml/oauth/token — returns decrypted access token for browser-side ML calls
+router.get('/oauth/token', async (c) => {
+  if (!c.env.KV1 || !c.env.CREDENTIALS_SECRET) return c.json({ token: null })
+  const { decrypt } = await import('../lib/crypto.js')
+  const stored = await c.env.KV1.get('apikey:ML_USER_ACCESS_TOKEN', { type: 'json' }).catch(() => null)
+  if (!stored?.ciphertext) return c.json({ token: null })
+  try {
+    const token = await decrypt(stored.ciphertext, stored.iv, c.env.CREDENTIALS_SECRET)
+    return c.json({ token: token ?? null })
+  } catch {
+    return c.json({ token: null })
+  }
+})
+
 // GET /api/ml/oauth/status
 router.get('/oauth/status', async (c) => {
   if (!c.env.KV1) return c.json({ connected: false, updated_at: null })
-  const stored = await c.env.KV1.get('apikey:ML_USER_REFRESH_TOKEN', { type: 'json' })
+  // Check access token first, fall back to refresh token
+  const access  = await c.env.KV1.get('apikey:ML_USER_ACCESS_TOKEN',  { type: 'json' })
+  const refresh = await c.env.KV1.get('apikey:ML_USER_REFRESH_TOKEN', { type: 'json' })
+  const stored  = access ?? refresh
   return c.json({ connected: !!stored?.ciphertext, updated_at: stored?.updated_at ?? null })
 })
 

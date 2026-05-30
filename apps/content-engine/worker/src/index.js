@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { runMiningSession, getCatalog, getCatalogStats, getSessions, fetchMLTrends, updateSession } from './services/miningService.js'
+import { runMiningSession, getCatalog, getCatalogStats, getSessions, fetchMLTrends, updateSession, mlFetch, getMLToken } from './services/miningService.js'
 import { generateNicheReport }                                from './services/nicheService.js'
 import { getDb }                                              from './lib/db.js'
 import { generateScript, listScripts, regenerateSection, generateShorts } from './services/scriptService.js'
@@ -9,12 +9,13 @@ import { getChannelProfile, upsertChannelProfile }            from './services/c
 import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from './services/blueprintService.js'
 import { generateVoiceover, listVoiceovers, generateVoiceoverSections, OPENAI_VOICES, ELEVENLABS_VOICES } from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
-import { runCommentAgent, listCommentJobs, reviewComment, postReadyJob } from './services/commentAgent.js'
+import { runCommentAgent, listCommentJobs, reviewComment, postReadyJob, checkYouTubeConnected } from './services/commentAgent.js'
 import { resolveAndTrack, listShortLinks }                   from './services/shortLinkService.js'
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
 import financeRouter                                          from './routes/finance.js'
 import youtubeRouter                                          from './routes/youtube.js'
+import mlOAuthRouter                                          from './routes/mercadolivre.js'
 import migrateRouter                                         from './routes/migrate.js'
 import { uid }                                               from './lib/uid.js'
 
@@ -59,6 +60,44 @@ app.get('/api/mining/sessions', async (c) => {
   const sessions = await getSessions(c.env)
   return c.json({ sessions })
 })
+
+// ── Mining config (KV1) — marketplace preferences ─────────────────────────────
+const MINING_CONFIG_KEY = 'mining:config'
+const DEFAULT_MINING_CONFIG = { marketplaces: ['mercadolivre', 'amazon'], defaultSortBy: 'sold_quantity_desc' }
+
+app.get('/api/mining/config', async (c) => {
+  if (!c.env.KV1) return c.json(DEFAULT_MINING_CONFIG)
+  const config = await c.env.KV1.get(MINING_CONFIG_KEY, { type: 'json' })
+  return c.json(config ?? DEFAULT_MINING_CONFIG)
+})
+
+app.put('/api/mining/config', async (c) => {
+  if (!c.env.KV1) return c.json({ error: 'KV1 not configured' }, 500)
+  const body = await c.req.json().catch(() => ({}))
+  const current = (await c.env.KV1.get(MINING_CONFIG_KEY, { type: 'json' })) ?? DEFAULT_MINING_CONFIG
+  const updated = { ...current, ...body }
+  await c.env.KV1.put(MINING_CONFIG_KEY, JSON.stringify(updated))
+  return c.json(updated)
+})
+// DELETE /api/mining/sessions/:id — delete a single session + its products
+app.delete('/api/mining/sessions/:id', async (c) => {
+  const db  = getDb(c.env)
+  const id  = c.req.param('id')
+  // Remove products belonging to this session
+  await db.from('catalog_entries').delete().eq('sessionId', id)
+  await db.from('products').delete().eq('sessionId', id)
+  // Remove the session itself
+  await db.from('mining_sessions').delete().eq('id', id)
+  // Clean up KV1 project link
+  if (c.env.KV1) {
+    const map = (await c.env.KV1.get('session-project-map', { type: 'json' })) ?? {}
+    delete map[id]
+    await c.env.KV1.put('session-project-map', JSON.stringify(map))
+  }
+  return c.json({ ok: true })
+})
+
+// DELETE /api/mining/sessions — delete ALL sessions
 app.delete('/api/mining/sessions', async (c) => {
   const db = getDb(c.env)
   await db.from('mining_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
@@ -79,66 +118,90 @@ app.patch('/api/mining/sessions/:id', async (c) => {
   }
 })
 
-// ── Projects CRUD ─────────────────────────────────────────────────────────────
+// ── Projects CRUD — stored in KV1 (no Supabase table needed) ─────────────────
+// KV key format: `project:{id}` → JSON project object
+// Index key:     `projects:index` → JSON array of ids (ordered newest-first)
+
+async function kvGetProject(kv, id) {
+  return kv.get(`project:${id}`, { type: 'json' })
+}
+
+async function kvGetIndex(kv) {
+  return (await kv.get('projects:index', { type: 'json' })) ?? []
+}
+
+async function kvSaveIndex(kv, ids) {
+  await kv.put('projects:index', JSON.stringify(ids))
+}
+
 app.get('/api/projects', async (c) => {
-  const db = getDb(c.env)
-  // Fetch projects and counts separately to avoid schema-cache issues with
-  // embedded resource counts right after a migration.
-  const { data: projects, error } = await db
-    .from('projects')
-    .select('*')
-    .order('createdAt', { ascending: false })
-  if (error) return c.json({ error: error.message }, 500)
+  if (!c.env.KV1) return c.json({ error: 'KV1 not configured' }, 500)
 
-  // Attach counts manually
-  const ids = (projects ?? []).map(p => p.id)
-  const [{ data: sessions }, { data: scripts }] = await Promise.all([
-    db.from('mining_sessions').select('projectId').in('projectId', ids.length ? ids : ['__none__']),
-    db.from('scripts').select('projectId').in('projectId', ids.length ? ids : ['__none__']),
-  ])
+  const ids      = await kvGetIndex(c.env.KV1)
+  const projects = (await Promise.all(ids.map(id => kvGetProject(c.env.KV1, id)))).filter(Boolean)
 
-  const sessionCount = {}
-  const scriptCount  = {}
-  ;(sessions ?? []).forEach(s => { sessionCount[s.projectId] = (sessionCount[s.projectId] ?? 0) + 1 })
-  ;(scripts  ?? []).forEach(s => { scriptCount[s.projectId]  = (scriptCount[s.projectId]  ?? 0) + 1 })
+  // Attach session + script counts using KV1 session-project-map (no Supabase schema deps)
+  try {
+    const sessionProjectMap = (await c.env.KV1.get('session-project-map', { type: 'json' })) ?? {}
+    const sessionCount = {}
+    for (const [, pid] of Object.entries(sessionProjectMap)) {
+      if (pid) sessionCount[pid] = (sessionCount[pid] ?? 0) + 1
+    }
 
-  const enriched = (projects ?? []).map(p => ({
-    ...p,
-    _sessionCount: sessionCount[p.id] ?? 0,
-    _scriptCount:  scriptCount[p.id]  ?? 0,
-  }))
+    // Scripts still use Supabase projectId column (best-effort)
+    const scriptCount = {}
+    try {
+      const db = getDb(c.env)
+      const { data: scripts } = await db.from('scripts').select('projectId').in('projectId', ids.length ? ids : ['__none__'])
+      ;(scripts ?? []).forEach(s => { if (s.projectId) scriptCount[s.projectId] = (scriptCount[s.projectId] ?? 0) + 1 })
+    } catch {}
 
-  return c.json({ projects: enriched })
+    projects.forEach(p => { p._sessionCount = sessionCount[p.id] ?? 0; p._scriptCount = scriptCount[p.id] ?? 0 })
+  } catch {}
+
+  return c.json({ projects })
 })
 
 app.post('/api/projects', async (c) => {
-  const db   = getDb(c.env)
+  if (!c.env.KV1) return c.json({ error: 'KV1 not configured' }, 500)
   const body = await c.req.json().catch(() => ({}))
   if (!body.name?.trim()) return c.json({ error: 'Nome obrigatório' }, 400)
-  const { data, error } = await db
-    .from('projects')
-    .insert({ id: uid(), name: body.name.trim(), description: body.description ?? null })
-    .select().single()
-  if (error) return c.json({ error: error.message }, 500)
-  return c.json(data)
+
+  const now     = new Date().toISOString()
+  const project = { id: uid(), name: body.name.trim(), description: body.description ?? null, createdAt: now, updatedAt: now }
+
+  await c.env.KV1.put(`project:${project.id}`, JSON.stringify(project))
+
+  // Prepend to index (newest first)
+  const ids = await kvGetIndex(c.env.KV1)
+  await kvSaveIndex(c.env.KV1, [project.id, ...ids.filter(i => i !== project.id)])
+
+  return c.json(project)
 })
 
 app.patch('/api/projects/:id', async (c) => {
-  const db   = getDb(c.env)
-  const body = await c.req.json().catch(() => ({}))
-  const updates = { updatedAt: new Date().toISOString() }
-  if (body.name        !== undefined) updates.name        = body.name.trim()
-  if (body.description !== undefined) updates.description = body.description
-  const { data, error } = await db
-    .from('projects').update(updates).eq('id', c.req.param('id')).select().single()
-  if (error) return c.json({ error: error.message }, 500)
-  return c.json(data)
+  if (!c.env.KV1) return c.json({ error: 'KV1 not configured' }, 500)
+  const id      = c.req.param('id')
+  const body    = await c.req.json().catch(() => ({}))
+  const project = await kvGetProject(c.env.KV1, id)
+  if (!project) return c.json({ error: 'Projeto não encontrado' }, 404)
+
+  if (body.name        !== undefined) project.name        = body.name.trim()
+  if (body.description !== undefined) project.description = body.description
+  project.updatedAt = new Date().toISOString()
+
+  await c.env.KV1.put(`project:${id}`, JSON.stringify(project))
+  return c.json(project)
 })
 
 app.delete('/api/projects/:id', async (c) => {
-  const db = getDb(c.env)
-  const { error } = await db.from('projects').delete().eq('id', c.req.param('id'))
-  if (error) return c.json({ error: error.message }, 500)
+  if (!c.env.KV1) return c.json({ error: 'KV1 not configured' }, 500)
+  const id  = c.req.param('id')
+  await c.env.KV1.delete(`project:${id}`)
+
+  const ids = await kvGetIndex(c.env.KV1)
+  await kvSaveIndex(c.env.KV1, ids.filter(i => i !== id))
+
   return c.json({ ok: true })
 })
 
@@ -149,6 +212,34 @@ app.get('/api/mining/catalog/stats', async (c) => {
   } catch (e) {
     return c.json({ total: 0, avgPrice: 0, bestScore: 0, totalSold: 0, byMarketplace: {} })
   }
+})
+// Debug endpoint — test ML connection
+app.get('/api/mining/debug-ml', async (c) => {
+  const { getMLToken, mlFetch } = await import('./services/miningService.js')
+  const { resolveKey } = await import('./lib/resolveKey.js')
+  const appId    = await resolveKey(c.env, 'ML_APP_ID')
+  const secret   = await resolveKey(c.env, 'ML_CLIENT_SECRET')
+  const proxyUrl = c.env.ML_PROXY_URL ?? null
+  const { token, error: tokenError } = await getMLToken(c.env)
+
+  // Test 1: with token
+  const r1 = await mlFetch(c.env, '/sites/MLB/search?q=fone&limit=3', { headers: { Authorization: `Bearer ${token}` } })
+  const b1 = await r1.text()
+
+  // Test 2: no auth at all
+  const r2 = await mlFetch(c.env, '/sites/MLB/search?q=fone&limit=3', {})
+  const b2 = await r2.text()
+
+  // Test 3: trends (known working)
+  const r3 = await mlFetch(c.env, '/trends/MLB', {})
+  const b3 = await r3.text()
+
+  return c.json({
+    appId: !!appId, secret: !!secret, proxyUrl, token: !!token, tokenError,
+    withToken:  { status: r1.status, body: b1.slice(0,200) },
+    noAuth:     { status: r2.status, body: b2.slice(0,200) },
+    trends:     { status: r3.status, body: b3.slice(0,200) },
+  })
 })
 app.get('/api/mining/trends', async (c) => {
   try {
@@ -168,6 +259,113 @@ app.post('/api/mining/run', async (c) => {
     console.error('[mining/run]', msg, e?.stack)
     return c.json({ error: msg }, 500)
   }
+})
+
+// ── Mining ingest — receives browser-fetched ML results, scores + saves ──────
+app.post('/api/mining/ingest', async (c) => {
+  const { resolveKey } = await import('./lib/resolveKey.js')
+  const { uid } = await import('./lib/uid.js')
+  const db = getDb(c.env)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { category = '', sortBy = 'relevance', results = [] } = body
+
+  if (!Array.isArray(results) || results.length === 0) {
+    return c.json({ error: 'Nenhum produto recebido' }, 400)
+  }
+
+  const mlAffiliateTag = await resolveKey(c.env, 'ML_AFFILIATE_TAG') ?? ''
+
+  // ── Score each product ────────────────────────────────────────────────────
+  function scoreMLProduct(p) {
+    const soldScore     = Math.min((p.sold_quantity ?? 0) / 1000, 1) * 45
+    const listingScores = { gold_pro: 20, gold_special: 16, gold: 12, silver: 6, bronze: 3, free: 1 }
+    const listingScore  = listingScores[p.listing_type_id] ?? 6
+    const sellerLevels  = { '5_green': 15, '4_light_green': 10, '3_yellow': 6, '2_orange': 2, '1_red': 0 }
+    const sellerScore   = sellerLevels[p.seller?.seller_reputation?.level_id] ?? 7
+    const freeShip      = p.shipping?.free_shipping ? 7 : 0
+    const fulfillment   = p.shipping?.logistic_type === 'fulfillment' ? 3 : 0
+    const discountScore = (p.original_price && p.original_price > p.price) ? 5 : 0
+    const officialScore = (p.official_store_id || p.catalog_listing) ? 5 : 0
+    return Math.round(soldScore + listingScore + sellerScore + freeShip + fulfillment + discountScore + officialScore)
+  }
+
+  function buildAffiliateLink(permalink, tag) {
+    if (!tag || !permalink) return permalink ?? ''
+    try {
+      const u = new URL(permalink)
+      if (tag.startsWith('matt:')) {
+        const parts = tag.split(':')
+        if (parts.length >= 3) { u.searchParams.set('matt_word', parts[1]); u.searchParams.set('matt_tool', parts[2]) }
+      } else {
+        u.searchParams.set('tag', tag)
+      }
+      return u.toString()
+    } catch { return permalink }
+  }
+
+  const now = new Date().toISOString()
+  const sessionId = uid()
+
+  // Auto session name
+  const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+  const d = new Date()
+  const autoName = `${category.charAt(0).toUpperCase() + category.slice(1)} · ML · ${d.getDate()} ${MONTHS_PT[d.getMonth()]}`
+
+  await db.from('mining_sessions').insert({
+    id: sessionId, marketplace: 'mercadolivre_direct', category, status: 'in_progress',
+    name: autoName, projectId: null, tenant_id: ROOT_TENANT_ID,
+  })
+
+  const products = results.map((item) => {
+    const permalink    = item.permalink ?? ''
+    const affiliateLink = buildAffiliateLink(permalink, mlAffiliateTag)
+    const soldQty      = item.sold_quantity ?? 0
+    const discount     = (item.original_price && item.original_price > item.price)
+      ? Math.round((1 - item.price / item.original_price) * 100) : 0
+    return {
+      id:               uid(),
+      marketplace:      'mercadolivre',
+      title:            item.title ?? '',
+      price:            item.price ?? 0,
+      originalPrice:    item.original_price ?? null,
+      discountPct:      discount,
+      rating:           0,
+      reviews:          soldQty,
+      soldQuantity:     soldQty,
+      listingType:      item.listing_type_id ?? '',
+      sellerLevel:      item.seller?.seller_reputation?.level_id ?? '',
+      condition:        item.condition ?? 'new',
+      freeShipping:     item.shipping?.free_shipping ?? false,
+      fulfillment:      item.shipping?.logistic_type === 'fulfillment',
+      officialStore:    !!item.official_store_id,
+      catalogListing:   !!item.catalog_listing,
+      affiliateLink,
+      mlAffiliateLink:  affiliateLink,
+      amazonAffiliateLink: null,
+      productUrl:       permalink,
+      imageUrl:         item.thumbnail ?? '',
+      currency:         'BRL',
+      sourceApi:        'ml_direct',
+      lastSeen:         now,
+      score:            scoreMLProduct(item),
+    }
+  })
+
+  const { data: saved, error: pErr } = await db.from('products').insert(products).select()
+  if (pErr) return c.json({ error: pErr.message }, 500)
+
+  const entries = (saved ?? products).map((p) => ({
+    id: uid(), productId: p.id, market: 'mercadolivre_direct',
+    freshnessScore: 1.0, provenance: `session-${sessionId}`,
+  }))
+  await db.from('catalog_entries').insert(entries)
+
+  await db.from('mining_sessions').update({
+    status: 'completed', productCount: products.length, completedAt: now,
+  }).eq('id', sessionId)
+
+  return c.json({ status: 'completed', sessionId, count: products.length })
 })
 
 // ── Niche intelligence ────────────────────────────────────────────────────────
@@ -392,10 +590,13 @@ const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 // ── Comments ──────────────────────────────────────────────────────────────────
 app.get('/api/comments', async (c) => {
   try {
-    const jobs = await listCommentJobs(c.env)
-    return c.json({ jobs: jobs ?? [] })
+    const [jobs, youtubeConnected] = await Promise.all([
+      listCommentJobs(c.env),
+      checkYouTubeConnected(c.env),
+    ])
+    return c.json({ jobs: jobs ?? [], youtubeConnected })
   } catch (e) {
-    return c.json({ jobs: [], error: e.message }, 200) // 200 so UI can show the message
+    return c.json({ jobs: [], youtubeConnected: false, error: e.message }, 200)
   }
 })
 app.post('/api/comments/run', async (c) => {
@@ -474,17 +675,13 @@ app.get('/api/mining/thumbnails', async (c) => {
 
 // ── Affiliate link builder ────────────────────────────────────────────────────
 // POST /api/affiliate/ml
-// body: { itemId | url }   (client just sends the raw ID or full ML URL)
-//
-// The worker fetches item data from api.mercadolibre.com via ML_PROXY_URL
-// (same Deno proxy used by miningService) so Cloudflare Workers' egress IPs
-// don't get blocked by ML's PolicyAgent.  ML_ACCESS_TOKEN (optional KV key)
-// is forwarded as Authorization: Bearer if set.
+// body: { itemId | url }
+// Strategy: try ML OAuth token first (bypasses PolicyAgent), fall back to proxy.
 app.post('/api/affiliate/ml', async (c) => {
   const { resolveKey } = await import('./lib/resolveKey.js')
   const body = await c.req.json().catch(() => ({}))
 
-  // ── Extract itemId from raw ID or full ML URL ────────────────────────────
+  // ── Extract itemId ────────────────────────────────────────────────────────
   let itemId = (body.itemId ?? body.url ?? '').trim()
   const match = itemId.match(/MLB[-]?(\d+)/i)
   itemId = match ? `MLB${match[1]}` : itemId.toUpperCase()
@@ -492,18 +689,26 @@ app.post('/api/affiliate/ml', async (c) => {
     return c.json({ error: 'ID inválido — use o formato MLB123456789 ou cole a URL completa' }, 400)
   }
 
-  // ── Fetch item data via proxy (same pattern as miningService.mlFetch) ────
-  const proxyBase   = (c.env.ML_PROXY_URL ?? '').replace(/\/$/, '') || 'https://api.mercadolibre.com'
-  const proxySecret = c.env.ML_PROXY_SECRET ?? ''
-  const mlToken     = await resolveKey(c.env, 'ML_ACCESS_TOKEN')
-
-  const headers = new Headers({ 'User-Agent': 'FabricaDeConteudo/1.0', Accept: 'application/json' })
-  if (mlToken)      headers.set('Authorization',  `Bearer ${mlToken}`)
-  if (proxySecret && proxyBase !== 'https://api.mercadolibre.com') {
-    headers.set('X-Proxy-Secret', proxySecret)
+  // ── Get auth token — OAuth client_credentials bypasses PolicyAgent ────────
+  // Priority: stored ML_ACCESS_TOKEN → fresh OAuth token via ML_APP_ID/SECRET
+  let authToken = await resolveKey(c.env, 'ML_ACCESS_TOKEN')
+  if (!authToken) {
+    const { token } = await getMLToken(c.env)
+    authToken = token
   }
 
-  const mlRes = await fetch(`${proxyBase}/items/${itemId}`, { headers })
+  // ── Fetch item via mlFetch (respects ML_PROXY_URL if set) ─────────────────
+  const fetchHeaders = { Accept: 'application/json' }
+  if (authToken) fetchHeaders['Authorization'] = `Bearer ${authToken}`
+
+  let mlRes = await mlFetch(c.env, `/items/${itemId}`, { headers: fetchHeaders })
+
+  // If still blocked and no proxy, try the public /items endpoint with no auth
+  // (some items are accessible without auth from non-CF IPs via fetch — last resort)
+  if (!mlRes.ok && mlRes.status === 403) {
+    mlRes = await mlFetch(c.env, `/items/${itemId}`, { headers: { Accept: 'application/json' } })
+  }
+
   if (!mlRes.ok) {
     const errText = await mlRes.text().catch(() => '')
     if (mlRes.status === 404) return c.json({ error: 'Produto não encontrado no Mercado Livre' }, 404)
@@ -646,6 +851,7 @@ app.route('/api/credentials', credentialsRouter)
 app.route('/api/apikeys',     apikeysRouter)
 app.route('/api/finance',     financeRouter)
 app.route('/api/youtube',     youtubeRouter)
+app.route('/api/ml',          mlOAuthRouter)
 app.route('/api/admin',       migrateRouter)
 
 // ── Voiceover preview (streams 3-second TTS sample for voice selection UI) ────
