@@ -17,6 +17,7 @@ import financeRouter                                          from './routes/fin
 import youtubeRouter                                          from './routes/youtube.js'
 import mlOAuthRouter                                          from './routes/mercadolivre.js'
 import migrateRouter                                         from './routes/migrate.js'
+import videoRouter                                           from './routes/video.js'
 import { uid }                                               from './lib/uid.js'
 
 const app = new Hono()
@@ -853,6 +854,7 @@ app.route('/api/finance',     financeRouter)
 app.route('/api/youtube',     youtubeRouter)
 app.route('/api/ml',          mlOAuthRouter)
 app.route('/api/admin',       migrateRouter)
+app.route('/api/video',       videoRouter)
 
 // ── Voiceover preview (streams 3-second TTS sample for voice selection UI) ────
 app.get('/api/voiceover/preview/:voiceId', async (c) => {
