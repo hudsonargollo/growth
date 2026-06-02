@@ -21,14 +21,95 @@ export const ELEVENLABS_VOICES = [
   { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam',      lang: 'EN',    gender: 'M', description: 'deep and authoritative' },
 ]
 
+// Google Gemini TTS voices — multilingual including PT-BR
+export const GOOGLE_TTS_VOICES = [
+  { id: 'Aoede',           label: 'Aoede',           lang: 'PT/EN/multi', gender: 'F', description: 'leve e descontraída' },
+  { id: 'Kore',            label: 'Kore',             lang: 'PT/EN/multi', gender: 'F', description: 'firme e assertiva' },
+  { id: 'Sulafat',         label: 'Sulafat',          lang: 'PT/EN/multi', gender: 'F', description: 'quente e acolhedora' },
+  { id: 'Zephyr',          label: 'Zephyr',           lang: 'PT/EN/multi', gender: 'F', description: 'brilhante e animada' },
+  { id: 'Puck',            label: 'Puck',             lang: 'PT/EN/multi', gender: 'M', description: 'animado e energético' },
+  { id: 'Charon',          label: 'Charon',           lang: 'PT/EN/multi', gender: 'M', description: 'informativo e claro' },
+  { id: 'Fenrir',          label: 'Fenrir',           lang: 'PT/EN/multi', gender: 'M', description: 'excitável e expressivo' },
+  { id: 'Orus',            label: 'Orus',             lang: 'PT/EN/multi', gender: 'M', description: 'firme e confiante' },
+]
+
+// ── Audio helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Wrap raw PCM bytes (s16le, 24 kHz, mono) in a standard RIFF/WAV header.
+ * Cloudflare Workers have no Node.js `Buffer` or `fs`, but DataView works fine.
+ */
+export function pcmToWav(pcmArrayBuffer, sampleRate = 24000, channels = 1, bitDepth = 16) {
+  const pcm      = new Uint8Array(pcmArrayBuffer)
+  const header   = new ArrayBuffer(44)
+  const view     = new DataView(header)
+  const byteRate = sampleRate * channels * (bitDepth / 8)
+  const blockAlign = channels * (bitDepth / 8)
+
+  const str = (offset, s) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)) }
+  str(0, 'RIFF')
+  view.setUint32(4,  36 + pcm.byteLength, true)
+  str(8, 'WAVE')
+  str(12, 'fmt ')
+  view.setUint32(16, 16,          true)  // PCM chunk size
+  view.setUint16(20, 1,           true)  // PCM format
+  view.setUint16(22, channels,    true)
+  view.setUint32(24, sampleRate,  true)
+  view.setUint32(28, byteRate,    true)
+  view.setUint16(32, blockAlign,  true)
+  view.setUint16(34, bitDepth,    true)
+  str(36, 'data')
+  view.setUint32(40, pcm.byteLength, true)
+
+  const wav = new Uint8Array(44 + pcm.byteLength)
+  wav.set(new Uint8Array(header), 0)
+  wav.set(pcm, 44)
+  return wav.buffer
+}
+
+/** Decode a base64 string → ArrayBuffer (works in Cloudflare Workers via atob) */
+export function base64ToArrayBuffer(b64) {
+  const binary = atob(b64)
+  const bytes  = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
 // ── Text helpers ──────────────────────────────────────────────────────────────
+
+// Section types that are visual-only / metadata — never spoken
+const SKIP_SECTION_TYPES = new Set(['title', 'thumbnail', 'metadata', 'seo'])
+
+/**
+ * Normalise currency symbols so a Portuguese TTS engine never reads "dólares".
+ * Only applied when the script language is PT (default).
+ *
+ * Rules (PT only):
+ *   $X  / USD X  → R$ X      (Amazon prices formatted in USD → treat as BRL)
+ *   "dólares"    → "reais"   (hard block — if LLM slipped it through, fix it)
+ *   "dólar"      → "real"
+ */
+function normaliseCurrencyPT(text) {
+  return text
+    // "$99,90" or "$99.90" or "$99" → "R$ 99,90" / "R$ 99.90" / "R$ 99"
+    .replace(/\$\s*(\d[\d.,]*)/g, 'R$ $1')
+    // "USD 99" or "USD99" → "R$ 99"
+    .replace(/USD\s*(\d[\d.,]*)/gi, 'R$ $1')
+    // Residual word forms (strict, case-insensitive)
+    .replace(/\bdólares\b/gi, 'reais')
+    .replace(/\bdólar\b/gi,   'real')
+    // Bare "$" with no number following (unlikely but safe)
+    .replace(/\$/g, 'R$')
+}
 
 /**
  * Clean a raw script string so it reads naturally when spoken by a TTS engine.
  * Removes markdown syntax, stage directions, section headers, and formatting symbols.
+ * @param {string}  raw
+ * @param {boolean} ptLanguage – when true, apply Portuguese currency normalisation
  */
-function cleanForTTS(raw) {
-  return raw
+function cleanForTTS(raw, ptLanguage = false) {
+  let text = raw
     // Remove full lines that are ONLY stage directions / production notes in brackets
     .replace(/^\s*\[.*?\]\s*$/gm, '')
     // Remove inline stage directions between brackets (e.g. [corte rápido])
@@ -48,21 +129,56 @@ function cleanForTTS(raw) {
     // Trim each line
     .split('\n').map((l) => l.trim()).join('\n')
     .trim()
+
+  // ── PT-only: ensure no dollar/USD references reach the TTS engine ──
+  if (ptLanguage) text = normaliseCurrencyPT(text)
+
+  return text
 }
 
+/**
+ * Convert a script record into plain text ready for TTS.
+ * – Skips sections whose `type` is visual-only (title, thumbnail, etc.)
+ * – Strips the script's own `title` if it appears verbatim as the first line
+ *   of any section (prevents the narrator reading out the video title).
+ * – Applies Portuguese currency normalisation when language is PT.
+ */
 function scriptToText(script) {
-  // Prefer structured sections, fall back to raw text blob
-  const sections = script.sections ?? []
-  const raw = sections.length > 0
-    ? sections.map((s) => s.content ?? '').filter(Boolean).join('\n\n')
-    : (script.text ?? '')
-  return cleanForTTS(raw)
+  const language  = (script.language ?? 'pt').toLowerCase()
+  const isPT      = !language.startsWith('en')
+  const sections  = script.sections ?? []
+  const titleText = (script.title ?? '').trim().toLowerCase()
+
+  let raw
+  if (sections.length > 0) {
+    raw = sections
+      // Drop visual-only sections (title cards, thumbnail copy, etc.)
+      .filter((s) => !SKIP_SECTION_TYPES.has(s.type ?? ''))
+      .map((s) => {
+        let content = s.content ?? ''
+        // Strip the script title if it's the literal first line of a section
+        // (avoids narrator reading "Top 5 Power Banks Mai 26" aloud)
+        if (titleText) {
+          const firstLine = content.split('\n')[0].trim().toLowerCase()
+          if (firstLine === titleText || firstLine === `# ${titleText}` || firstLine === `## ${titleText}`) {
+            content = content.split('\n').slice(1).join('\n')
+          }
+        }
+        return content
+      })
+      .filter(Boolean)
+      .join('\n\n')
+  } else {
+    raw = script.text ?? ''
+  }
+
+  return cleanForTTS(raw, isPT)
 }
 
 function estimateDuration(byteLength, format = 'mp3') {
-  // 128kbps MP3 ≈ 16 KB/s; opus ~8 KB/s
-  const bytesPerSec = format === 'opus' ? 8000 : 16000
-  const secs = Math.round(byteLength / bytesPerSec)
+  // 128kbps MP3 ≈ 16 KB/s; WAV s16le 24kHz mono = 48 KB/s; opus ~8 KB/s
+  const bytesPerSec = format === 'wav' ? 48000 : format === 'opus' ? 8000 : 16000
+  const secs = Math.round((byteLength - (format === 'wav' ? 44 : 0)) / bytesPerSec)
   return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
 }
 
@@ -124,6 +240,149 @@ async function generateElevenLabs(env, { text, voiceId, stability, similarityBoo
   return res.arrayBuffer()
 }
 
+// ── ElevenLabs TTS with timestamps (drives the video timeline) ─────────────────
+
+/**
+ * Synthesize speech AND return alignment. The video generator needs to know when
+ * each word is spoken so captions/transitions land on the right frame.
+ *
+ * NB: ElevenLabs returns CHARACTER-level alignment (not word-level as the PRD
+ * states). We aggregate characters → words here so the composer gets clean
+ * { text, start, end, type:'word' } entries.
+ *
+ * @returns {Promise<{ audio: ArrayBuffer, alignment: Array<{text,start,end,type}>, words: Array }>}
+ */
+async function generateElevenLabsAligned(env, { text, voiceId, stability, similarityBoost }) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'ELEVENLABS_API_KEY')
+  if (!key) throw new Error('ELEVENLABS_API_KEY não configurada — adicione em Configurações')
+
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
+    method: 'POST',
+    headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      text,
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: { stability, similarity_boost: similarityBoost },
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`ElevenLabs (timestamps) error ${res.status}: ${err.slice(0, 200)}`)
+  }
+
+  const json = await res.json()
+  if (!json.audio_base64) throw new Error('ElevenLabs: resposta sem audio_base64')
+  // Prefer normalized_alignment (handles punctuation) when present.
+  const a = json.normalized_alignment ?? json.alignment ?? {}
+  const words = charsToWords(a)
+  return { audio: base64ToArrayBuffer(json.audio_base64), alignment: words, words }
+}
+
+/**
+ * Collapse ElevenLabs character arrays into word objects.
+ * Input: { characters[], character_start_times_seconds[], character_end_times_seconds[] }
+ */
+export function charsToWords(alignment) {
+  const chars = alignment.characters ?? []
+  const starts = alignment.character_start_times_seconds ?? []
+  const ends = alignment.character_end_times_seconds ?? []
+  const words = []
+  let cur = null
+
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i]
+    const isSpace = /\s/.test(ch)
+    if (isSpace) {
+      if (cur) { words.push(cur); cur = null }
+      continue
+    }
+    if (!cur) cur = { text: '', start: starts[i] ?? 0, end: ends[i] ?? 0, type: 'word' }
+    cur.text += ch
+    cur.end = ends[i] ?? cur.end
+  }
+  if (cur) words.push(cur)
+  return words
+}
+
+/**
+ * Synthesize a script's voiceover with alignment and upload the audio.
+ * Returns { audioUrl, alignment, duration }.
+ */
+export async function generateAlignedVoiceover(env, {
+  scriptId,
+  voiceId = ELEVENLABS_VOICES[0].id,
+  stability = 0.75,
+  similarityBoost = 0.80,
+}) {
+  const db = getDb(env)
+  const { data: script, error } = await db
+    .from('scripts')
+    .select('id, text, sections, title, blueprintId')
+    .eq('id', scriptId)
+    .single()
+  if (error || !script) throw new Error(`Roteiro ${scriptId} não encontrado`)
+
+  const text = scriptToText(script)
+  if (!text) throw new Error('Roteiro sem conteúdo — gere o roteiro primeiro')
+  const textToSynth = text.length > 5000 ? text.slice(0, 5000) : text
+
+  const { audio, alignment } = await generateElevenLabsAligned(env, {
+    text: textToSynth, voiceId, stability, similarityBoost,
+  })
+
+  const fileName = `aligned-${scriptId}-${voiceId}.mp3`
+  const audioUrl = await uploadAudio(env, { buffer: audio, fileName, contentType: 'audio/mpeg' })
+  const duration = alignment.length ? alignment[alignment.length - 1].end : 0
+
+  return { audioUrl, alignment, duration }
+}
+
+// ── Google Gemini TTS ─────────────────────────────────────────────────────────
+
+const GOOGLE_TTS_MODEL = 'gemini-2.5-flash-preview-tts'
+
+async function generateGoogle(env, { text, voiceId }) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'GOOGLE_API_KEY')
+  if (!key) throw new Error('GOOGLE_API_KEY não configurada — adicione em Configurações')
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GOOGLE_TTS_MODEL}:generateContent`,
+    {
+      method:  'POST',
+      headers: {
+        'x-goog-api-key': key,
+        'Content-Type':   'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: voiceId ?? 'Aoede' },
+            },
+          },
+        },
+      }),
+    }
+  )
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Google TTS error ${res.status}: ${err.slice(0, 300)}`)
+  }
+
+  const json      = await res.json()
+  const b64Audio  = json?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data
+  if (!b64Audio)  throw new Error('Google TTS: resposta sem dados de áudio')
+
+  // Response is raw PCM (s16le, 24 kHz, mono) — wrap in WAV header
+  const pcmBuffer = base64ToArrayBuffer(b64Audio)
+  return pcmToWav(pcmBuffer)
+}
+
 // ── Supabase Storage upload ───────────────────────────────────────────────────
 
 async function ensureBucket(env, bucket) {
@@ -142,7 +401,7 @@ async function ensureBucket(env, bucket) {
   }
 }
 
-async function uploadAudio(env, { buffer, fileName }) {
+async function uploadAudio(env, { buffer, fileName, contentType = 'audio/mpeg' }) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY não configurados')
   }
@@ -153,7 +412,7 @@ async function uploadAudio(env, { buffer, fileName }) {
       method:  'POST',
       headers: {
         Authorization:  `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': contentType,
         'x-upsert':     'true',
       },
       body: buffer,
@@ -197,7 +456,7 @@ export async function generateVoiceover(env, {
   {
     const { data, error } = await db
       .from('scripts')
-      .select('id, text, sections, language, blueprintId')
+      .select('id, text, sections, language, blueprintId, title')
       .eq('id', scriptId)
       .single()
     if (error) {
@@ -218,22 +477,38 @@ export async function generateVoiceover(env, {
   const text = scriptToText(script)
   if (!text) throw new Error('Roteiro sem conteúdo — gere o roteiro primeiro')
 
-  // Truncate to provider limits (OpenAI: 4096 chars per request; ElevenLabs: varies by plan)
+  // Provider-specific char limits
   const MAX_CHARS = provider === 'openai' ? 4096 : 5000
   const textToSynth = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text
 
   let audioBuffer
+  let audioExt         = 'mp3'
+  let audioContentType = 'audio/mpeg'
+
   if (provider === 'openai') {
-    const voice = voiceId ?? 'nova'
-    audioBuffer = await generateOpenAI(env, { text: textToSynth, voiceId: voice, model })
+    audioBuffer = await generateOpenAI(env, { text: textToSynth, voiceId: voiceId ?? 'nova', model })
+  } else if (provider === 'google') {
+    audioBuffer      = await generateGoogle(env, { text: textToSynth, voiceId: voiceId ?? 'Aoede' })
+    audioExt         = 'wav'
+    audioContentType = 'audio/wav'
   } else {
-    const voice = voiceId ?? ELEVENLABS_VOICES[0].id
-    audioBuffer = await generateElevenLabs(env, { text: textToSynth, voiceId: voice, stability, similarityBoost })
+    audioBuffer = await generateElevenLabs(env, { text: textToSynth, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost })
   }
 
-  const fileName = `${scriptId}-${provider}-${Date.now()}.mp3`
-  const fileUrl  = await uploadAudio(env, { buffer: audioBuffer, fileName })
-  const duration = estimateDuration(audioBuffer.byteLength)
+  // Build a human-readable filename from the script title
+  // e.g. "short-viral-hook-protetor-bucal-valentina-elevenlabs.mp3"
+  const titleSlug = (script.title ?? script.blueprintId ?? scriptId)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')  // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  const voiceSlug = (voiceLabel ?? voiceId ?? provider)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  const fileName = `${titleSlug}--${voiceSlug}-${provider}.${audioExt}`
+  const fileUrl  = await uploadAudio(env, { buffer: audioBuffer, fileName, contentType: audioContentType })
+  const duration = estimateDuration(audioBuffer.byteLength, audioExt === 'wav' ? 'wav' : 'mp3')
 
   const fullRow = {
     id:             uid(),
@@ -252,8 +527,13 @@ export async function generateVoiceover(env, {
 
   let { data, error } = await db.from('voiceovers').insert(fullRow).select().single()
 
+  // Tier 2 — provider/charCount columns may not exist yet; fall back to original schema
   if (error) {
-    // provider/charCount columns may not be in schema cache — use only Prisma-original columns
+    const isColErr = (e) => e?.message && (
+      e.message.includes('Could not find') || e.message.includes('column') || e.message.includes('does not exist')
+    )
+    if (!isColErr(error)) throw new Error(error.message)
+
     const baseRow = {
       id:             fullRow.id,
       scriptId,
@@ -272,6 +552,103 @@ export async function generateVoiceover(env, {
   }
 
   return data
+}
+
+/**
+ * Generate one TTS audio file per section of a script.
+ *
+ * Returns an array of { sectionIndex, sectionLabel, sectionType, audioUrl, duration }
+ * and inserts one voiceovers row per section so the UI can link downloads to sections.
+ *
+ * Provider fallbacks and char limits mirror generateVoiceover.
+ */
+export async function generateVoiceoverSections(env, {
+  scriptId,
+  provider        = 'elevenlabs',
+  voiceId,
+  voiceLabel,
+  model           = 'tts-1',
+  stability       = 0.75,
+  similarityBoost = 0.80,
+}) {
+  const db = getDb(env)
+
+  const { data: script, error: fetchErr } = await db
+    .from('scripts').select('id, text, sections, language, blueprintId, title').eq('id', scriptId).single()
+  if (fetchErr || !script) throw new Error(`Roteiro ${scriptId} não encontrado`)
+
+  const language = (script.language ?? 'pt').toLowerCase()
+  const isPT     = !language.startsWith('en')
+  const rawSections = (script.sections ?? []).filter((s) => !SKIP_SECTION_TYPES.has(s.type ?? '') && s.content?.trim())
+  if (!rawSections.length) throw new Error('Roteiro sem seções — gere o roteiro primeiro')
+
+  const MAX_CHARS    = provider === 'openai' ? 4096 : 5000
+  const isGoogle     = provider === 'google'
+  const audioExt     = isGoogle ? 'wav' : 'mp3'
+  const contentType  = isGoogle ? 'audio/wav' : 'audio/mpeg'
+
+  const titleSlug = (script.title ?? script.blueprintId ?? scriptId)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+  const voiceSlug = (voiceLabel ?? voiceId ?? provider)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+  const results = []
+  const isColErr = (e) => e?.message && (e.message.includes('Could not find') || e.message.includes('column') || e.message.includes('does not exist'))
+
+  for (let i = 0; i < rawSections.length; i++) {
+    const sec     = rawSections[i]
+    let   text    = cleanForTTS(sec.content, isPT)
+    if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS)
+    if (!text) continue
+
+    let audioBuffer
+    try {
+      if (provider === 'openai') {
+        audioBuffer = await generateOpenAI(env, { text, voiceId: voiceId ?? 'nova', model })
+      } else if (isGoogle) {
+        audioBuffer = await generateGoogle(env, { text, voiceId: voiceId ?? 'Aoede' })
+      } else {
+        audioBuffer = await generateElevenLabs(env, { text, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost })
+      }
+    } catch (e) {
+      console.error(`[voiceover/sections] TTS failed for section ${i} (${sec.label}):`, e.message)
+      results.push({ sectionIndex: i, sectionLabel: sec.label, sectionType: sec.type, error: e.message })
+      continue
+    }
+
+    const labelSlug = sec.label.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30)
+    const fileName  = `${titleSlug}--sec${i + 1}-${labelSlug}--${voiceSlug}-${provider}.${audioExt}`
+    const fileUrl   = await uploadAudio(env, { buffer: audioBuffer, fileName, contentType })
+    const duration  = estimateDuration(audioBuffer.byteLength, audioExt === 'wav' ? 'wav' : 'mp3')
+
+    const fullRow = {
+      id:             uid(),
+      scriptId,
+      provider,
+      voiceModel:     voiceLabel ?? voiceId,
+      voiceId,
+      fileUrl,
+      duration,
+      charCount:      text.length,
+      bitrate:        '128kbps',
+      stability,
+      similarityBoost,
+      sectionLabel:   sec.label,
+      sectionIndex:   i,
+      status:         'completed',
+    }
+
+    let { data: saved, error: insErr } = await db.from('voiceovers').insert(fullRow).select().single()
+    if (insErr && isColErr(insErr)) {
+      const { charCount: _c, sectionLabel: _sl, sectionIndex: _si, ...baseRow } = fullRow
+      const { data: d2, error: e2 } = await db.from('voiceovers').insert(baseRow).select().single()
+      if (!e2) saved = d2
+    }
+
+    results.push({ sectionIndex: i, sectionLabel: sec.label, sectionType: sec.type, audioUrl: fileUrl, duration, id: saved?.id })
+  }
+
+  return results
 }
 
 export async function listVoiceovers(env) {
