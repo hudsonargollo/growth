@@ -11,9 +11,6 @@ import scriptsRouter   from './routes/scripts.js'
 import voiceoverRouter from './routes/voiceover.js'
 import deliveryRouter  from './routes/delivery.js'
 import commentsRouter  from './routes/comments.js'
-import productsRouter  from './routes/products.js'
-import projectsRouter  from './routes/projects.js'
-import mlRouter        from './routes/ml.js'
 
 import { startCommentCron } from './services/commentAgent.js'
 
@@ -39,9 +36,6 @@ app.use('/api/scripts',   scriptsRouter)
 app.use('/api/voiceover', voiceoverRouter)
 app.use('/api/delivery',  deliveryRouter)
 app.use('/api/comments',  commentsRouter)
-app.use('/api/products',  productsRouter)
-app.use('/api/projects',  projectsRouter)
-app.use('/api/ml',        mlRouter)
 
 // Serve built React client in production
 if (existsSync(clientDist)) {
