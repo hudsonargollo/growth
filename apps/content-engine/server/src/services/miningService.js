@@ -10,18 +10,28 @@ function scoreProduct(p) {
 }
 
 // ── MercadoLibre OAuth app token ──────────────────────────────────────────────
+// Uses ML_PROXY_URL when set to bypass cloud-provider IP blocks (AWS/Render IPs
+// are sometimes blocked by MercadoLibre). Set ML_PROXY_URL to your Deno Deploy
+// or ml-proxy-node URL in the Render environment variables.
 async function getMercadoLibreToken() {
   if (!process.env.ML_APP_ID || !process.env.ML_CLIENT_SECRET) {
     throw new Error(
-      'MercadoLibre credentials not configured.\n' +
-      '1. Create a free app at https://developers.mercadolibre.com\n' +
-      '2. Set ML_APP_ID and ML_CLIENT_SECRET in server/.env'
+      'MercadoLibre credentials not configured — set ML_APP_ID and ML_CLIENT_SECRET'
     )
   }
 
-  const res = await fetch('https://api.mercadolibre.com/oauth/token', {
+  const base    = process.env.ML_PROXY_URL
+    ? process.env.ML_PROXY_URL.replace(/\/$/, '')
+    : 'https://api.mercadolibre.com'
+
+  const headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+  if (process.env.ML_PROXY_URL && process.env.ML_PROXY_SECRET) {
+    headers['X-Proxy-Secret'] = process.env.ML_PROXY_SECRET
+  }
+
+  const res = await fetch(`${base}/oauth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers,
     body: new URLSearchParams({
       grant_type:    'client_credentials',
       client_id:     process.env.ML_APP_ID,
@@ -31,7 +41,7 @@ async function getMercadoLibreToken() {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(`MercadoLibre auth failed: ${err.message ?? res.status}`)
+    throw new Error(`MercadoLibre auth failed (${res.status}): ${err.message ?? 'unknown'}`)
   }
 
   const json = await res.json()
@@ -185,4 +195,71 @@ export async function getSessions() {
     .limit(20)
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function getStats() {
+  const { data: products, error } = await db.from('products').select('price, score, marketplace')
+  if (error) throw new Error(error.message)
+  const total       = products.length
+  const bestScore   = total > 0 ? Math.max(...products.map(p => p.score ?? 0)) : 0
+  const avgPrice    = total > 0 ? products.reduce((s, p) => s + (p.price ?? 0), 0) / total : 0
+  const mlConfirmed = products.filter(p => p.marketplace === 'mercadolibre').length
+  return { total, bestScore, avgPrice, mlConfirmed }
+}
+
+export async function ingestProducts({ category, sortBy, results }) {
+  const sessionId = uid()
+  const { error: sErr } = await db.from('mining_sessions').insert({
+    id: sessionId, marketplace: 'mercadolibre_direct', category, status: 'in_progress',
+  })
+  if (sErr) throw new Error(sErr.message)
+
+  const scored = results.map(item => ({
+    id:            uid(),
+    marketplace:   'mercadolibre',
+    title:         item.title,
+    price:         item.price ?? 0,
+    rating:        item.reviews?.rating_average ?? 0,
+    reviews:       item.reviews?.total ?? 0,
+    affiliateLink: item.permalink ?? '',
+    imageUrl:      item.thumbnail ?? '',
+    currency:      item.currency_id ?? 'BRL',
+    sourceApi:     'mercadolibre_direct',
+    lastSeen:      new Date().toISOString(),
+    sessionId,
+    score:         scoreProduct({
+      rating:  item.reviews?.rating_average ?? 0,
+      reviews: item.reviews?.total ?? 0,
+      price:   item.price ?? 0,
+    }),
+  }))
+
+  const { data: saved, error: pErr } = await db.from('products').insert(scored).select()
+  if (pErr) throw new Error(pErr.message)
+
+  await db.from('mining_sessions').update({
+    status: 'completed', productCount: saved.length, completedAt: new Date().toISOString(),
+  }).eq('id', sessionId)
+
+  return { status: 'completed', sessionId, count: saved.length }
+}
+
+export async function deleteSession(id) {
+  // delete products in this session first
+  await db.from('products').delete().eq('sessionId', id)
+  const { error } = await db.from('mining_sessions').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function clearAll() {
+  await db.from('products').delete().neq('id', '')
+  await db.from('mining_sessions').delete().neq('id', '')
+}
+
+export async function renameSession(id, { name, projectId }) {
+  const update = {}
+  if (name      !== undefined) update.name      = name
+  if (projectId !== undefined) update.projectId = projectId
+  const { error } = await db.from('mining_sessions').update(update).eq('id', id)
+  if (error) throw new Error(error.message)
 }
