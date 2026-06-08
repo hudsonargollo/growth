@@ -1,5 +1,6 @@
-import { ShoppingBag, FileText, Mic, Send, MessageSquare, TrendingUp, Wand2, Zap, ArrowRight } from 'lucide-react'
+import { ShoppingBag, FileText, Mic, Send, MessageSquare, TrendingUp, Wand2, Zap, ArrowRight, FolderOpen, Radar, Film } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { humanize, scriptDisplayName, sessionDisplayName } from '../lib/humanize.js'
 import { useState } from 'react'
 import StatCard    from '../components/StatCard.jsx'
 import PageHeader  from '../components/PageHeader.jsx'
@@ -105,6 +106,49 @@ function WizardBanner() {
   )
 }
 
+// ── Acesso Rápido ─────────────────────────────────────────────────────────────
+
+const QUICK_LINKS = [
+  { to: '/projects',   label: 'Projetos',        icon: FolderOpen, color: '#8B5CF6', bg: 'rgba(139,92,246,0.10)', border: 'rgba(139,92,246,0.22)' },
+  { to: '/radar',      label: 'Radar',           icon: Radar,      color: '#00D4FF', bg: 'rgba(0,212,255,0.08)',  border: 'rgba(0,212,255,0.20)'  },
+  { to: '/mining',     label: 'Mineração',       icon: ShoppingBag,color: '#a78bfa', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.18)' },
+  { to: '/scripts',    label: 'Roteiros',        icon: FileText,   color: '#CCFF00', bg: 'rgba(204,255,0,0.07)',  border: 'rgba(204,255,0,0.18)'  },
+  { to: '/voiceover',  label: 'Narração',        icon: Mic,        color: '#00FFB9', bg: 'rgba(0,255,185,0.07)',  border: 'rgba(0,255,185,0.18)'  },
+  { to: '/storyboard', label: 'Storyboard',      icon: Film,       color: '#fbbf24', bg: 'rgba(251,191,36,0.07)', border: 'rgba(251,191,36,0.18)' },
+  { to: '/delivery',   label: 'Entrega',         icon: Send,       color: '#FF6B2B', bg: 'rgba(255,107,43,0.07)', border: 'rgba(255,107,43,0.18)' },
+  { to: '/comments',   label: 'Comentários',     icon: MessageSquare, color: '#FFB800', bg: 'rgba(255,184,0,0.07)', border: 'rgba(255,184,0,0.18)' },
+]
+
+function QuickAccess() {
+  const navigate = useNavigate()
+  return (
+    <div className="mb-7">
+      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/20 mb-3 px-0.5">Acesso Rápido</p>
+      <div className="grid grid-cols-4 xl:grid-cols-8 gap-2">
+        {QUICK_LINKS.map(({ to, label, icon: Icon, color, bg, border }) => (
+          <button
+            key={to}
+            onClick={() => navigate(to)}
+            className="flex flex-col items-center gap-2 py-3 px-2 rounded-2xl transition-all group"
+            style={{ background: bg, border: `1px solid ${border}` }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${bg}` }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+              <Icon size={14} style={{ color }} />
+            </div>
+            <span className="text-[10px] font-semibold text-center leading-tight"
+              style={{ color: 'rgba(255,255,255,0.55)' }}>
+              {label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // type → inline style chip (dark neon palette, avoids Tailwind purge)
 const TYPE_STYLES = {
   Mining:    { background: 'rgba(99,102,241,0.12)',  color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)'  },
@@ -146,8 +190,8 @@ export default function Dashboard() {
   const aiPct     = comments.length ? Math.round((aiReplies / comments.length) * 100) : 0
 
   const activity = [
-    ...sessions.map((s)   => ({ type: 'Mining',    name: `${s.marketplace} – ${s.category}`,         status: s.status,    time: s.createdAt })),
-    ...scripts.map((s)    => ({ type: 'Script',    name: s.title || s.blueprintId,                   status: 'completed', time: s.createdAt })),
+    ...sessions.map((s)   => ({ type: 'Mining',    name: sessionDisplayName(s),   status: s.status,    time: s.createdAt })),
+    ...scripts.map((s)    => ({ type: 'Script',    name: scriptDisplayName(s),    status: 'completed', time: s.createdAt })),
     ...voiceovers.map((v) => ({ type: 'Voiceover', name: `${v.voiceModel} voice`,                    status: v.status,    time: v.createdAt })),
     ...deliveries.map((d) => ({ type: 'Delivery',  name: `Editor – ${d.editorContact}`,              status: d.status,    time: d.createdAt })),
     ...comments.map((c)   => ({ type: 'Comment',   name: c.comment?.slice(0, 50) ?? '—',             status: c.status,    time: c.createdAt })),
@@ -162,6 +206,8 @@ export default function Dashboard() {
       />
 
       <WizardBanner />
+
+      <QuickAccess />
 
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
         <StatCard label="Produtos Catalogados"    value={products.length.toLocaleString()}   sub="Todos os marketplaces"                                                   icon={ShoppingBag}   color="indigo" />

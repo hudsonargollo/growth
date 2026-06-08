@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, FileText, Mic, Send,
-  MessageSquare, Settings, LogOut, Loader2, Zap,
+  MessageSquare, Settings, LogOut, Loader2, Zap, Film,
+  FolderOpen, Radar,
 } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
@@ -14,15 +15,21 @@ import Voiceover    from './pages/Voiceover.jsx'
 import Delivery     from './pages/Delivery.jsx'
 import Comments     from './pages/Comments.jsx'
 import SettingsPage from './pages/Settings.jsx'
-import Wizard       from './pages/Wizard.jsx'
+import Wizard            from './pages/Wizard.jsx'
+import StoryboardEditor  from './pages/StoryboardEditor.jsx'
+import Projects          from './pages/Projects.jsx'
+import RadarPage         from './pages/Radar.jsx'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard',   icon: LayoutDashboard },
-  { to: '/mining',    label: 'Mineração',   icon: ShoppingBag },
-  { to: '/scripts',   label: 'Roteiros',    icon: FileText },
-  { to: '/voiceover', label: 'Narração',    icon: Mic },
-  { to: '/delivery',  label: 'Entrega',     icon: Send },
-  { to: '/comments',  label: 'Comentários', icon: MessageSquare },
+  { to: '/dashboard',  label: 'Dashboard',        icon: LayoutDashboard },
+  { to: '/projects',   label: 'Projetos',          icon: FolderOpen },
+  { to: '/radar',      label: 'Radar',             icon: Radar },
+  { to: '/mining',     label: 'Mineração',         icon: ShoppingBag },
+  { to: '/scripts',    label: 'Roteiros',          icon: FileText },
+  { to: '/voiceover',  label: 'Narração',          icon: Mic },
+  { to: '/storyboard', label: 'Storyboard',        icon: Film },
+  { to: '/delivery',   label: 'Entrega',           icon: Send },
+  { to: '/comments',   label: 'Comentários',       icon: MessageSquare },
 ]
 
 const bottomNavItems = [
@@ -126,10 +133,13 @@ function AppShell({ session }) {
       <main className="flex-1 px-8 py-7 overflow-auto min-w-0">
         <Routes>
           <Route path="/dashboard"  element={<Dashboard />} />
+          <Route path="/projects"   element={<Projects />} />
+          <Route path="/radar"      element={<RadarPage />} />
           <Route path="/wizard"     element={<Wizard />} />
           <Route path="/mining"     element={<Mining />} />
           <Route path="/scripts"    element={<Scripts />} />
-          <Route path="/voiceover"  element={<Voiceover />} />
+          <Route path="/voiceover"   element={<Voiceover />} />
+          <Route path="/storyboard"  element={<StoryboardEditor />} />
           <Route path="/delivery"   element={<Delivery />} />
           <Route path="/comments"   element={<Comments />} />
           <Route path="/settings"   element={<SettingsPage />} />

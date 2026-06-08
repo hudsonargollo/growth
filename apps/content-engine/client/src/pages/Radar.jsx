@@ -151,10 +151,10 @@ function NicheCard({ niche, isShort, onMine }) {
   // Pick 4 score keys based on format
   const scoreDefs = isShort
     ? [
-        { key: 'earningPotential', label: '$ Comissão', icon: DollarSign, accent: '#00FFB9' },
-        { key: 'viralPotential',   label: '↗ Viral',    icon: TrendingUp, accent: '#CCFF00' },
-        { key: 'beginnerFriendly', label: '⚡ Fácil',   icon: Zap,        accent: '#a78bfa' },
-        { key: 'evergreen',        label: '◉ Perene',   icon: Target,     accent: '#60a5fa' },
+        { key: 'earningPotential', label: 'Comissão', icon: DollarSign, accent: '#00FFB9' },
+        { key: 'viralPotential',   label: 'Viral',    icon: TrendingUp, accent: '#CCFF00' },
+        { key: 'beginnerFriendly', label: 'Fácil',    icon: Zap,        accent: '#a78bfa' },
+        { key: 'evergreen',        label: 'Perene',   icon: Target,     accent: '#60a5fa' },
       ]
     : [
         { key: 'earningPotential', label: '$ Comissão',  icon: DollarSign, accent: '#00FFB9' },
@@ -238,7 +238,7 @@ function NicheCard({ niche, isShort, onMine }) {
       {/* ── Hook ─────────────────────────────────────────────────────────────── */}
       <div style={{ margin: '0 20px 16px', padding: '12px 14px', borderRadius: 12, background: `${accentColor}0D`, border: `1px solid ${accentColor}33` }}>
         <p style={{ fontSize: 9, fontWeight: 900, color: accentColor, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
-          ⚡ Gancho — Primeiros 3 Segundos
+          Gancho — Primeiros 3 Segundos
         </p>
         <p style={{ fontSize: 13, fontStyle: 'italic', color: 'rgba(255,255,255,0.70)', fontWeight: 500, lineHeight: 1.5, margin: 0 }}>
           "{niche.hook}"
@@ -354,8 +354,14 @@ export default function RadarDeNichos() {
         action={
           report ? (
             <button onClick={handleGenerate} disabled={loading}
-              className="btn-secondary flex items-center gap-2">
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 18px', borderRadius: 12,
+                fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.65)',
+                border: '1px solid rgba(255,255,255,0.10)', transition: 'all 180ms',
+              }}>
+              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> Atualizar
             </button>
           ) : null
         }
@@ -414,8 +420,17 @@ export default function RadarDeNichos() {
                   : 'A IA analisa o mercado brasileiro e aponta nichos com maior comissão, retenção e oportunidade evergreen.'}
               </p>
             </div>
-            <button onClick={handleGenerate} disabled={loading} className="btn-primary px-8 py-3">
-              <Sparkles size={15} /> Gerar Recomendações
+            <button onClick={handleGenerate} disabled={loading}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '12px 32px', borderRadius: 14,
+                fontSize: 14, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
+                background: loading ? 'rgba(204,255,0,0.40)' : '#CCFF00',
+                color: '#07070B', border: 'none',
+                boxShadow: loading ? 'none' : '0 0 28px rgba(204,255,0,0.25)',
+                transition: 'all 200ms',
+              }}>
+              <Sparkles size={15} /> {loading ? 'Analisando…' : 'Gerar Recomendações'}
             </button>
           </div>
         </div>

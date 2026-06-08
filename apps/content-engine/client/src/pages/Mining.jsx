@@ -7,41 +7,53 @@ import {
   Sparkles, TrendingUp, Users, DollarSign, Target, Zap, Video, Clapperboard,
   Trash2, BarChart2, Star, Truck, Award, Filter, SlidersHorizontal, Tag,
   Package, Flame, Trophy, ArrowUpRight, ChevronRight, XCircle, BookOpen, Layers,
-  LayoutGrid, List, Database, Loader2, FolderOpen, Tag as TagIcon, Save, FolderPlus,
+  LayoutGrid, List, Database, Loader2, FolderOpen, Tag as TagIcon, Save, FolderPlus, Calendar,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import StatCard from '../components/StatCard.jsx'
 import { useApi, apiPost, timeAgo } from '../hooks/useApi.js'
-import { AILoadingOverlay, friendlyError } from './Scripts.jsx'
+import { AILoadingOverlay, friendlyError, sleep } from './Scripts.jsx'
+import { humanize, sessionDisplayName } from '../lib/humanize.js'
+
+// Region/language groups — mirrors backend REGIONS. One option per language.
+// Português = Brasil (ML + Amazon). Español = México + Espanha (Amazon).
+// English = EUA + Canadá (Amazon).
+const REGIONS = [
+  { code: 'pt', label: 'Português', langLabel: 'Português', sublabel: 'Brasil',          hasML: true  },
+  { code: 'es', label: 'Español',   langLabel: 'Español',   sublabel: 'España & México', hasML: false },
+  { code: 'en', label: 'English',   langLabel: 'English',   sublabel: 'US & Canada',     hasML: false },
+]
+const getRegion = (code) => REGIONS.find(r => r.code === code) ?? REGIONS[0]
 
 const MINING_STEPS = [
-  { icon: '🛒', label: 'Acessando marketplaces…' },
-  { icon: '📊', label: 'Analisando tendências de busca…' },
-  { icon: '⭐', label: 'Filtrando por avaliações e reviews…' },
-  { icon: '💰', label: 'Calculando potencial de comissão…' },
-  { icon: '🎯', label: 'Selecionando os melhores produtos…' },
+  { icon: ShoppingBag, label: 'Acessando os marketplaces e varrendo o catálogo de produtos do nicho selecionado…' },
+  { icon: TrendingUp,  label: 'Analisando tendências de busca, volume de demanda e velocidade de vendas de cada item…' },
+  { icon: Star,        label: 'Filtrando por avaliações, quantidade de reviews e reputação dos vendedores…' },
+  { icon: DollarSign,  label: 'Calculando o potencial de comissão, a margem e o ticket médio de cada produto…' },
+  // Final step — held on screen until mining actually finishes.
+  { icon: Target,      label: 'Selecionando e ranqueando os melhores produtos para os seus roteiros. Quase lá — mantenha esta janela aberta…' },
 ]
 
 // ── Niche presets ─────────────────────────────────────────────────────────────
 const NICHES = [
   { id: 'all',         label: 'Todos',       keywords: [] },
-  { id: 'eletronicos', label: '⚡ Eletrônicos', keywords: ['fone', 'headphone', 'smartphone', 'tablet', 'carregador', 'cabo', 'câmera', 'notebook', 'teclado', 'mouse'] },
-  { id: 'games',       label: '🎮 Games',     keywords: ['jogo', 'game', 'controle', 'console', 'playstation', 'xbox', 'nintendo', 'gamer', 'headset'] },
-  { id: 'fitness',     label: '💪 Fitness',   keywords: ['musculação', 'academia', 'proteína', 'whey', 'suplemento', 'haltere', 'esteira', 'bike', 'yoga'] },
-  { id: 'casa',        label: '🏠 Casa',      keywords: ['cozinha', 'sala', 'decoração', 'organização', 'limpeza', 'cafeteira', 'aspirador', 'ventilador', 'ar'] },
-  { id: 'beleza',      label: '💄 Beleza',    keywords: ['cabelo', 'skin care', 'maquiagem', 'perfume', 'cuidado', 'hidratante', 'secador', 'escova'] },
-  { id: 'pets',        label: '🐾 Pets',      keywords: ['cachorro', 'gato', 'pet', 'ração', 'brinquedo animal', 'coleira', 'cama pet'] },
-  { id: 'informatica', label: '💻 Informática', keywords: ['monitor', 'ssd', 'memoria ram', 'placa de vídeo', 'processador', 'impressora', 'webcam'] },
-  { id: 'som',         label: '🔊 Áudio',     keywords: ['caixa de som', 'speaker', 'soundbar', 'subwoofer', 'amplificador', 'microfone'] },
+  { id: 'eletronicos', label: 'Eletrônicos', keywords: ['fone', 'headphone', 'smartphone', 'tablet', 'carregador', 'cabo', 'câmera', 'notebook', 'teclado', 'mouse'] },
+  { id: 'games',       label: 'Games',     keywords: ['jogo', 'game', 'controle', 'console', 'playstation', 'xbox', 'nintendo', 'gamer', 'headset'] },
+  { id: 'fitness',     label: 'Fitness',   keywords: ['musculação', 'academia', 'proteína', 'whey', 'suplemento', 'haltere', 'esteira', 'bike', 'yoga'] },
+  { id: 'casa',        label: 'Casa',      keywords: ['cozinha', 'sala', 'decoração', 'organização', 'limpeza', 'cafeteira', 'aspirador', 'ventilador', 'ar'] },
+  { id: 'beleza',      label: 'Beleza',    keywords: ['cabelo', 'skin care', 'maquiagem', 'perfume', 'cuidado', 'hidratante', 'secador', 'escova'] },
+  { id: 'pets',        label: 'Pets',      keywords: ['cachorro', 'gato', 'pet', 'ração', 'brinquedo animal', 'coleira', 'cama pet'] },
+  { id: 'informatica', label: 'Informática', keywords: ['monitor', 'ssd', 'memoria ram', 'placa de vídeo', 'processador', 'impressora', 'webcam'] },
+  { id: 'som',         label: 'Áudio',     keywords: ['caixa de som', 'speaker', 'soundbar', 'subwoofer', 'amplificador', 'microfone'] },
 ]
 
 const SORT_OPTIONS = [
-  { id: 'score',      label: '🏆 Maior Score' },
-  { id: 'sold',       label: '🔥 Mais Vendidos' },
-  { id: 'price_asc',  label: '💰 Menor Preço' },
-  { id: 'price_desc', label: '💎 Maior Preço' },
-  { id: 'rating',     label: '⭐ Melhor Avaliação' },
+  { id: 'score',      label: 'Maior Score' },
+  { id: 'sold',       label: 'Mais Vendidos' },
+  { id: 'price_asc',  label: 'Menor Preço' },
+  { id: 'price_desc', label: 'Maior Preço' },
+  { id: 'rating',     label: 'Melhor Avaliação' },
 ]
 
 const LISTING_COLORS = {
@@ -89,56 +101,80 @@ function discountPct(original, current) {
 
 // ── Affiliate link inline editor ──────────────────────────────────────────────
 function AffiliateLinkEditor({ productId, label, placeholder, initialValue, color, onSave }) {
-  const [editing, setEditing] = useState(false)
-  const [draft,   setDraft]   = useState(initialValue ?? '')
+  const [saving,  setSaving]  = useState(false)
   const [saved,   setSaved]   = useState(false)
-  const inputRef              = useRef(null)
+  const [err,     setErr]     = useState(null)
+  const [draft,   setDraft]   = useState(initialValue ?? '')
+  const inputRef = useRef(null)
+  const skipBlur = useRef(false)  // prevents blur from firing when clicking the X cancel button
 
+  // Keep draft in sync when initialValue changes externally (e.g. after re-fetch)
   useEffect(() => { setDraft(initialValue ?? '') }, [initialValue])
-  useEffect(() => {
-    if (editing) requestAnimationFrame(() => inputRef.current?.focus())
-  }, [editing])
 
-  async function handleSave() {
-    await onSave(productId, draft)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
-    setEditing(false)
+  async function commitSave(value) {
+    const trimmed = value.trim()
+    // Don't save if unchanged
+    if (trimmed === (initialValue ?? '')) return
+    setSaving(true); setErr(null)
+    try {
+      await onSave(productId, trimmed)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setErr(e.message ?? 'Erro ao salvar')
+      setDraft(initialValue ?? '')   // revert to last known good value
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleBlur() {
+    if (skipBlur.current) { skipBlur.current = false; return }
+    commitSave(draft)
+  }
+
+  function handleCancel() {
+    skipBlur.current = true
+    setDraft(initialValue ?? '')
+    setErr(null)
+    inputRef.current?.blur()
   }
 
   return (
-    <div className="flex items-center gap-2 min-w-0">
-      <span className={`text-[10px] font-bold uppercase tracking-wider w-20 shrink-0 ${color}`}>{label}</span>
-      {editing ? (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`text-[10px] font-bold uppercase tracking-wider w-20 shrink-0 ${color}`}>{label}</span>
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          <input ref={inputRef} type="text" value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-            placeholder={placeholder} autoComplete="off"
-            className="input flex-1 min-w-0 text-xs py-1 font-mono" />
-          <button onMouseDown={e => e.preventDefault()} onClick={handleSave}
-            className="p-1 text-green-600 hover:bg-green-50 rounded shrink-0"><Check size={11} /></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => setEditing(false)}
-            className="p-1 text-white/35 hover:bg-[#0F0F16]/[0.05] rounded shrink-0"><X size={11} /></button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {initialValue ? (
-            <a href={initialValue} target="_blank" rel="noreferrer"
-              className="text-xs text-violet-400 hover:underline font-mono truncate flex-1 flex items-center gap-1">
-              {initialValue} <ExternalLink size={9} className="shrink-0" />
-            </a>
-          ) : (
-            <span className="text-xs text-white/25 flex-1">—</span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={e => { setDraft(e.target.value); setErr(null) }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); inputRef.current?.blur() }
+              if (e.key === 'Escape') handleCancel()
+            }}
+            onBlur={handleBlur}
+            placeholder={placeholder}
+            autoComplete="off"
+            className="input flex-1 min-w-0 text-xs py-1 font-mono"
+            style={{ borderColor: err ? 'rgba(255,51,102,0.45)' : undefined }}
+          />
+          {saving && <Loader2 size={11} className="animate-spin text-white/40 shrink-0" />}
+          {saved && !saving && <Check size={11} className="text-[#00FFB9] shrink-0" />}
+          {draft !== (initialValue ?? '') && !saving && !saved && (
+            <button
+              onMouseDown={e => e.preventDefault()}
+              onClick={handleCancel}
+              className="p-0.5 rounded text-white/25 hover:text-[#FF3366] shrink-0 transition-colors"
+              title="Cancelar">
+              <X size={10} />
+            </button>
           )}
-          {saved
-            ? <Check size={11} className="text-green-500 shrink-0" />
-            : <button onMouseDown={e => e.preventDefault()} onClick={() => setEditing(true)}
-                className="p-0.5 rounded hover:bg-[#0F0F16]/[0.05] text-white/25 hover:text-white/40 shrink-0">
-                <Pencil size={10} />
-              </button>
-          }
         </div>
+      </div>
+      {err && (
+        <p className="text-[10px] pl-[88px]" style={{ color: '#FF3366' }}>{err}</p>
       )}
     </div>
   )
@@ -255,7 +291,7 @@ function ProductCard({ product, onOpen, onMine }) {
         {blogCount > 0 && (
           <span className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
             <BookOpen size={8} /> {blogCount}
-            {trustedCount > 0 && <span className="text-purple-200">★</span>}
+            {trustedCount > 0 && <Star size={10} className="text-purple-200" />}
           </span>
         )}
       </div>
@@ -475,9 +511,9 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
                 { icon: Flame,   label: 'Vendas',      value: soldQty > 0 ? soldQty.toLocaleString('pt-BR') : '—',     color: '#fb923c', bg: 'rgba(251,146,60,0.10)' },
-                { icon: Star,    label: 'Avaliação',   value: product.rating > 0 ? `${product.rating} ★` : '—',         color: '#fbbf24', bg: 'rgba(251,191,36,0.10)' },
-                { icon: Truck,   label: 'Frete',       value: product.freeShipping ? 'Grátis ✓' : 'Cobrado',             color: product.freeShipping ? '#4ade80' : 'rgba(255,255,255,0.30)', bg: product.freeShipping ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.04)' },
-                { icon: Package, label: 'Logística',   value: product.fulfillment ? 'Full ✓' : 'Vendedor',               color: product.fulfillment  ? '#818cf8' : 'rgba(255,255,255,0.30)', bg: product.fulfillment  ? 'rgba(129,140,248,0.10)' : 'rgba(255,255,255,0.04)' },
+                { icon: Star,    label: 'Avaliação',   value: product.rating > 0 ? `${product.rating}` : '—',            color: '#fbbf24', bg: 'rgba(251,191,36,0.10)' },
+                { icon: Truck,   label: 'Frete',       value: product.freeShipping ? 'Grátis' : 'Cobrado',               color: product.freeShipping ? '#4ade80' : 'rgba(255,255,255,0.30)', bg: product.freeShipping ? 'rgba(74,222,128,0.10)' : 'rgba(255,255,255,0.04)' },
+                { icon: Package, label: 'Logística',   value: product.fulfillment ? 'Full' : 'Vendedor',                 color: product.fulfillment  ? '#818cf8' : 'rgba(255,255,255,0.30)', bg: product.fulfillment  ? 'rgba(129,140,248,0.10)' : 'rgba(255,255,255,0.04)' },
               ].map(({ icon: Icon, label, value, color, bg }) => (
                 <div key={label} style={{ background: bg, borderRadius: 12, padding: '10px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
@@ -507,7 +543,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>📦 Dados da plataforma</span>
+                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Dados da plataforma</span>
                   <span style={{ fontWeight: 700, color: '#a78bfa' }}>{platformScore}<span style={{ color: 'rgba(255,255,255,0.30)', fontWeight: 400 }}>/100</span></span>
                 </div>
                 <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
@@ -517,7 +553,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>📰 Reviews editoriais</span>
+                  <span style={{ color: 'rgba(255,255,255,0.60)', fontWeight: 500 }}>Reviews editoriais</span>
                   <span style={{ fontWeight: 700, color: blogBonus > 0 ? '#c084fc' : 'rgba(255,255,255,0.30)' }}>+{blogBonus}<span style={{ color: 'rgba(255,255,255,0.30)', fontWeight: 400 }}>/15</span></span>
                 </div>
                 <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
@@ -549,7 +585,7 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(168,85,247,0.08)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,0.25)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      {r.trusted && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: 'rgba(168,85,247,0.20)', color: '#c084fc' }}>✓ confiável</span>}
+                      {r.trusted && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999, background: 'rgba(168,85,247,0.20)', color: '#c084fc' }}>confiável</span>}
                       <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.40)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{r.source}</span>
                       <ExternalLink size={9} color="rgba(255,255,255,0.25)" style={{ flexShrink: 0 }} />
                     </div>
@@ -626,22 +662,31 @@ function ProductDrawer({ product, onClose, onSaveAffiliateLink, onDelete, affili
 
 // ── Mine modal ────────────────────────────────────────────────────────────────
 function MineModal({ open, onClose, onRun, loading, defaultMarketplace }) {
+  const [region,      setRegion]      = useState('pt')
   const [marketplace, setMarketplace] = useState(defaultMarketplace ?? 'mercadolivre_direct')
   const [siteFilter,  setSiteFilter]  = useState('ml_amazon')
   const [category,    setCategory]    = useState('')
   const [sortBy,      setSortBy]      = useState('sold_quantity_desc')
+
+  const reg = getRegion(region)
 
   // Sync when parent resolves the config default
   useEffect(() => {
     if (defaultMarketplace) setMarketplace(defaultMarketplace)
   }, [defaultMarketplace])
 
+  // When switching to an Amazon-only region, force Amazon marketplace
+  useEffect(() => {
+    if (!reg.hasML) { setMarketplace('amazon'); setSiteFilter('amazon') }
+    else            { setMarketplace(defaultMarketplace ?? 'mercadolivre_direct'); setSiteFilter('ml_amazon') }
+  }, [region])
+
   if (!open) return null
 
   function handleSubmit(e) {
     e.preventDefault()
     if (!category.trim()) return
-    onRun({ marketplace, siteFilter, category: category.trim(), sortBy })
+    onRun({ region, marketplace, siteFilter, category: category.trim(), sortBy })
   }
 
   return (
@@ -669,31 +714,51 @@ function MineModal({ open, onClose, onRun, loading, defaultMarketplace }) {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Region / language */}
           <div>
-            <label className="block text-xs font-medium text-white/60 mb-1.5">Marketplace</label>
-            <select value={marketplace} onChange={e => setMarketplace(e.target.value)}
-              className="input">
-              <option value="mercadolivre_direct">🏆 Mercado Livre Direto (melhor dados)</option>
-              <option value="google_shopping">Google Shopping</option>
-              <option value="amazon">Amazon (SerpAPI)</option>
-              <option value="both">Google: ML + Amazon</option>
+            <label className="block text-xs font-medium text-white/60 mb-1.5">País / Idioma do vídeo</label>
+            <select value={region} onChange={e => setRegion(e.target.value)} className="input">
+              {REGIONS.map(r => (
+                <option key={r.code} value={r.code}>
+                  {r.label} — {r.sublabel}
+                </option>
+              ))}
             </select>
+            {!reg.hasML && (
+              <p className="text-[11px] text-white/35 mt-1.5 leading-snug">
+                {reg.sublabel} — mineração na Amazon, roteiros em {reg.langLabel}.
+              </p>
+            )}
           </div>
 
-          {marketplace === 'mercadolivre_direct' && (
+          {/* Marketplace — only meaningful for Brazil (ML available) */}
+          {reg.hasML && (
             <div>
-              <label className="block text-xs font-medium text-white/60 mb-1.5">Ordenação</label>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+              <label className="block text-xs font-medium text-white/60 mb-1.5">Marketplace</label>
+              <select value={marketplace} onChange={e => setMarketplace(e.target.value)}
                 className="input">
-                <option value="sold_quantity_desc">🔥 Mais Vendidos</option>
-                <option value="relevance">Relevância</option>
-                <option value="price_asc">💰 Menor Preço</option>
-                <option value="price_desc">💎 Maior Preço</option>
+                <option value="mercadolivre_direct">Mercado Livre Direto (melhor dados)</option>
+                <option value="google_shopping">Google Shopping</option>
+                <option value="amazon">Amazon (SerpAPI)</option>
+                <option value="both">Google: ML + Amazon</option>
               </select>
             </div>
           )}
 
-          {marketplace === 'google_shopping' && (
+          {reg.hasML && marketplace === 'mercadolivre_direct' && (
+            <div>
+              <label className="block text-xs font-medium text-white/60 mb-1.5">Ordenação</label>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                className="input">
+                <option value="sold_quantity_desc">Mais Vendidos</option>
+                <option value="relevance">Relevância</option>
+                <option value="price_asc">Menor Preço</option>
+                <option value="price_desc">Maior Preço</option>
+              </select>
+            </div>
+          )}
+
+          {reg.hasML && marketplace === 'google_shopping' && (
             <div>
               <label className="block text-xs font-medium text-white/60 mb-1.5">Filtro de sites</label>
               <select value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
@@ -790,7 +855,7 @@ function NicheCard({ niche, onMine }) {
             <div><p className="font-semibold text-white/70 flex items-center gap-1 mb-0.5"><Target size={11} /> Ângulo da review</p><p>{niche.reviewAngle}</p></div>
             <div><p className="font-semibold text-white/70 flex items-center gap-1 mb-0.5"><Zap size={11} /> Por que encaixa no canal</p><p>{niche.whyItFits}</p></div>
             <div style={{ background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 10, padding: '10px 12px' }}>
-              <p className="font-semibold mb-1" style={{ color: '#a78bfa' }}>🎣 Gancho de abertura</p>
+              <p className="font-semibold mb-1" style={{ color: '#a78bfa' }}>Gancho de abertura</p>
               <p className="italic" style={{ color: 'rgba(255,255,255,0.60)' }}>"{niche.hook}"</p>
             </div>
           </div>
@@ -893,7 +958,7 @@ function ShortNicheCard({ niche, onMine }) {
           borderRadius: 10, padding: '10px 12px', marginBottom: 12,
         }}>
           <p style={{ fontSize: 9, fontWeight: 800, color: '#FF3366', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>
-            ⚡ Gancho — primeiros 3 segundos
+            Gancho — primeiros 3 segundos
           </p>
           <p style={{ fontSize: 12, fontStyle: 'italic', color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}>"{niche.hook}"</p>
         </div>
@@ -940,9 +1005,9 @@ function ShortNicheCard({ niche, onMine }) {
 
 // ── Top Products Slider ───────────────────────────────────────────────────────
 const RANK_STYLES = [
-  { badge: '#FFB800', badgeBg: 'rgba(255,184,0,0.18)', label: '🥇' },
-  { badge: 'rgba(255,255,255,0.70)', badgeBg: 'rgba(255,255,255,0.10)', label: '🥈' },
-  { badge: '#FF6B2B', badgeBg: 'rgba(255,107,43,0.18)', label: '🥉' },
+  { badge: '#FFB800', badgeBg: 'rgba(255,184,0,0.18)', label: '1' },
+  { badge: 'rgba(255,255,255,0.70)', badgeBg: 'rgba(255,255,255,0.10)', label: '2' },
+  { badge: '#FF6B2B', badgeBg: 'rgba(255,107,43,0.18)', label: '3' },
   { badge: 'rgba(255,255,255,0.35)', badgeBg: 'rgba(255,255,255,0.06)', label: '4' },
   { badge: 'rgba(255,255,255,0.35)', badgeBg: 'rgba(255,255,255,0.06)', label: '5' },
 ]
@@ -966,12 +1031,23 @@ const CARD_GAP     = 12   // px gap
 const VISIBLE      = 3    // cards visible at once
 
 function TopProductsSlider({ products, onSelect }) {
-  const [offset, setOffset] = useState(0)   // index of first visible card
-  const total   = products.length
-  const maxOff  = Math.max(0, total - VISIBLE)
+  const scrollRef = useRef(null)
+  const total     = products.length
 
-  const prev = () => setOffset(o => Math.max(0, o - 1))
-  const next = () => setOffset(o => Math.min(maxOff, o + 1))
+  // Native horizontal scroll — the partial card at the right edge teaches scroll.
+  const scrollByCards = (dir) => {
+    scrollRef.current?.scrollBy({ left: dir * (CARD_WIDTH + CARD_GAP) * 2, behavior: 'smooth' })
+  }
+
+  // One-time nudge on mount: bump the row left a touch, then snap back, to hint
+  // that the list is scrollable.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || el.scrollWidth <= el.clientWidth + 8) return
+    const t1 = setTimeout(() => el.scrollTo({ left: 56, behavior: 'smooth' }), 650)
+    const t2 = setTimeout(() => el.scrollTo({ left: 0,  behavior: 'smooth' }), 1150)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [total])
 
   const fmtPrice = (p) => {
     if (!p.price) return null
@@ -992,38 +1068,34 @@ function TopProductsSlider({ products, onSelect }) {
         </div>
         {/* Prev / Next */}
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={prev} disabled={offset === 0}
-            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: offset === 0 ? 'not-allowed' : 'pointer', opacity: offset === 0 ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
+          <button onClick={() => scrollByCards(-1)}
+            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
             <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} />
           </button>
-          <button onClick={next} disabled={offset >= maxOff}
-            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: offset >= maxOff ? 'not-allowed' : 'pointer', opacity: offset >= maxOff ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
+          <button onClick={() => scrollByCards(1)}
+            style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.60)' }}>
             <ChevronRight size={13} />
           </button>
         </div>
       </div>
 
-      {/* Sliding track — clips to show VISIBLE cards */}
-      <div style={{ overflow: 'hidden', padding: '14px 16px' }}>
-        <div style={{
-          display: 'flex', gap: CARD_GAP,
-          transform: `translateX(-${offset * (CARD_WIDTH + CARD_GAP)}px)`,
-          transition: 'transform 300ms ease',
-        }}>
-          {products.map((p, i) => {
+      {/* Native scroll track — a partial next card peeks at the right edge */}
+      <div ref={scrollRef} className="hide-scrollbar" style={{
+        display: 'flex', gap: CARD_GAP, padding: '14px 16px',
+        overflowX: 'auto', scrollSnapType: 'x proximity', scrollBehavior: 'smooth',
+      }}>
+        {products.map((p, i) => {
             const rank      = RANK_STYLES[i] ?? RANK_STYLES[4]
             const price     = fmtPrice(p)
             const affLink   = resolveAffiliateLink(p)
-            const isVisible = i >= offset && i < offset + VISIBLE
 
             return (
               <div key={p.id ?? i} style={{
                 width: CARD_WIDTH, flexShrink: 0, borderRadius: 12, overflow: 'hidden',
                 background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isVisible ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}`,
+                border: '1px solid rgba(255,255,255,0.09)',
                 display: 'flex', flexDirection: 'column',
-                opacity: isVisible ? 1 : 0.4,
-                transition: 'opacity 300ms ease',
+                scrollSnapAlign: 'start',
               }}>
 
                 {/* Image */}
@@ -1085,7 +1157,6 @@ function TopProductsSlider({ products, onSelect }) {
               </div>
             )
           })}
-        </div>
       </div>
     </div>
   )
@@ -1093,10 +1164,10 @@ function TopProductsSlider({ products, onSelect }) {
 
 // ── Marketplace pill — color-coded per platform ───────────────────────────────
 const MP_STYLES = {
-  mercadolivre:        { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: '🟡 Mercado Livre' },
-  mercadolivre_direct: { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: '🟡 ML Direto' },
-  amazon:              { bg: 'rgba(255,107,43,0.14)', border: 'rgba(255,107,43,0.35)', color: '#FF6B2B',  label: '🟠 Amazon' },
-  google_shopping:     { bg: 'rgba(66,133,244,0.14)', border: 'rgba(66,133,244,0.35)', color: '#4285F4',  label: '🔵 Google Shopping' },
+  mercadolivre:        { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: 'Mercado Livre' },
+  mercadolivre_direct: { bg: 'rgba(255,184,0,0.14)',  border: 'rgba(255,184,0,0.35)',  color: '#FFB800',  label: 'ML Direto' },
+  amazon:              { bg: 'rgba(255,107,43,0.14)', border: 'rgba(255,107,43,0.35)', color: '#FF6B2B',  label: 'Amazon' },
+  google_shopping:     { bg: 'rgba(66,133,244,0.14)', border: 'rgba(66,133,244,0.35)', color: '#4285F4',  label: 'Google Shopping' },
 }
 function MpPill({ marketplace }) {
   const s = MP_STYLES[marketplace] ?? { bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.28)', color: '#a78bfa', label: marketplace?.replace(/_/g, ' ') ?? '—' }
@@ -1120,7 +1191,7 @@ function SessionGroup({ session, products, onOpen, onMine, defaultOpen, onRename
 
   useEffect(() => {
     if (renaming) {
-      setNameDraft(session?.name ?? session?.category ?? '')
+      setNameDraft(sessionDisplayName(session))
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [renaming])
@@ -1149,7 +1220,7 @@ function SessionGroup({ session, products, onOpen, onMine, defaultOpen, onRename
     } finally { setDeleting(false) }
   }
 
-  const displayName = session?.name || session?.category || 'Sessão sem nome'
+  const displayName = sessionDisplayName(session)
 
   return (
     <div className="mb-3 rounded-xl overflow-hidden"
@@ -1191,11 +1262,28 @@ function SessionGroup({ session, products, onOpen, onMine, defaultOpen, onRename
         {!renaming && (
           <>
             {session?.marketplace && <MpPill marketplace={session.marketplace} />}
-            {session?.createdAt && (
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', whiteSpace: 'nowrap' }}>
-                {timeAgo(session.createdAt)}
+
+            {/* Keyword pill */}
+            {(session?.keyword || session?.category) && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100,
+                background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)',
+                color: '#a78bfa', whiteSpace: 'nowrap', maxWidth: 140,
+                overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {session.keyword || session.category}
               </span>
             )}
+
+            {/* Date */}
+            {session?.createdAt && (
+              <span title={new Date(session.createdAt).toLocaleString('pt-BR')}
+                style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Calendar size={10} style={{ opacity: 0.5 }} />
+                {new Date(session.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </span>
+            )}
+
             <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
               background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
               color: 'rgba(255,255,255,0.50)', whiteSpace: 'nowrap',
@@ -1262,6 +1350,7 @@ export default function Mining() {
   const [sortBy,             setSortBy]            = useState('score')
   const [mpFilter,           setMpFilter]          = useState('all')
   const [running,            setRunning]            = useState(false)
+  const [mineDone,           setMineDone]           = useState(false)  // success → animated green check
   const [error,              setError]              = useState(null)
   const [lastResult,         setLastResult]         = useState(null)
   const [affiliateOverrides, setAffiliateOverrides] = useState({})
@@ -1360,56 +1449,48 @@ export default function Mining() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleRun({ marketplace, siteFilter, category, sortBy: runSortBy }) {
-    setRunning(true); setError(null); setLastResult(null); setMineModalOpen(false)
+  async function handleRun({ region = 'pt', marketplace, siteFilter, category, sortBy: runSortBy }) {
+    setRunning(true); setMineDone(false); setError(null); setLastResult(null); setMineModalOpen(false)
     try {
       let result
+      const reg = getRegion(region)
 
-      if (marketplace === 'mercadolivre_direct') {
-        // ── Browser-side ML fetch (bypasses Cloudflare IP block) ──────────────
-        const tokenRes = await fetch('/api/ml/oauth/token')
-        const { token } = await tokenRes.json()
-
-        if (!token) throw new Error('Conta Mercado Livre não conectada. Vá em Configurações → Mercado Livre — OAuth e clique em Conectar.')
-
+      // Browser-side ML proxy only applies to Brazil. Non-BR regions are Amazon-only
+      // and go straight through the Worker SerpAPI path with the region param.
+      if (reg.hasML && marketplace === 'mercadolivre_direct') {
+        // ── Proxy ML search through Worker (avoids CORS block) ──────────────
         const sortMap = {
-          best_sellers:     'sold_quantity_desc',
-          price_asc:        'price_asc',
-          price_desc:       'price_desc',
-          relevance:        'relevance',
+          best_sellers:       'sold_quantity_desc',
+          price_asc:          'price_asc',
+          price_desc:         'price_desc',
+          relevance:          'relevance',
           sold_quantity_desc: 'sold_quantity_desc',
         }
         const mlSort = sortMap[runSortBy] ?? 'relevance'
         const params = new URLSearchParams({ q: category, limit: '20', sort: mlSort })
 
-        const mlRes = await fetch(`https://api.mercadolibre.com/sites/MLB/search?${params}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        })
+        const mlRes = await fetch(`/api/ml/search?${params}`)
+        const mlBody = await mlRes.json()
 
         if (!mlRes.ok) {
-          const err = await mlRes.json().catch(() => ({}))
-          // Token expired — fall through to worker (will use SerpAPI fallback)
           if (mlRes.status === 401) {
+            // Token expired — fall back to Worker SerpAPI path
             console.warn('[mining] ML token expired, falling back to worker')
-            result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+            result = await apiPost('/mining/run', { region, marketplace, category, siteFilter, sortBy: runSortBy })
           } else {
-            throw new Error(`Mercado Livre retornou ${mlRes.status}: ${err.message ?? 'erro desconhecido'}`)
+            throw new Error(`Mercado Livre retornou ${mlRes.status}: ${mlBody.error ?? 'erro desconhecido'}`)
           }
         } else {
-          const mlData = await mlRes.json()
-          const results = mlData.results ?? []
-
+          const results = mlBody.results ?? []
           if (results.length === 0) {
-            // No results from ML — fall back to worker SerpAPI path
             console.warn('[mining] ML returned 0 results, falling back to worker')
-            result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+            result = await apiPost('/mining/run', { region, marketplace, category, siteFilter, sortBy: runSortBy })
           } else {
-            // Send raw results to worker to score + save
             result = await apiPost('/mining/ingest', { category, sortBy: runSortBy, results })
           }
         }
       } else {
-        result = await apiPost('/mining/run', { marketplace, category, siteFilter, sortBy: runSortBy })
+        result = await apiPost('/mining/run', { region, marketplace, category, siteFilter, sortBy: runSortBy })
       }
 
       setLastResult({ count: result.count, warnings: result.warnings, competitionLevel: result.competitionLevel, listingTotal: result.listingTotal })
@@ -1420,8 +1501,10 @@ export default function Mining() {
         setNameProjectId('')
         setNameModalOpen(true)
       }
+      setMineDone(true)
+      await sleep(1100) // let the green check land before hiding the overlay
     } catch (e) { console.error("[mining]", e.message); setError(friendlyError(e.message)) }
-    finally { setRunning(false) }
+    finally { setRunning(false); setMineDone(false) }
   }
 
   async function handleSaveSessionName() {
@@ -1429,7 +1512,7 @@ export default function Mining() {
     setNameSaving(true)
     try {
       // Always send the name (even if unchanged) so the session is never left unnamed
-      const body = { name: nameModalDraft.trim() || (sessions.find(s => s.id === nameModalSessionId)?.category ?? 'Sessão') }
+      const body = { name: nameModalDraft.trim() || sessionDisplayName(sessions.find(s => s.id === nameModalSessionId)) }
       if (nameProjectId) body.projectId = nameProjectId
       const res = await fetch(`/api/mining/sessions/${nameModalSessionId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -1472,21 +1555,30 @@ export default function Mining() {
   }
 
   async function handleSaveAffiliateLink(productId, field, value) {
+    // Optimistic update so UI reflects change immediately
     setAffiliateOverrides(prev => ({ ...prev, [productId]: { ...(prev[productId] ?? {}), [field]: value } }))
-    try {
-      await fetch(`/api/products/${productId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+    const res = await fetch(`/api/products/${productId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      // Revert optimistic update
+      setAffiliateOverrides(prev => {
+        const ovr = { ...(prev[productId] ?? {}) }
+        delete ovr[field]
+        return { ...prev, [productId]: ovr }
       })
-    } catch (e) { console.error('[affiliate] save failed', e) }
+      throw new Error(err.error ?? `Erro ${res.status}`)
+    }
   }
 
   const selectedSession = sessions.find(s => s.id === selectedSessionId)
-  const topProducts = useMemo(() => [...rawProducts].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5), [rawProducts])
+  const topProducts = useMemo(() => [...rawProducts].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 10), [rawProducts])
 
   return (
     <div className="animate-fade-up">
-      <AILoadingOverlay show={running} steps={MINING_STEPS} title="Minerando Produtos" />
+      <AILoadingOverlay show={running} done={mineDone} steps={MINING_STEPS} title="Minerando Produtos" doneLabel="Mineração Concluída" />
       <PageHeader
         overline="Pipeline"
         title="Mineração de Produtos"
@@ -1519,7 +1611,7 @@ export default function Mining() {
                 ) : null
               })()}
             </div>
-            {lastResult.warnings?.map((w, i) => <p key={i} className="text-green-600 text-xs mt-0.5">⚠ {w}</p>)}
+            {lastResult.warnings?.map((w, i) => <p key={i} className="text-green-600 text-xs mt-0.5">{w}</p>)}
           </div>
         </div>
       )}
@@ -1653,12 +1745,12 @@ export default function Mining() {
               className="input text-xs py-1.5 min-w-[160px]"
               style={{ backgroundImage: 'none' }}
             >
-              <option value="all">🛒 Todas as lojas ({marketplaces.length})</option>
+              <option value="all">Todas as lojas ({marketplaces.length})</option>
               {marketplaces.map(mp => (
                 <option key={mp} value={mp}>
-                  {mp === 'mercadolivre' || mp === 'mercadolivre_direct' ? '🟡 Mercado Livre'
-                   : mp === 'amazon' ? '🟠 Amazon'
-                   : `🏪 ${mp.replace(/_/g, ' ')}`}
+                  {mp === 'mercadolivre' || mp === 'mercadolivre_direct' ? 'Mercado Livre'
+                   : mp === 'amazon' ? 'Amazon'
+                   : mp.replace(/_/g, ' ')}
                 </option>
               ))}
             </select>
@@ -1746,10 +1838,20 @@ export default function Mining() {
       ) : viewMode === 'grouped' ? (
         /* ── Grouped by session ── */
         <div>
-          {groupedProducts.map(([sessionId, sessionProds], idx) => (
+          {groupedProducts.map(([sessionId, sessionProds], idx) => {
+            const sessionObj = sessions.find(s => s.id === sessionId) ?? (
+              sessionId === '__ungrouped' ? {
+                id: '__ungrouped',
+                name: 'Produtos sem sessão',
+                category: sessionProds[0]?.marketplace ?? 'catalog',
+                marketplace: sessionProds[0]?.marketplace ?? null,
+                createdAt: null,
+              } : null
+            )
+            return (
             <SessionGroup
               key={sessionId}
-              session={sessions.find(s => s.id === sessionId) ?? null}
+              session={sessionObj}
               products={sessionProds}
               onOpen={setDrawerProduct}
               onMine={p => navigate('/wizard', { state: { autoTopic: p.title ?? '' } })}
@@ -1757,7 +1859,8 @@ export default function Mining() {
               onRename={refetchSessions}
               onDelete={handleDeleteSession}
             />
-          ))}
+            )
+          })}
         </div>
       ) : (
         /* ── Flat grid ── */

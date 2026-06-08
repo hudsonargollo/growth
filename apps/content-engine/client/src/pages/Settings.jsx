@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import {
   Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Save,
   Copy, Check, Key, Radio, Globe, Youtube, Link2, Unlink, ShoppingCart,
+  Bot, Pickaxe, X,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
 import { apiPut, apiDelete } from '../hooks/useApi.js'
@@ -12,7 +13,7 @@ import { supabase } from '../lib/supabase.js'
 const KEY_GROUPS = [
   {
     title: 'YouTube',
-    icon: '▶️',
+    icon: Youtube,
     keys: [
       { key: 'YOUTUBE_API_KEY',    label: 'YouTube Data API Key', placeholder: 'AIza…',   required: true },
       { key: 'YOUTUBE_CHANNEL_ID', label: 'YouTube Channel ID',   placeholder: 'UCxxxx…', required: true },
@@ -22,7 +23,7 @@ const KEY_GROUPS = [
   },
   {
     title: 'IA',
-    icon: '🤖',
+    icon: Bot,
     keys: [
       { key: 'ANTHROPIC_API_KEY',   label: 'Anthropic API Key',         placeholder: 'sk-ant-…',          required: false, hint: 'Claude — para geração de roteiros e análise de nichos' },
       { key: 'OPENAI_API_KEY',      label: 'OpenAI API Key',            placeholder: 'sk-…',              required: false, hint: 'Fallback para IA + narração de voz (TTS)' },
@@ -31,7 +32,7 @@ const KEY_GROUPS = [
   },
   {
     title: 'Mineração',
-    icon: '⛏️',
+    icon: Pickaxe,
     keys: [
       { key: 'SERPAPI_KEY',          label: 'SerpAPI Key',               placeholder: '…',                 required: false },
       { key: 'AMAZON_AFFILIATE_TAG', label: 'Tag Amazon Associates',     placeholder: 'seusite-20',        required: false },
@@ -114,7 +115,7 @@ function KeyField({ keyDef, savedState, onSaved, onDeleted }) {
         )}
       </div>
       {keyDef.hint && <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.30)' }}>{keyDef.hint}</p>}
-      {status === 'saved' && <p className="text-[11px] font-medium" style={{ color: '#00FFB9' }}>✓ Salvo com sucesso</p>}
+      {status === 'saved' && <p className="text-[11px] font-medium inline-flex items-center gap-1" style={{ color: '#00FFB9' }}><Check size={12} /> Salvo com sucesso</p>}
       {status === 'error' && (
         <p className="text-[11px] flex items-center gap-1" style={{ color: '#FF3366' }}><AlertCircle size={11} /> {errMsg}</p>
       )}
@@ -309,7 +310,7 @@ function MLOAuthCard() {
             ? { background: 'rgba(255,184,0,0.15)', border: '1px solid rgba(255,184,0,0.35)' }
             : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
         >
-          🟡
+          <ShoppingCart size={18} style={{ color: '#FFB800' }} />
         </div>
         <h3 className="card-title">Mercado Livre — OAuth</h3>
         {status === null && <Loader2 size={13} className="animate-spin ml-auto" style={{ color: 'rgba(255,255,255,0.30)' }} />}
@@ -381,9 +382,9 @@ function MLOAuthCard() {
 
 // ── Marketplace config card ───────────────────────────────────────────────────
 const MARKETPLACE_OPTIONS = [
-  { id: 'mercadolivre', label: 'Mercado Livre', emoji: '🟡', desc: 'ML Direto — melhor dados de vendas' },
-  { id: 'amazon',       label: 'Amazon',        emoji: '🟠', desc: 'Via SerpAPI — requer SERPAPI_KEY' },
-  { id: 'google_shopping', label: 'Google Shopping', emoji: '🔵', desc: 'Via SerpAPI — produtos variados' },
+  { id: 'mercadolivre', label: 'Mercado Livre', desc: 'ML Direto — melhor dados de vendas' },
+  { id: 'amazon',       label: 'Amazon',        desc: 'Via SerpAPI — requer SERPAPI_KEY' },
+  { id: 'google_shopping', label: 'Google Shopping', desc: 'Via SerpAPI — produtos variados' },
 ]
 
 function MarketplaceConfigCard() {
@@ -442,7 +443,6 @@ function MarketplaceConfigCard() {
                 onChange={() => toggle(mp.id)}
                 className="w-4 h-4 rounded accent-violet-500"
               />
-              <span className="text-lg leading-none">{mp.emoji}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>{mp.label}</p>
                 <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.38)' }}>{mp.desc}</p>
@@ -545,7 +545,7 @@ function ApiKeysTab() {
             <p className="font-semibold text-[12px]">{oauthMsg.type === 'success' ? 'YouTube conectado!' : 'Erro na conexão'}</p>
             <p className="text-[11px] mt-0.5 opacity-80">{oauthMsg.text}</p>
           </div>
-          <button onClick={() => setOauthMsg(null)} className="ml-auto text-xs opacity-50 hover:opacity-100">✕</button>
+          <button onClick={() => setOauthMsg(null)} className="ml-auto text-xs opacity-50 hover:opacity-100"><X size={13} /></button>
         </div>
       )}
 
@@ -573,7 +573,7 @@ function ApiKeysTab() {
         <div key={group.title}>
           <div className="card overflow-hidden">
             <div className="card-header">
-              <span className="text-base">{group.icon}</span>
+              <span className="text-base">{group.icon && <group.icon size={16} className="text-white/60" />}</span>
               <h3 className="card-title">{group.title}</h3>
               <span className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.30)', fontFamily: "'JetBrains Mono', monospace" }}>
                 {group.keys.filter((k) => keyStates[k.key]?.isSet).length}/{group.keys.length} configuradas
@@ -809,7 +809,7 @@ function ChannelProfileTab() {
       <div className="flex justify-end">
         <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          {saved ? '✓ Salvo!' : 'Salvar Perfil'}
+          {saved ? 'Salvo!' : 'Salvar Perfil'}
         </button>
       </div>
     </div>

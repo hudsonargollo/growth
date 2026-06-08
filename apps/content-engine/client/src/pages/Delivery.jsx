@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Send, CheckCircle, MessageCircle, Mic, Trash2 } from 'lucide-react'
-import PageHeader from '../components/PageHeader.jsx'
-import StatusBadge from '../components/StatusBadge.jsx'
+import { Send, CheckCircle, MessageCircle, Mic, Trash2, AlertCircle, X } from 'lucide-react'
+import PageHeader    from '../components/PageHeader.jsx'
+import StatusBadge   from '../components/StatusBadge.jsx'
 import { useApi, apiPost, timeAgo } from '../hooks/useApi.js'
+import { scriptDisplayName } from '../lib/humanize.js'
 
 export default function Delivery() {
   const { data, refetch }     = useApi('/delivery')
@@ -20,202 +21,195 @@ export default function Delivery() {
   const [error,         setError]         = useState(null)
   const [success,       setSuccess]       = useState(false)
 
-  const selectedScript   = scripts.find((s) => s.id === scriptId)
-  const selectedVoiceover = voiceovers.find((v) => v.id === voiceoverId)
-
-  // Filter voiceovers to only those matching the selected script
+  const selectedScript    = scripts.find(s => s.id === scriptId)
+  const selectedVoiceover = voiceovers.find(v => v.id === voiceoverId)
   const matchingVoiceovers = scriptId
-    ? voiceovers.filter((v) => v.scriptId === scriptId)
+    ? voiceovers.filter(v => v.scriptId === scriptId)
     : voiceovers
 
   async function handleSend() {
-    if (!scriptId)      { setError('Selecione um roteiro');              return }
-    if (!editorContact) { setError('Informe o número do editor');        return }
-    setSending(true)
-    setError(null)
-    setSuccess(false)
+    if (!scriptId)      { setError('Selecione um roteiro');       return }
+    if (!editorContact) { setError('Informe o número do editor'); return }
+    setSending(true); setError(null); setSuccess(false)
     try {
-      await apiPost('/delivery/send', {
-        scriptId,
-        voiceoverId: voiceoverId || undefined,
-        editorContact,
-      })
+      await apiPost('/delivery/send', { scriptId, voiceoverId: voiceoverId || undefined, editorContact })
       await refetch()
       setSuccess(true)
       setTimeout(() => setSuccess(false), 5000)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setSending(false)
-    }
+    } catch (e) { setError(e.message) }
+    finally     { setSending(false) }
   }
 
   return (
-    <div>
+    <div className="animate-fade-up">
       <PageHeader
+        overline="Pipeline"
         title="Entrega para Editor"
         description="Envie roteiros e narrações ao editor via WhatsApp (Evolution API)"
         action={
-          <button
-            onClick={handleSend}
-            disabled={sending || !scriptId || !editorContact}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <Send size={15} />
+          <button onClick={handleSend} disabled={sending || !scriptId || !editorContact}
+            className="btn-primary" style={{ opacity: (sending || !scriptId || !editorContact) ? 0.5 : 1 }}>
+            <Send size={14} />
             {sending ? 'Enviando…' : 'Enviar Agora'}
           </button>
         }
       />
 
+      {/* Error / success banners */}
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-5 text-sm"
+          style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.22)', color: '#FF3366' }}>
+          <AlertCircle size={14} className="shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)}><X size={13} className="opacity-60 hover:opacity-100" /></button>
+        </div>
       )}
       {success && (
-        <div className="mb-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg flex items-center gap-2">
-          <CheckCircle size={15} /> Mensagem enviada com sucesso via WhatsApp!
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-5 text-sm"
+          style={{ background: 'rgba(0,255,185,0.07)', border: '1px solid rgba(0,255,185,0.22)', color: '#00FFB9' }}>
+          <CheckCircle size={14} className="shrink-0" />
+          Mensagem enviada com sucesso via WhatsApp!
         </div>
       )}
 
-      <div className="grid grid-cols-5 gap-6 mb-6">
-        {/* Form */}
-        <div className="col-span-3 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">Nova Entrega</h3>
+      <div className="grid grid-cols-5 gap-5 mb-5">
+        {/* ── Form ── */}
+        <div className="col-span-3 rounded-2xl p-5 space-y-4"
+          style={{ background: 'rgba(15,15,22,0.70)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-sm font-bold text-white/80">Nova Entrega</p>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Roteiro *</label>
-            <select
-              value={scriptId}
-              onChange={(e) => { setScriptId(e.target.value); setVoiceoverId('') }}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
+            <label className="block text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">Roteiro *</label>
+            <select value={scriptId} onChange={e => { setScriptId(e.target.value); setVoiceoverId('') }}
+              className="input">
               <option value="">— Selecione o roteiro —</option>
-              {scripts.map((s) => (
+              {scripts.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.title || s.blueprintId} · {s.language?.toUpperCase()}
+                  {scriptDisplayName(s)}{s.language ? ` · ${s.language.toUpperCase()}` : ''}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Narração (opcional)</label>
-            <select
-              value={voiceoverId}
-              onChange={(e) => setVoiceoverId(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
+            <label className="block text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">Narração (opcional)</label>
+            <select value={voiceoverId} onChange={e => setVoiceoverId(e.target.value)} className="input">
               <option value="">— Sem narração —</option>
-              {matchingVoiceovers.map((v) => (
+              {matchingVoiceovers.map(v => (
                 <option key={v.id} value={v.id}>
                   {v.voiceModel} · {v.duration} · {v.provider ?? 'elevenlabs'}
                 </option>
               ))}
             </select>
             {scriptId && matchingVoiceovers.length === 0 && (
-              <p className="text-xs text-gray-400 mt-1">Nenhuma narração gerada para este roteiro ainda</p>
+              <p className="text-[11px] text-white/25 mt-1.5">Nenhuma narração gerada para este roteiro ainda</p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">WhatsApp do Editor *</label>
-            <input
-              type="text"
-              value={editorContact}
-              onChange={(e) => setEditorContact(e.target.value)}
-              placeholder="5511999999999"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-gray-400 mt-1">Código do país + DDD + número, sem espaços. Ex: 5511999999999</p>
+            <label className="block text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">WhatsApp do Editor *</label>
+            <input type="text" value={editorContact} onChange={e => setEditorContact(e.target.value)}
+              placeholder="5511999999999" className="input" />
+            <p className="text-[11px] text-white/25 mt-1.5">Código do país + DDD + número, sem espaços. Ex: 5511999999999</p>
           </div>
         </div>
 
-        {/* Preview */}
-        <div className="col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Pré-visualização</h3>
+        {/* ── Preview ── */}
+        <div className="col-span-2 rounded-2xl p-5"
+          style={{ background: 'rgba(15,15,22,0.70)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-sm font-bold text-white/80 mb-4">Pré-visualização</p>
           {selectedScript ? (
-            <div className="space-y-3">
-              <div className="bg-[#dcf8c6] rounded-xl rounded-tl-none px-4 py-3 max-w-[90%] text-sm text-gray-800 space-y-1.5 shadow-sm">
-                <p className="font-semibold text-xs text-gray-500">Fábrica de Conteúdo</p>
-                <p>📋 <strong>Novo Conteúdo Pronto — Fábrica de Conteúdo</strong></p>
-                <p><strong>Roteiro:</strong> {selectedScript.title || selectedScript.blueprintId} ({(selectedScript.language ?? 'pt').toUpperCase()})</p>
+            <div className="space-y-2">
+              {/* WhatsApp bubble */}
+              <div className="rounded-2xl rounded-tl-none px-4 py-3 max-w-[92%] space-y-1.5 text-xs"
+                style={{ background: 'rgba(0,255,185,0.08)', border: '1px solid rgba(0,255,185,0.18)' }}>
+                <p className="text-[10px] font-bold tracking-wide" style={{ color: '#00FFB9' }}>Fábrica de Conteúdo</p>
+                <p className="text-white/80 font-semibold">Novo Conteúdo Pronto</p>
+                <p style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  <span className="text-white/40">Roteiro: </span>{scriptDisplayName(selectedScript)}
+                  {selectedScript.language ? ` (${selectedScript.language.toUpperCase()})` : ''}
+                </p>
                 {(selectedScript.sections ?? []).length > 0 && (
-                  <p><strong>Seções:</strong> {selectedScript.sections.map((s) => s.label).join(' → ')}</p>
+                  <p className="text-white/40 truncate">
+                    <span className="text-white/40">Seções: </span>
+                    {selectedScript.sections.map(s => s.label).join(' → ')}
+                  </p>
                 )}
-                {voiceoverId && <p>🎙️ Narração em áudio em seguida.</p>}
-                <p className="text-xs text-gray-500 italic">Confirme o recebimento. — Fábrica de Conteúdo</p>
+                {voiceoverId && <p style={{ color: 'rgba(255,255,255,0.50)' }}>Narração em áudio em seguida.</p>}
+                <p className="text-white/25 italic">Confirme o recebimento. — Fábrica de Conteúdo</p>
               </div>
               {voiceoverId && (
-                <div className="bg-[#dcf8c6] rounded-xl rounded-tl-none px-4 py-3 max-w-[90%] flex items-center gap-2 shadow-sm">
-                  <Mic size={16} className="text-gray-500 shrink-0" />
+                <div className="rounded-2xl rounded-tl-none px-4 py-3 max-w-[92%] flex items-center gap-2.5"
+                  style={{ background: 'rgba(0,255,185,0.06)', border: '1px solid rgba(0,255,185,0.14)' }}>
+                  <Mic size={15} style={{ color: '#00FFB9', flexShrink: 0 }} />
                   <div>
-                    <p className="text-xs font-medium text-gray-700">narração.mp3</p>
-                    <p className="text-xs text-gray-400">{selectedVoiceover?.duration ?? '—'}</p>
+                    <p className="text-xs font-semibold text-white/70">narração.mp3</p>
+                    <p className="text-[10px] text-white/35">{selectedVoiceover?.duration ?? '—'}</p>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-300">
-              <MessageCircle size={32} className="mb-2" />
-              <p className="text-sm">Selecione um roteiro para pré-visualizar</p>
+            <div className="flex flex-col items-center justify-center h-40 gap-3">
+              <MessageCircle size={28} style={{ color: 'rgba(255,255,255,0.12)' }} />
+              <p className="text-xs text-white/25 text-center">Selecione um roteiro para pré-visualizar</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* History */}
-      <div className="bg-white rounded-xl border border-gray-200">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-          <Send size={14} className="text-gray-400" />
-          <h3 className="font-semibold text-gray-800 text-sm">Histórico de Entregas</h3>
-          <span className="text-xs text-gray-400">{deliveries.length} total</span>
+      {/* ── History table ── */}
+      <div className="card">
+        <div className="card-header">
+          <Send size={13} style={{ color: '#8B5CF6' }} />
+          <h3 className="card-title">Histórico de Entregas</h3>
+          <span className="text-[11px] text-white/30 ml-1">{deliveries.length} total</span>
           {deliveries.length > 0 && (
-            <button
-              onClick={async () => {
-                if (!window.confirm('Apagar todo o histórico de entregas?')) return
-                await fetch('/api/delivery/all', { method: 'DELETE' })
-                refetch()
-              }}
-              className="ml-auto flex items-center gap-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-            >
-              <Trash2 size={11} /> Limpar histórico
+            <button onClick={async () => {
+              if (!window.confirm('Apagar todo o histórico de entregas?')) return
+              await fetch('/api/delivery/all', { method: 'DELETE' }); refetch()
+            }}
+              className="ml-auto flex items-center gap-1.5 text-xs text-white/25 hover:text-[#FF3366] transition-colors px-2 py-1 rounded-lg hover:bg-[#FF3366]/[0.08]">
+              <Trash2 size={11} /> Limpar
             </button>
           )}
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-400 border-b border-gray-100 text-xs">
-              <th className="px-5 py-2 font-medium">Roteiro</th>
-              <th className="px-5 py-2 font-medium">Editor</th>
-              <th className="px-5 py-2 font-medium">Narração</th>
-              <th className="px-5 py-2 font-medium">Status</th>
-              <th className="px-5 py-2 font-medium">Enviado</th>
+            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <th className="th">Roteiro</th>
+              <th className="th">Editor</th>
+              <th className="th">Narração</th>
+              <th className="th">Status</th>
+              <th className="th">Enviado</th>
             </tr>
           </thead>
           <tbody>
             {deliveries.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-gray-400 text-sm">
+                <td colSpan={5} className="px-5 py-10 text-center text-xs text-white/25">
                   Nenhuma entrega ainda.
                 </td>
               </tr>
             ) : (
-              deliveries.map((d) => (
-                <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50">
+              deliveries.map(d => (
+                <tr key={d.id} className="tr">
                   <td className="px-5 py-3">
-                    <div className="font-medium text-gray-700 text-xs truncate max-w-[180px]">
-                      {d.scripts?.title || d.scripts?.blueprintId || d.scriptId?.slice(0, 12) + '…'}
-                    </div>
-                    <div className="text-xs text-gray-400">{d.scripts?.language?.toUpperCase()}</div>
+                    <p className="text-xs font-semibold text-white/75 truncate max-w-[200px]">
+                      {d.scripts?.title || scriptDisplayName(d.scripts) || d.scriptId?.slice(0,10) + '…'}
+                    </p>
+                    {d.scripts?.language && (
+                      <p className="text-[10px] text-white/30 mt-0.5">{d.scripts.language.toUpperCase()}</p>
+                    )}
                   </td>
-                  <td className="px-5 py-3 text-gray-600 text-xs">{d.editorContact}</td>
+                  <td className="px-5 py-3 text-xs text-white/55">{d.editorContact}</td>
                   <td className="px-5 py-3">
                     {d.voiceoverId
-                      ? <CheckCircle size={14} className="text-emerald-500" />
-                      : <span className="text-gray-300 text-xs">—</span>}
+                      ? <CheckCircle size={13} style={{ color: '#00FFB9' }} />
+                      : <span className="text-white/20 text-xs">—</span>}
                   </td>
                   <td className="px-5 py-3"><StatusBadge status={d.status} /></td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">{timeAgo(d.sentAt)}</td>
+                  <td className="px-5 py-3 text-xs text-white/30 tabular-nums">{timeAgo(d.sentAt)}</td>
                 </tr>
               ))
             )}

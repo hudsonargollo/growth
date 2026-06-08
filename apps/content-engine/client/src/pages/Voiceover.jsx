@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Mic, Play, Pause, Download, Loader2,
   Sparkles, Zap, Volume2, KeyRound, Check, Eye, EyeOff, Trash2,
-  Layers, CheckCircle2,
+  Layers, CheckCircle2, FileText, Music, UploadCloud, AlertTriangle,
 } from 'lucide-react'
 import PageHeader  from '../components/PageHeader.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
+import LanguageFollowUp from '../components/LanguageFollowUp.jsx'
 import { useApi, timeAgo } from '../hooks/useApi.js'
-import { AILoadingOverlay, friendlyError } from './Scripts.jsx'
+import { AILoadingOverlay, friendlyError, sleep } from './Scripts.jsx'
+import { findLanguageSiblings, normalizeLang } from '../lib/languages.js'
 
 // ── Inline API-key setup (appears when a provider key is missing) ─────────────
 
@@ -93,11 +95,12 @@ function InlineKeySetup({ keyName, label, onSaved }) {
 }
 
 const VOICE_STEPS = [
-  { icon: '📝', label: 'Lendo o roteiro…' },
-  { icon: '🎙️', label: 'Processando voz com IA…' },
-  { icon: '🔊', label: 'Sintetizando áudio…' },
-  { icon: '🎵', label: 'Ajustando entonação e ritmo…' },
-  { icon: '☁️', label: 'Fazendo upload do arquivo…' },
+  { icon: FileText,    label: 'Lendo o roteiro e preparando o texto, a pontuação e as pausas para a síntese de voz…' },
+  { icon: Mic,         label: 'Processando a voz com IA e calibrando o timbre e o tom da voz selecionada…' },
+  { icon: Volume2,     label: 'Sintetizando o áudio frase por frase, com pronúncia e ênfase naturais…' },
+  { icon: Music,       label: 'Ajustando a entonação, o ritmo e a respiração para que a narração soe humana…' },
+  // Final step — held on screen until the upload actually finishes.
+  { icon: UploadCloud, label: 'Finalizando e enviando o arquivo de áudio. Quase pronto — mantenha esta janela aberta…' },
 ]
 
 function AudioPlayer({ url }) {
@@ -176,7 +179,7 @@ function VoiceCard({ voice, selected, onSelect }) {
         </span>
       </div>
       <p className="text-xs text-white/35">{voice.description}</p>
-      <span className="text-[11px] text-white/35">{voice.gender === 'F' ? '♀ Feminina' : voice.gender === 'M' ? '♂ Masculina' : '⊙ Neutra'}</span>
+      <span className="text-[11px] text-white/35">{voice.gender === 'F' ? 'Feminina' : voice.gender === 'M' ? 'Masculina' : 'Neutra'}</span>
     </button>
   )
 }
@@ -222,6 +225,10 @@ export default function Voiceover() {
   const [stability,      setStability]      = useState(75)
   const [similarity,     setSimilarity]     = useState(80)
   const [generating,     setGenerating]     = useState(false)
+  const [voDone,         setVoDone]         = useState(false)  // success → animated green check
+  const [lastVo,         setLastVo]         = useState(null)   // { sourceScript, siblings, settings } for the language follow-up
+  const [voLangDone,     setVoLangDone]     = useState([])     // language codes already narrated
+  const [voLangBusy,     setVoLangBusy]     = useState(null)   // language code currently narrating
   const [error,          setError]          = useState(null)
   const [checkedVo,      setCheckedVo]      = useState([])
   const [deleting,       setDeleting]       = useState(false)
@@ -245,45 +252,70 @@ export default function Voiceover() {
     setSelectedVoice(provider === 'elevenlabs' && rachel ? rachel : voices[0])
   }, [provider, voices.length])
 
+  // Narrate a given script id with a fixed set of voice settings. Shared by the
+  // main flow and the "another language" follow-up so siblings reuse the voice.
+  async function postVoiceover(targetScriptId, settings) {
+    const commonBody = {
+      scriptId:        targetScriptId,
+      provider:        settings.provider,
+      voiceId:         settings.voiceId,
+      voiceLabel:      settings.voiceLabel,
+      model:           settings.provider === 'openai' ? settings.model : undefined,
+      stability:       settings.stability / 100,
+      similarityBoost: settings.similarity / 100,
+    }
+    const url = settings.audioMode === 'sections'
+      ? '/api/voiceover/generate-sections'
+      : '/api/voiceover/generate'
+    const res  = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(commonBody),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error ?? res.statusText)
+    return data
+  }
+
   async function handleGenerate() {
     if (!scriptId)    { setError('Selecione um roteiro'); return }
     if (!selectedVoice){ setError('Selecione uma voz');  return }
-    setGenerating(true); setError(null); setSectionResults(null)
+    setGenerating(true); setVoDone(false); setError(null); setSectionResults(null)
+    const settings = { provider, voiceId: selectedVoice.id, voiceLabel: selectedVoice.label, model, stability, similarity, audioMode }
     try {
-      const commonBody = {
-        scriptId, provider,
-        voiceId:         selectedVoice.id,
-        voiceLabel:      selectedVoice.label,
-        model:           provider === 'openai' ? model : undefined,
-        stability:       stability / 100,
-        similarityBoost: similarity / 100,
-      }
-
-      if (audioMode === 'sections') {
-        // Per-section mode: one TTS file per script section
-        const res  = await fetch('/api/voiceover/generate-sections', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(commonBody),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? res.statusText)
-        setSectionResults(data.sections ?? [])
-      } else {
-        // Full-script mode (original behaviour)
-        const res  = await fetch('/api/voiceover/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(commonBody),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? res.statusText)
-      }
+      const data = await postVoiceover(scriptId, settings)
+      if (audioMode === 'sections') setSectionResults(data.sections ?? [])
       await refetch()
+      // Set up the language follow-up: only offered when sibling-language
+      // versions of this exact script already exist.
+      const sourceScript = scripts.find((s) => s.id === scriptId)
+      const siblings     = findLanguageSiblings(sourceScript, scripts)
+      setLastVo({ sourceScript, siblings, settings })
+      setVoLangDone([normalizeLang(sourceScript?.language)])
+      setVoDone(true)
+      await sleep(1100) // let the green check land before hiding the overlay
     } catch (e) {
       setError(friendlyError(e.message))
     } finally {
-      setGenerating(false)
+      setGenerating(false); setVoDone(false)
+    }
+  }
+
+  // Follow-up: narrate a sibling-language script with the same voice settings.
+  async function handleGenerateSiblingVoice(code) {
+    if (!lastVo) return
+    const target = normalizeLang(code)
+    const sib    = lastVo.siblings.find((s) => normalizeLang(s.language) === target)
+    if (!sib) return
+    setVoLangBusy(target); setError(null)
+    try {
+      await postVoiceover(sib.id, lastVo.settings)
+      await refetch()
+      setVoLangDone((prev) => (prev.includes(target) ? prev : [...prev, target]))
+    } catch (e) {
+      setError(friendlyError(e.message))
+    } finally {
+      setVoLangBusy(null)
     }
   }
 
@@ -357,7 +389,7 @@ export default function Voiceover() {
 
   return (
     <div className="animate-fade-up">
-      <AILoadingOverlay show={generating} steps={VOICE_STEPS} title="Gerando Narração" />
+      <AILoadingOverlay show={generating} done={voDone} steps={VOICE_STEPS} title="Gerando Narração" doneLabel="Narração Concluída" />
       <PageHeader
         overline="Pipeline"
         title="Narração"
@@ -469,7 +501,7 @@ export default function Voiceover() {
                   <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Selecione o Roteiro</span>
                 </div>
                 <div className="p-4 space-y-3">
-                  <select value={scriptId} onChange={(e) => { setScriptId(e.target.value); setSectionResults(null) }} className="select">
+                  <select value={scriptId} onChange={(e) => { setScriptId(e.target.value); setSectionResults(null) }} className="input">
                     <option value="">— Selecione um roteiro —</option>
                     {scripts.map((s) => (
                       <option key={s.id} value={s.id}>{s.title || s.blueprintId} · {s.language?.toUpperCase()}</option>
@@ -733,7 +765,7 @@ export default function Voiceover() {
                   {provider === 'openai' && charCount > 4096 && (
                     <p className="text-[11px] rounded-lg px-3 py-2"
                       style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.20)', color: 'rgba(245,158,11,0.80)' }}>
-                      ⚠️ O roteiro tem {charCount.toLocaleString()} chars — será truncado em 4 096.
+                      <AlertTriangle size={12} className="inline mr-1 -mt-0.5" />O roteiro tem {charCount.toLocaleString()} chars — será truncado em 4 096.
                     </p>
                   )}
                 </div>
@@ -765,6 +797,20 @@ export default function Voiceover() {
           )}
         </div>
       </div>
+
+      {/* Opt-in: narrate the same script in another language — only shown when
+          sibling-language versions of this script already exist. */}
+      {lastVo && lastVo.siblings.length > 0 && (
+        <LanguageFollowUp
+          title="Gerar a narração em outro idioma?"
+          subtitle="Este roteiro também existe em outros idiomas. Gere a narração dessas versões com a mesma voz e os mesmos ajustes."
+          currentCode={normalizeLang(lastVo.sourceScript?.language)}
+          options={[...new Set(lastVo.siblings.map((s) => normalizeLang(s.language)))]}
+          doneCodes={voLangDone}
+          busyCode={voLangBusy}
+          onPick={handleGenerateSiblingVoice}
+        />
+      )}
 
       {/* Per-section results panel (shown right after sections generation) */}
       {sectionResults && sectionResults.length > 0 && (
