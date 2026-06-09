@@ -1,5 +1,5 @@
 /* ============================================================================
-   Impeccable — Neo Kinpaku kit (page-global primitives)
+   Tektone — Neo Kinpaku kit (page-global primitives)
 
    Reusable component primitives lifted from /design-system so they work on
    every page. Brand lockup, section scaffolding, buttons, form controls,
@@ -1149,7 +1149,7 @@
 }
 
 /* Active control surfaces — the bottom picker bar and the context bar
-   that floats next to the picked element. These ARE the Impeccable UI,
+   that floats next to the picked element. These ARE the Tektone UI,
    so they get the full-saturation kinpaku-gold border at 1.5px with a
    faint matching halo, distinguishing them from chrome. */
 .home-kinpaku .live-demo-gbar,

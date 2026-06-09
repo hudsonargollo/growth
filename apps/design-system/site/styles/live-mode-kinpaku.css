@@ -3,15 +3,15 @@
 
    Same page-scope pattern as docs-kinpaku.css and slop-kinpaku.css. The
    interactive demo at the top of the page simulates a real dev server with
-   Impeccable's picker overlaid. The simulated user-app surface inside the
-   browser mock stays light (it represents any app, not Impeccable itself).
-   The Impeccable-branded picker bar at the bottom of the mock — which IS
-   Impeccable's UI — gets the kinpaku treatment.
+   Tektone's picker overlaid. The simulated user-app surface inside the
+   browser mock stays light (it represents any app, not Tektone itself).
+   The Tektone-branded picker bar at the bottom of the mock — which IS
+   Tektone's UI — gets the kinpaku treatment.
 
    Sections of this file:
      1. Page scope + base
      2. Hero
-     3. Demo frame chrome + Impeccable picker bar re-skin
+     3. Demo frame chrome + Tektone picker bar re-skin
      4. Stages (3-up "What happens")
      5. Pathways (3-up "Where next")
      6. Frameworks list
@@ -236,12 +236,12 @@
 
 
 /* ============================================================================
-   3. INTERACTIVE DEMO — frame chrome + Impeccable picker bar re-skin
+   3. INTERACTIVE DEMO — frame chrome + Tektone picker bar re-skin
 
    The mock represents: a real user dev server (light "app" inside) with
-   Impeccable's picker bar (kinpaku) layered on top. Only the Impeccable
+   Tektone's picker bar (kinpaku) layered on top. Only the Tektone
    chrome flips dark; the simulated app stays cream so it reads as a
-   generic dev preview, not as Impeccable-themed.
+   generic dev preview, not as Tektone-themed.
    ============================================================================ */
 
 .live-mode-kinpaku .live-mode-demo-wrap {

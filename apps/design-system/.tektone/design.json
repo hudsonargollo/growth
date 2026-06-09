@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-05-26T00:00:00Z",
-  "title": "Design System: Impeccable",
+  "title": "Design System: Tektone",
   "extensions": {
     "colorMeta": {
       "kinpaku-gold": {
@@ -92,7 +92,7 @@
     "typographyMeta": {
       "wordmark": {
         "displayName": "Wordmark",
-        "purpose": "IMPECCABLE lockup only. Solid Alumni Sans, not pinstripe."
+        "purpose": "TEKTONE lockup only. Solid Alumni Sans, not pinstripe."
       },
       "display": {
         "displayName": "Display",
@@ -205,7 +205,7 @@
   ],
   "narrative": {
     "northStar": "Neo Kinpaku",
-    "overview": "Impeccable is a dark lacquer interface marked by Japanese gold leaf and precise technical geometry. The brand should feel like a crafted object: black urushi, irregular kinpaku seams, quiet measurement marks, circuit traces, and controlled verdigris oxidation. It is refined, technical, and physical. This direction replaces the old warm-paper editorial system.",
+    "overview": "Tektone is a dark lacquer interface marked by Japanese gold leaf and precise technical geometry. The brand should feel like a crafted object: black urushi, irregular kinpaku seams, quiet measurement marks, circuit traces, and controlled verdigris oxidation. It is refined, technical, and physical. This direction replaces the old warm-paper editorial system.",
     "keyCharacteristics": [
       "Dark mineral and lacquer surfaces, never pure black.",
       "Kinpaku gold as the primary accent, with true leaf texture where an element carries brand weight.",
@@ -215,7 +215,7 @@
       "Small radii, restrained borders, and almost no decorative shadow."
     ],
     "rules": [
-      { "name": "The Gold Carries Brand Rule", "section": "colors", "body": "Kinpaku gold is the primary brand signal. If a single accent must represent Impeccable, use gold, not magenta or cyan." },
+      { "name": "The Gold Carries Brand Rule", "section": "colors", "body": "Kinpaku gold is the primary brand signal. If a single accent must represent Tektone, use gold, not magenta or cyan." },
       { "name": "The Patina Has Meaning Rule", "section": "colors", "body": "Verdigris is secondary. It marks improvement, live state, or contrast against gold. Do not use it as a generic decoration field." },
       { "name": "The Texture Budget Rule", "section": "colors", "body": "Leaf and patina textures are for brand-bearing moments: hero seams, CTA fills, dividers, major swatches, and select system modules. Generic cards stay mostly flat." },
       { "name": "The OKLCH-Only Rule", "section": "colors", "body": "New colors are declared in OKLCH. Hex appears only inside third-party examples or imported assets." },
@@ -225,7 +225,7 @@
       { "name": "The Dark Type Needs Air Rule", "section": "typography", "body": "Body text on lacquer uses line-height 1.65 to 1.8 and a max width of 65 to 75ch." },
       { "name": "The Hairline First Rule", "section": "elevation", "body": "Use 1px gold hairlines before adding shadow." },
       { "name": "The No Glass Rule", "section": "elevation", "body": "Translucency can exist in overlays, but decorative blur/glass panels are not part of this system." },
-      { "name": "The Picker Is Brand Rule", "section": "components", "body": "Live mode UI is Impeccable product chrome, not host-page chrome. It always ships the full kinpaku border, lacquer-deep fill, and carved-tile mark." }
+      { "name": "The Picker Is Brand Rule", "section": "components", "body": "Live mode UI is Tektone product chrome, not host-page chrome. It always ships the full kinpaku border, lacquer-deep fill, and carved-tile mark." }
     ],
     "dos": [
       "Do use kinpaku gold as the primary brand color.",

@@ -16,12 +16,12 @@ const categoryColors = {
 };
 
 const categoryLabels = {
-	create: 'Create',
-	evaluate: 'Evaluate',
-	refine: 'Refine',
-	simplify: 'Simplify',
-	harden: 'Harden',
-	system: 'System'
+	create: 'Criar',
+	evaluate: 'Avaliar',
+	refine: 'Refinar',
+	simplify: 'Simplificar',
+	harden: 'Reforçar',
+	system: 'Sistema'
 };
 
 const commandSymbols = {

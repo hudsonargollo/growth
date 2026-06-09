@@ -1,5 +1,5 @@
 /**
- * Impeccable DevTools Extension - Popup
+ * Tektone DevTools Extension - Popup
  *
  * Quick controls: scan, toggle overlays, and see finding count.
  */

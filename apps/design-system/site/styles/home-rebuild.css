@@ -219,7 +219,7 @@
   animation: none;
 }
 
-/* The category labels under the demo ("Generic AI output" / "With Impeccable")
+/* The category labels under the demo ("Generic AI output" / "With Tektone")
    need to stay readable on the vibrant kinpaku-leaf hero. Localized frosted
    pills behind each label only — backdrop stays full-color elsewhere. */
 .home-kinpaku .hero-rebuild-right .split-labels {
@@ -1192,7 +1192,7 @@
 
 /* ----------------------------------------------------------------------------
    The page under the picker: AURELIA, a warm serif boutique-hotel site.
-   Deliberately the opposite of Impeccable's dark kinpaku aesthetic.
+   Deliberately the opposite of Tektone's dark kinpaku aesthetic.
    ---------------------------------------------------------------------------- */
 .hotel-site {
   --h-ivory: oklch(96.5% 0.012 84);

@@ -2,7 +2,7 @@
    /designing — Neo Kinpaku redesign
 
    Overrides sub-pages.css + docs-visuals.css for the long-form "Designing
-   with Impeccable" walkthrough. The existing markup is unchanged; this file
+   with Tektone" walkthrough. The existing markup is unchanged; this file
    restyles every block to the kinpaku brand: dark lacquer surface, gold +
    verdigris accents, Alumni Sans Pinstripe display, Albert Sans body.
 
@@ -150,7 +150,7 @@
   .designing-kinpaku .designing-hero {
     /* minmax(0, 1fr) instead of 1fr so the column shrinks to fit the
        container — bare 1fr lets the column grow to the intrinsic min-content
-       width of "Impeccable" (~472px), blowing past a 360px viewport. */
+       width of "Tektone" (~472px), blowing past a 360px viewport. */
     grid-template-columns: minmax(0, 1fr);
     padding: 56px 24px 64px;
     align-items: start;
@@ -197,7 +197,7 @@
   margin: 0 0 24px;
   text-wrap: balance;
   max-width: none;
-  /* "Impeccable" at the display token's 3.4rem minimum is 270px+ in the
+  /* "Tektone" at the display token's 3.4rem minimum is 270px+ in the
      narrow Pinstripe face and overflows a 360px viewport. Allow break-word
      as a safety net so the title never blows out of its container. */
   word-break: break-word;
@@ -997,7 +997,7 @@
   background: var(--ks-rule);
   margin: 0 4px;
 }
-/* Global picker bar — mirrors the real Impeccable live bar: carved-tile mark,
+/* Global picker bar — mirrors the real Tektone live bar: carved-tile mark,
    Pick/Insert/Detect/DESIGN.md controls, exit. Lacquer-deep fill + 1.5px gold
    border + halo per DESIGN.md's "Picker Is Brand" rule. */
 .designing-kinpaku .docs-viz-live-gbar {

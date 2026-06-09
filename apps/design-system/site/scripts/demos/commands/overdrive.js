@@ -8,7 +8,7 @@ export default {
   before: `
     <div style="width: 100%; height: 100%; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; font-family: system-ui, sans-serif;">
       <div style="text-align: center; padding: 20px;">
-        <div style="font-size: 12px; color: #666; font-style: italic; line-height: 1.6; max-width: 220px; margin-bottom: 16px;">It's time to spark your imagination. Welcome to the Impeccable Community.</div>
+        <div style="font-size: 12px; color: #666; font-style: italic; line-height: 1.6; max-width: 220px; margin-bottom: 16px;">It's time to spark your imagination. Welcome to the Tektone Community.</div>
         <div style="font-size: 12px; color: #aaa;">Paul Bakaus</div>
       </div>
     </div>
@@ -18,7 +18,7 @@ export default {
     <canvas class="od-burn" style="position: absolute; inset: 0; width: 100%; height: 100%; background: #0e0d0b;"></canvas>
     <canvas class="od-sparks" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
     <div style="position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; pointer-events: none; text-align: center;">
-      <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; font-weight: 400; color: rgba(240,230,210,0.85); line-height: 1.5; max-width: 260px; margin: 0 0 24px;">It's time to spark your imagination.<br>Welcome to the Impeccable Community.</p>
+      <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; font-weight: 400; color: rgba(240,230,210,0.85); line-height: 1.5; max-width: 260px; margin: 0 0 24px;">It's time to spark your imagination.<br>Welcome to the Tektone Community.</p>
     </div>
   `,
 

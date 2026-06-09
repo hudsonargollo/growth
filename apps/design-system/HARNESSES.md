@@ -50,7 +50,7 @@ Fields marked with * are spec-standard. Others are provider extensions.
 
 Notes:
 - Gemini CLI validates only `name` and `description`; other spec fields are parsed but ignored.
-- Codex CLI uses a separate `agents/openai.yaml` sidecar for skill metadata (icons, branding, MCP tools, invocation control). Codex also auto-discovers subagents bundled inside an installed skill's `agents/` folder (TOML), which is how Impeccable ships its asset-producer. Standalone custom agents can still live under `.codex/agents/` or `~/.codex/agents/`, but Impeccable no longer installs anything there.
+- Codex CLI uses a separate `agents/openai.yaml` sidecar for skill metadata (icons, branding, MCP tools, invocation control). Codex also auto-discovers subagents bundled inside an installed skill's `agents/` folder (TOML), which is how Tektone ships its asset-producer. Standalone custom agents can still live under `.codex/agents/` or `~/.codex/agents/`, but Tektone no longer installs anything there.
 - Kiro recognizes `user-invocable` and `disable-model-invocation` per community reports but does not formally document them.
 - Unknown fields are silently ignored by all harnesses.
 
@@ -80,7 +80,7 @@ All harnesses support the `{skill-name}/SKILL.md` directory structure with optio
 | Claude Code | `.claude/agents/` (installed plugin) | Markdown with YAML frontmatter |
 | Codex CLI | `<skill>/agents/` (nested, auto-discovered) | TOML |
 
-Impeccable keeps canonical agent prompts under `skill/agents/` and emits provider-native files only for harnesses with documented subagent formats. Claude reads its agents from the installed plugin; Codex auto-discovers the TOML bundled inside the installed skill's own `agents/` folder, so the normal skills install carries it with no separate sidecar.
+Tektone keeps canonical agent prompts under `skill/agents/` and emits provider-native files only for harnesses with documented subagent formats. Claude reads its agents from the installed plugin; Codex auto-discovers the TOML bundled inside the installed skill's own `agents/` folder, so the normal skills install carries it with no separate sidecar.
 
 ## Placeholder / Variable Substitution
 

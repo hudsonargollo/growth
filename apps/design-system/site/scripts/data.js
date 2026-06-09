@@ -20,13 +20,13 @@ export const alphaCommands = [
 // Consolidated tektone skill with reference domains
 export const skillFocusAreas = {
   'tektone': [
-    { area: 'Typography', detail: 'Scale, rhythm, hierarchy, expression' },
-    { area: 'Color & Contrast', detail: 'Accessibility, systems, theming' },
-    { area: 'Spatial Design', detail: 'Layout, spacing, composition' },
-    { area: 'Responsive', detail: 'Fluid layouts, touch targets' },
-    { area: 'Interaction', detail: 'States, feedback, affordances' },
-    { area: 'Motion', detail: 'Micro-interactions, transitions' },
-    { area: 'UX Writing', detail: 'Clarity, voice, error messages' }
+    { area: 'Typography', detail: 'Escala, ritmo, hierarquia, expressão' },
+    { area: 'Color & Contrast', detail: 'Acessibilidade, sistemas, temas' },
+    { area: 'Spatial Design', detail: 'Layout, espaçamento, composição' },
+    { area: 'Responsive', detail: 'Layouts fluidos, alvos de toque' },
+    { area: 'Interaction', detail: 'Estados, feedback, affordances' },
+    { area: 'Motion', detail: 'Microinterações, transições' },
+    { area: 'UX Writing', detail: 'Clareza, voz, mensagens de erro' }
   ]
 };
 
@@ -34,13 +34,13 @@ export const skillFocusAreas = {
 // detail line communicates what bad-default we catch — not what we teach.
 export const slopFocusAreas = {
   'tektone': [
-    { area: 'Typography', detail: 'A type scale with real contrast, set in a face chosen on purpose, not Inter by reflex.' },
-    { area: 'Color & Contrast', detail: 'Palettes that clear WCAG and commit to a hue. The purple-gradient default never ships.' },
-    { area: 'Spatial Design', detail: 'Structure from spacing and rhythm, not a grid of identical cards nested in more cards.' },
-    { area: 'Responsive', detail: 'Built for the small screen first, with breakpoints that follow the content.' },
-    { area: 'Interaction', detail: 'Honest states and clear affordances, without defaulting to a modal or gradient text.' },
-    { area: 'Motion', detail: 'Motion that eases like physics and settles. Nothing bounces or springs past its mark.' },
-    { area: 'UX Writing', detail: 'Specific copy that names what the thing does, not "Welcome to our platform."' }
+    { area: 'Typography', detail: 'Uma escala tipográfica com contraste real, em uma fonte escolhida de propósito, não Inter por reflexo.' },
+    { area: 'Color & Contrast', detail: 'Paletas que passam no WCAG e se comprometem com um matiz. O gradiente roxo padrão nunca é publicado.' },
+    { area: 'Spatial Design', detail: 'Estrutura a partir de espaçamento e ritmo, não uma grade de cards idênticos aninhados em mais cards.' },
+    { area: 'Responsive', detail: 'Feito primeiro para a tela pequena, com breakpoints que seguem o conteúdo.' },
+    { area: 'Interaction', detail: 'Estados honestos e affordances claras, sem recorrer a um modal ou texto em gradiente.' },
+    { area: 'Motion', detail: 'Movimento que suaviza como física e se acomoda. Nada quica ou salta além do ponto.' },
+    { area: 'UX Writing', detail: 'Texto específico que nomeia o que a coisa faz, não "Bem-vindo à nossa plataforma."' }
   ]
 };
 
@@ -67,30 +67,30 @@ export const skillReferenceDomains = [
 ];
 
 export const commandProcessSteps = {
-  'tektone': ['Direct', 'Design', 'Build', 'Refine'],
-  'craft': ['Shape', 'Reference', 'Build', 'Iterate'],
-  'shape': ['Interview', 'Synthesize', 'Brief', 'Confirm'],
-  'overdrive': ['Assess', 'Choose', 'Build', 'Polish'],
-  'critique': ['Evaluate', 'Critique', 'Prioritize', 'Suggest'],
-  'audit': ['Scan', 'Document', 'Prioritize', 'Recommend'],
-  'typeset': ['Assess', 'Select', 'Scale', 'Refine'],
-  'layout': ['Assess', 'Grid', 'Rhythm', 'Balance'],
-  'colorize': ['Analyze', 'Strategy', 'Apply', 'Balance'],
-  'animate': ['Identify', 'Design', 'Implement', 'Polish'],
-  'delight': ['Identify', 'Design', 'Implement'],
-  'bolder': ['Analyze', 'Amplify', 'Impact'],
-  'quieter': ['Analyze', 'Reduce', 'Refine'],
-  'distill': ['Audit', 'Remove', 'Clarify'],
-  'clarify': ['Read', 'Simplify', 'Improve', 'Test'],
-  'adapt': ['Analyze', 'Adjust', 'Optimize'],
-  'polish': ['Discover', 'Review', 'Refine', 'Verify'],
-  'optimize': ['Profile', 'Identify', 'Improve', 'Measure'],
-  'harden': ['Assess', 'Implement', 'Test', 'Verify'],
-  'onboard': ['Identify', 'Design', 'Guide', 'Measure'],
-  'init': ['Explore', 'Interview', 'Configure', 'Recommend'],
-  'document': ['Scan', 'Extract', 'Describe', 'Write'],
-  'extract': ['Identify', 'Abstract', 'Migrate', 'Document'],
-  'live': ['Start', 'Select', 'Generate', 'Accept']
+  'tektone': ['Dirigir', 'Projetar', 'Construir', 'Refinar'],
+  'craft': ['Moldar', 'Referenciar', 'Construir', 'Iterar'],
+  'shape': ['Entrevistar', 'Sintetizar', 'Briefar', 'Confirmar'],
+  'overdrive': ['Avaliar', 'Escolher', 'Construir', 'Polir'],
+  'critique': ['Avaliar', 'Criticar', 'Priorizar', 'Sugerir'],
+  'audit': ['Escanear', 'Documentar', 'Priorizar', 'Recomendar'],
+  'typeset': ['Avaliar', 'Selecionar', 'Escalar', 'Refinar'],
+  'layout': ['Avaliar', 'Grade', 'Ritmo', 'Equilibrar'],
+  'colorize': ['Analisar', 'Estratégia', 'Aplicar', 'Equilibrar'],
+  'animate': ['Identificar', 'Projetar', 'Implementar', 'Polir'],
+  'delight': ['Identificar', 'Projetar', 'Implementar'],
+  'bolder': ['Analisar', 'Amplificar', 'Impacto'],
+  'quieter': ['Analisar', 'Reduzir', 'Refinar'],
+  'distill': ['Auditar', 'Remover', 'Clarear'],
+  'clarify': ['Ler', 'Simplificar', 'Melhorar', 'Testar'],
+  'adapt': ['Analisar', 'Ajustar', 'Otimizar'],
+  'polish': ['Descobrir', 'Revisar', 'Refinar', 'Verificar'],
+  'optimize': ['Perfilar', 'Identificar', 'Melhorar', 'Medir'],
+  'harden': ['Avaliar', 'Implementar', 'Testar', 'Verificar'],
+  'onboard': ['Identificar', 'Projetar', 'Guiar', 'Medir'],
+  'init': ['Explorar', 'Entrevistar', 'Configurar', 'Recomendar'],
+  'document': ['Escanear', 'Extrair', 'Descrever', 'Escrever'],
+  'extract': ['Identificar', 'Abstrair', 'Migrar', 'Documentar'],
+  'live': ['Iniciar', 'Selecionar', 'Gerar', 'Aceitar']
 };
 
 export const commandCategories = {
@@ -130,33 +130,33 @@ export const commandCategories = {
 // The tektone skill contains all domains as reference files
 export const skillRelationships = {
   'tektone': {
-    description: 'Comprehensive design intelligence with progressive reference loading',
+    description: 'Inteligência de design abrangente com carregamento progressivo de referências',
     referenceDomains: ['typography', 'color-and-contrast', 'spatial-design', 'responsive-design', 'interaction-design', 'motion-design', 'ux-writing']
   }
 };
 
 export const commandRelationships = {
-  'tektone': { flow: 'Create: Freeform design with full design intelligence' },
-  'craft': { flow: 'Create: Full shape-then-build flow with visual iteration' },
-  'shape': { flow: 'Create: Plan UX and UI through structured discovery' },
-  'critique': { leadsTo: ['polish', 'distill', 'bolder', 'quieter', 'typeset', 'layout'], flow: 'Evaluate: UX and design review with scoring' },
-  'audit': { leadsTo: ['harden', 'optimize', 'adapt', 'clarify'], flow: 'Evaluate: Technical quality audit' },
-  'typeset': { combinesWith: ['bolder', 'polish'], flow: 'Refine: Fix typography and type hierarchy' },
-  'layout': { combinesWith: ['distill', 'adapt'], flow: 'Refine: Fix layout and spacing' },
-  'colorize': { combinesWith: ['bolder', 'delight'], flow: 'Refine: Add strategic color' },
-  'animate': { combinesWith: ['delight'], flow: 'Refine: Add purposeful motion' },
-  'delight': { combinesWith: ['bolder', 'animate'], flow: 'Refine: Add personality and joy' },
-  'bolder': { pairs: 'quieter', flow: 'Refine: Amplify timid designs' },
-  'quieter': { pairs: 'bolder', flow: 'Refine: Tone down aggressive designs' },
-  'overdrive': { combinesWith: ['animate', 'delight'], flow: 'Refine: Technically extraordinary effects' },
-  'distill': { combinesWith: ['quieter', 'polish'], flow: 'Simplify: Strip to essence' },
-  'clarify': { combinesWith: ['polish', 'adapt'], flow: 'Simplify: Improve UX copy' },
-  'adapt': { combinesWith: ['polish', 'clarify'], flow: 'Simplify: Adapt for different contexts' },
-  'polish': { flow: 'Harden: Final pass and design system alignment' },
-  'optimize': { flow: 'Harden: Performance improvements' },
-  'harden': { combinesWith: ['optimize'], flow: 'Harden: Edge cases, error handling, and i18n' },
-  'onboard': { combinesWith: ['clarify', 'delight'], flow: 'Harden: First-run experiences and empty states' },
-  'init': { flow: 'System: One-time project setup. Context, live config, next steps' },
-  'extract': { flow: 'System: Extract design system components and tokens' },
-  'live': { flow: 'System: Visual variant mode in the browser' }
+  'tektone': { flow: 'Criar: Design livre com inteligência de design completa' },
+  'craft': { flow: 'Criar: Fluxo completo de moldar e construir com iteração visual' },
+  'shape': { flow: 'Criar: Planejar UX e UI por descoberta estruturada' },
+  'critique': { leadsTo: ['polish', 'distill', 'bolder', 'quieter', 'typeset', 'layout'], flow: 'Avaliar: Revisão de UX e design com pontuação' },
+  'audit': { leadsTo: ['harden', 'optimize', 'adapt', 'clarify'], flow: 'Avaliar: Auditoria de qualidade técnica' },
+  'typeset': { combinesWith: ['bolder', 'polish'], flow: 'Refinar: Corrigir tipografia e hierarquia de tipos' },
+  'layout': { combinesWith: ['distill', 'adapt'], flow: 'Refinar: Corrigir layout e espaçamento' },
+  'colorize': { combinesWith: ['bolder', 'delight'], flow: 'Refinar: Adicionar cor estratégica' },
+  'animate': { combinesWith: ['delight'], flow: 'Refinar: Adicionar movimento com propósito' },
+  'delight': { combinesWith: ['bolder', 'animate'], flow: 'Refinar: Adicionar personalidade e alegria' },
+  'bolder': { pairs: 'quieter', flow: 'Refinar: Amplificar designs tímidos' },
+  'quieter': { pairs: 'bolder', flow: 'Refinar: Suavizar designs agressivos' },
+  'overdrive': { combinesWith: ['animate', 'delight'], flow: 'Refinar: Efeitos tecnicamente extraordinários' },
+  'distill': { combinesWith: ['quieter', 'polish'], flow: 'Simplificar: Reduzir à essência' },
+  'clarify': { combinesWith: ['polish', 'adapt'], flow: 'Simplificar: Melhorar o texto de UX' },
+  'adapt': { combinesWith: ['polish', 'clarify'], flow: 'Simplificar: Adaptar para contextos diferentes' },
+  'polish': { flow: 'Reforçar: Passagem final e alinhamento ao design system' },
+  'optimize': { flow: 'Reforçar: Melhorias de performance' },
+  'harden': { combinesWith: ['optimize'], flow: 'Reforçar: Casos extremos, tratamento de erros e i18n' },
+  'onboard': { combinesWith: ['clarify', 'delight'], flow: 'Reforçar: Experiências de primeiro uso e estados vazios' },
+  'init': { flow: 'Sistema: Configuração única do projeto. Contexto, config ao vivo, próximos passos' },
+  'extract': { flow: 'Sistema: Extrair componentes e tokens do design system' },
+  'live': { flow: 'Sistema: Modo de variações visuais no navegador' }
 };

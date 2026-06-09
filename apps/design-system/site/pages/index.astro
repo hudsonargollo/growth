@@ -19,15 +19,15 @@ import '../styles/testimonials.css';
 ---
 
 <Base
-  title="Tektone: The missing upgrade to Anthropic's tektone skill"
-  description="1 skill, 23 commands, and curated anti-patterns for tektone frontend design. Works with Cursor, Claude Code, GitHub Copilot, Gemini CLI, and Codex CLI."
+  title="Tektone Design: o vocabulário de design que falta aos agentes de IA"
+  description="1 habilidade, 23 comandos e antipadrões selecionados para um design de frontend impecável. Funciona com Cursor, Claude Code, GitHub Copilot, Gemini CLI e Codex CLI."
   activeNav="home"
   canonicalPath="/"
   bodyClass="home-kinpaku kinpaku-chrome"
   mainId="main-content"
   mainClass="site-content"
-  ogTitle="Tektone: Design skills for AI harnesses"
-  ogDescription="1 skill, 23 commands, and curated anti-patterns for tektone frontend design. Works with Cursor, Claude Code, GitHub Copilot, Gemini CLI, and Codex CLI."
+  ogTitle="Tektone Design: habilidades de design para agentes de IA"
+  ogDescription="1 habilidade, 23 comandos e antipadrões selecionados para um design de frontend impecável. Funciona com Cursor, Claude Code, GitHub Copilot, Gemini CLI e Codex CLI."
   ogImage="https://tektone.design/og-image-v2.jpg"
   twitterSite="@pbakaus"
   twitterCreator="@pbakaus"
@@ -55,27 +55,27 @@ import '../styles/testimonials.css';
     <div class="hero-rebuild-art" aria-hidden="true"></div>
     <div class="hero-rebuild-container">
       <div class="hero-rebuild-left">
-        <h1 class="hero-rebuild-title">The missing design<br>vocabulary for agents.</h1>
+        <h1 class="hero-rebuild-title">O vocabulário de design<br>que falta aos agentes.</h1>
 
         <p class="hero-rebuild-body">
-          It's why AI frontends all share one look: no words for hierarchy, contrast, or restraint.
-          Tektone gives your agent the designer's vocabulary, and gives you the same commands,
-          so you both stop guessing and start directing, live, in your production codebase.
+          É por isso que todos os frontends de IA têm a mesma cara: faltam palavras para hierarquia, contraste ou contenção.
+          O Tektone dá ao seu agente o vocabulário do designer, e dá a você os mesmos comandos,
+          para que os dois parem de adivinhar e comecem a dirigir, ao vivo, na sua base de código de produção.
         </p>
 
         <div class="hero-rebuild-actions">
           <a href="#downloads" class="ks-button ks-button-primary">
-            Get started
+            Começar
             <span class="ks-button-arrow" aria-hidden="true">
               <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
                 <path d="M0 4h14M10 0l4 4-4 4"/>
               </svg>
             </span>
           </a>
-          <a href="/designing" class="ks-button ks-button-ghost">How it works</a>
+          <a href="/designing" class="ks-button ks-button-ghost">Como funciona</a>
         </div>
 
-        <div class="hero-rebuild-logos" aria-label="AI coding harnesses Tektone works with">
+        <div class="hero-rebuild-logos" aria-label="Agentes de IA com os quais o Tektone funciona">
           <span class="hero-rebuild-logo has-tooltip" data-tooltip="Codex CLI"><img src="assets/openai-logo.png" alt="Codex CLI" width="20" height="20" loading="lazy"></span>
           <span class="hero-rebuild-logo has-tooltip" data-tooltip="Claude Code"><img src="assets/claude-logo.png" alt="Claude Code" width="22" height="22" loading="lazy"></span>
           <span class="hero-rebuild-logo has-tooltip" data-tooltip="Cursor"><img src="assets/cursor-logo.png" alt="Cursor" width="22" height="22" loading="lazy"></span>
@@ -90,7 +90,7 @@ import '../styles/testimonials.css';
       <div class="hero-rebuild-right">
         <!-- Live Mode loop: starts on the AI-slop card, picks it, and cycles
              three refined variants. Driven by live-demo.js (#live-demo). -->
-        <div class="live-demo hero-live-demo" id="live-demo" aria-label="Live Mode interactive demo loop">
+        <div class="live-demo hero-live-demo" id="live-demo" aria-label="Demonstração interativa do Modo Ao Vivo">
           <div class="live-demo-frame-col"><div class="live-demo-frame">
             <div class="live-demo-chrome">
               <span class="live-demo-dot"></span>
@@ -105,8 +105,8 @@ import '../styles/testimonials.css';
               <div class="hotel-site" aria-hidden="true">
                 <header class="hotel-nav">
                   <span class="hotel-logo">AURELIA</span>
-                  <nav class="hotel-nav-links"><span>Suites</span><span>Dining</span><span>Spa</span><span>Journal</span></nav>
-                  <span class="hotel-nav-book">Book</span>
+                  <nav class="hotel-nav-links"><span>Suítes</span><span>Gastronomia</span><span>Spa</span><span>Diário</span></nav>
+                  <span class="hotel-nav-book">Reservar</span>
                 </header>
                 <!-- The picked element: the hero. Your AI generated it generic;
                      pick it, comment, and the variants make it exclusive + on-brand. -->
@@ -114,9 +114,9 @@ import '../styles/testimonials.css';
                   <div class="live-demo-variant is-active" data-variant="original">
                     <div class="hotel-hero hotel-hero--slop">
                       <div class="hotel-hero-inner">
-                        <h2 class="hotel-hero-title">Welcome to Our Hotel</h2>
-                        <p class="hotel-hero-sub">Book the best rooms at the best prices.</p>
-                        <button type="button" class="hotel-hero-cta">Book Now</button>
+                        <h2 class="hotel-hero-title">Bem-vindo ao Nosso Hotel</h2>
+                        <p class="hotel-hero-sub">Reserve os melhores quartos pelos melhores preços.</p>
+                        <button type="button" class="hotel-hero-cta">Reservar Agora</button>
                       </div>
                     </div>
                   </div>
@@ -125,10 +125,10 @@ import '../styles/testimonials.css';
                       <div class={`hotel-hero hotel-hero--${n}`}>
                         <div class="hotel-hero-photo"></div>
                         <div class="hotel-hero-inner">
-                          <p class="hotel-hero-eyebrow">Amalfi Coast</p>
-                          <h2 class="hotel-hero-title">Where the coast forgets time</h2>
-                          <p class="hotel-hero-sub">Forty suites above the sea.</p>
-                          <button type="button" class="hotel-hero-cta">Reserve your stay</button>
+                          <p class="hotel-hero-eyebrow">Costa Amalfitana</p>
+                          <h2 class="hotel-hero-title">Onde a costa esquece o tempo</h2>
+                          <p class="hotel-hero-sub">Quarenta suítes sobre o mar.</p>
+                          <button type="button" class="hotel-hero-cta">Reserve sua estadia</button>
                         </div>
                       </div>
                     </div>
@@ -137,41 +137,41 @@ import '../styles/testimonials.css';
 
                 <!-- Context: the rest of the page, scrolled just into view -->
                 <div class="hotel-suites">
-                  <p class="hotel-suites-label">Our Suites</p>
+                  <p class="hotel-suites-label">Nossas Suítes</p>
                   <div class="hotel-suites-row">
                     <article class="hotel-card">
                       <div class="hotel-card-photo"></div>
                       <div class="hotel-card-body">
-                        <p class="hotel-card-kicker">Suite</p>
-                        <h3 class="hotel-card-name">Garden Suite</h3>
-                        <p class="hotel-card-meta">Sea view · 48m²</p>
+                        <p class="hotel-card-kicker">Suíte</p>
+                        <h3 class="hotel-card-name">Suíte Jardim</h3>
+                        <p class="hotel-card-meta">Vista para o mar · 48m²</p>
                         <div class="hotel-card-foot">
-                          <span class="hotel-card-price">$420<i>/night</i></span>
-                          <button type="button" class="hotel-card-btn">Reserve</button>
+                          <span class="hotel-card-price">R$420<i>/noite</i></span>
+                          <button type="button" class="hotel-card-btn">Reservar</button>
                         </div>
                       </div>
                     </article>
                     <article class="hotel-card">
                       <div class="hotel-card-photo hotel-card-photo--b"></div>
                       <div class="hotel-card-body">
-                        <p class="hotel-card-kicker">Suite</p>
-                        <h3 class="hotel-card-name">Sea Loft</h3>
-                        <p class="hotel-card-meta">Terrace · 62m²</p>
+                        <p class="hotel-card-kicker">Suíte</p>
+                        <h3 class="hotel-card-name">Loft do Mar</h3>
+                        <p class="hotel-card-meta">Terraço · 62m²</p>
                         <div class="hotel-card-foot">
-                          <span class="hotel-card-price">$510<i>/night</i></span>
-                          <button type="button" class="hotel-card-btn">Reserve</button>
+                          <span class="hotel-card-price">R$510<i>/noite</i></span>
+                          <button type="button" class="hotel-card-btn">Reservar</button>
                         </div>
                       </div>
                     </article>
                     <article class="hotel-card">
                       <div class="hotel-card-photo hotel-card-photo--c"></div>
                       <div class="hotel-card-body">
-                        <p class="hotel-card-kicker">Suite</p>
-                        <h3 class="hotel-card-name">Cliff Suite</h3>
-                        <p class="hotel-card-meta">Sea view · 70m²</p>
+                        <p class="hotel-card-kicker">Suíte</p>
+                        <h3 class="hotel-card-name">Suíte Penhasco</h3>
+                        <p class="hotel-card-meta">Vista para o mar · 70m²</p>
                         <div class="hotel-card-foot">
-                          <span class="hotel-card-price">$680<i>/night</i></span>
-                          <button type="button" class="hotel-card-btn">Reserve</button>
+                          <span class="hotel-card-price">R$680<i>/noite</i></span>
+                          <button type="button" class="hotel-card-btn">Reservar</button>
                         </div>
                       </div>
                     </article>
@@ -205,24 +205,24 @@ import '../styles/testimonials.css';
                     <span data-demo-input-text></span><span class="live-demo-ctx-caret"></span>
                   </span>
                   <button type="button" class="live-demo-ctx-count">×3</button>
-                  <button type="button" class="live-demo-ctx-go" data-demo-go>Go <span aria-hidden="true">→</span></button>
+                  <button type="button" class="live-demo-ctx-go" data-demo-go>Gerar <span aria-hidden="true">→</span></button>
                 </div>
                 <LiveDemoPalette pick="colorize" />
                 <div class="live-demo-ctx-row live-demo-ctx-row--generating">
                   <span class="live-demo-ctx-spinner" aria-hidden="true"></span>
-                  <span>Generating variants…</span>
+                  <span>Gerando variações…</span>
                 </div>
                 <div class="live-demo-ctx-row live-demo-ctx-row--cycling">
-                  <button type="button" class="live-demo-ctx-nav" aria-label="Previous variant">‹</button>
+                  <button type="button" class="live-demo-ctx-nav" aria-label="Variação anterior">‹</button>
                   <span class="live-demo-ctx-counter" data-demo-counter>1 / 3</span>
-                  <button type="button" class="live-demo-ctx-nav" aria-label="Next variant">›</button>
+                  <button type="button" class="live-demo-ctx-nav" aria-label="Próxima variação">›</button>
                   <span class="live-demo-ctx-divider"></span>
-                  <button type="button" class="live-demo-ctx-discard" aria-label="Discard">✕</button>
-                  <button type="button" class="live-demo-ctx-accept" data-demo-accept>Accept</button>
+                  <button type="button" class="live-demo-ctx-discard" aria-label="Descartar">✕</button>
+                  <button type="button" class="live-demo-ctx-accept" data-demo-accept>Aceitar</button>
                 </div>
                 <div class="live-demo-ctx-row live-demo-ctx-row--accepted">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span>Variant 3 written to source</span>
+                  <span>Variação 3 gravada no código-fonte</span>
                 </div>
               </div>
 
@@ -250,13 +250,13 @@ import '../styles/testimonials.css';
     <!-- 02. CATCH THE SLOP - Anti-pattern detector teaser -->
     <section class="slop-teaser-section" id="slop" aria-labelledby="slop-teaser-title">
       <div class="slop-teaser-head">
-        <h2 id="slop-teaser-title" class="slop-teaser-title">Desloppification</h2>
+        <h2 id="slop-teaser-title" class="slop-teaser-title">Deslopificação</h2>
         <p class="slop-teaser-body">
-          Tektone strips the AI slop tells and bad defaults out of every design discipline, from type to motion to copy. A skill can't make the model a better designer; it can clear the reflexes that make its output look generated.
+          O Tektone elimina os vícios de slop da IA e os padrões ruins de cada disciplina de design, da tipografia ao movimento e ao texto. Uma habilidade não torna o modelo um designer melhor; ela limpa os reflexos que deixam a saída com cara de gerada.
         </p>
         <div class="slop-teaser-actions">
           <a class="slop-teaser-cta-primary" href="/slop">
-            Browse the full catalog
+            Ver o catálogo completo
             <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" aria-hidden="true">
               <path d="M0 4h14M10 0l4 4-4 4"/>
             </svg>
@@ -298,14 +298,14 @@ import '../styles/testimonials.css';
     <section class="language-section" id="language">
       <div id="solution" style="height:0;overflow:hidden;visibility:hidden"></div>
       <div class="section-header" data-reveal>
-        <h2 class="section-title">The Language</h2>
+        <h2 class="section-title">A Linguagem</h2>
       </div>
       <div class="language-content">
         <div class="language-intro-row" data-reveal>
-          <p class="section-lead">23 commands give you a shared design vocabulary with your AI. Each maps to one discipline (<code>/typeset</code> for type, <code>/colorize</code> for color, <code>/animate</code> for motion), so you can ask for the exact thing without explaining it. Pick any to see it in action, or <a href="/docs" class="cheatsheet-link">browse the full reference &rarr;</a></p>
-          <div class="language-view-toggle" role="tablist" aria-label="Commands view">
-            <button type="button" role="tab" class="language-view-tab is-active" data-view="palette" aria-selected="true">Palette</button>
-            <button type="button" role="tab" class="language-view-tab" data-view="periodic" aria-selected="false">Periodic</button>
+          <p class="section-lead">23 comandos dão a você um vocabulário de design compartilhado com sua IA. Cada um mapeia uma disciplina (<code>/typeset</code> para tipografia, <code>/colorize</code> para cor, <code>/animate</code> para movimento), então você pede exatamente o que quer sem precisar explicar. Escolha qualquer um para ver em ação, ou <a href="/docs" class="cheatsheet-link">consulte a referência completa &rarr;</a></p>
+          <div class="language-view-toggle" role="tablist" aria-label="Visualização dos comandos">
+            <button type="button" role="tab" class="language-view-tab is-active" data-view="palette" aria-selected="true">Paleta</button>
+            <button type="button" role="tab" class="language-view-tab" data-view="periodic" aria-selected="false">Periódica</button>
           </div>
         </div>
 
@@ -337,33 +337,33 @@ import '../styles/testimonials.css';
     <section class="why-section" id="why">
       <div class="why-content" data-reveal>
         <div class="section-header">
-          <h2 class="section-title">Ready to drop in</h2>
+          <h2 class="section-title">Pronto para usar</h2>
         </div>
 
         <div class="ks-bento why-bento">
           <!-- T1: hero, wide. Respects your design system. -->
           <article class="ks-bento-tile ks-bento-tile--span-8" id="why-respects">
             <span class="ks-bento-num" data-color="kinpaku">01</span>
-            <h3 class="why-panel-title">Respects your design system.</h3>
-            <p class="why-panel-body">Inherits your tokens, components, and conventions instead of overwriting them. New work fits the system, not the model's defaults.</p>
+            <h3 class="why-panel-title">Respeita o seu design system.</h3>
+            <p class="why-panel-body">Herda seus tokens, componentes e convenções em vez de sobrescrevê-los. O novo trabalho se encaixa no sistema, não nos padrões do modelo.</p>
             <div class="why-visual why-visual--terminal">
                 <div class="why-terminal">
                   <div class="why-terminal-header">
                     <span class="why-terminal-dot"></span>
                     <span class="why-terminal-dot"></span>
                     <span class="why-terminal-dot"></span>
-                    <span class="why-terminal-title">/tektone polish : scanning codebase</span>
+                    <span class="why-terminal-title">/tektone polish : analisando o código</span>
                   </div>
                   <div class="why-terminal-body">
-                    <div class="why-terminal-line why-terminal-line--prompt"><span class="why-terminal-prompt">&rsaquo;</span> Walking src/…</div>
-                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">src/styles/tokens.css</span> &nbsp;<span class="why-terminal-meta">14 colors, 6 font sizes, 7 spacing steps</span></div>
-                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">tailwind.config.ts</span> &nbsp;<span class="why-terminal-meta">theme.extend merged</span></div>
-                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">src/components/</span> &nbsp;<span class="why-terminal-meta">34 components</span></div>
+                    <div class="why-terminal-line why-terminal-line--prompt"><span class="why-terminal-prompt">&rsaquo;</span> Percorrendo src/…</div>
+                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">src/styles/tokens.css</span> &nbsp;<span class="why-terminal-meta">14 cores, 6 tamanhos de fonte, 7 níveis de espaçamento</span></div>
+                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">tailwind.config.ts</span> &nbsp;<span class="why-terminal-meta">theme.extend mesclado</span></div>
+                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">src/components/</span> &nbsp;<span class="why-terminal-meta">34 componentes</span></div>
                     <div class="why-terminal-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="why-terminal-meta">&middot; Button: primary, secondary, ghost, destructive</span></div>
-                    <div class="why-terminal-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="why-terminal-meta">&middot; Card: 3 variants, 8px / 16px radii</span></div>
+                    <div class="why-terminal-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="why-terminal-meta">&middot; Card: 3 variações, raios de 8px / 16px</span></div>
                     <div class="why-terminal-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="why-terminal-meta">&middot; Input, Select, Dialog, Toast, Table&hellip;</span></div>
-                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">DESIGN.md</span> &nbsp;<span class="why-terminal-meta">brand rules loaded</span></div>
-                    <div class="why-terminal-line why-terminal-line--hint"><span class="why-terminal-arrow">&rarr;</span> Matching your system. Not inventing one.</div>
+                    <div class="why-terminal-line">  <span class="why-terminal-ok">&check;</span> <span class="why-terminal-path">DESIGN.md</span> &nbsp;<span class="why-terminal-meta">regras da marca carregadas</span></div>
+                    <div class="why-terminal-line why-terminal-line--hint"><span class="why-terminal-arrow">&rarr;</span> Seguindo o seu sistema. Sem inventar um novo.</div>
                   </div>
                 </div>
               </div>
@@ -372,30 +372,30 @@ import '../styles/testimonials.css';
           <!-- T2: narrow. Real product context. -->
           <article class="ks-bento-tile ks-bento-tile--span-4" id="why-product">
             <span class="ks-bento-num" data-color="patina">02</span>
-            <h3 class="why-panel-title">Real product context.</h3>
-            <p class="why-panel-body">Captures the brief once, in <code>PRODUCT.md</code>. Every command reads it before designing.</p>
+            <h3 class="why-panel-title">Contexto real do produto.</h3>
+            <p class="why-panel-body">Captura o briefing uma vez, no <code>PRODUCT.md</code>. Todo comando o lê antes de desenhar.</p>
               <div class="why-visual why-visual--productmd">
                 <div class="why-productmd-file">
                   <div class="why-productmd-header">
                     <span class="why-productmd-filename">PRODUCT.md</span>
-                    <span class="why-productmd-status">Loaded on every command</span>
+                    <span class="why-productmd-status">Carregado em cada comando</span>
                   </div>
                   <div class="why-productmd-body">
                     <div class="why-productmd-field">
-                      <span class="why-productmd-k">Users</span>
-                      <span class="why-productmd-v">SREs on call, reading fast, often in the dark.</span>
+                      <span class="why-productmd-k">Usuários</span>
+                      <span class="why-productmd-v">SREs de plantão, lendo rápido, muitas vezes no escuro.</span>
                     </div>
                     <div class="why-productmd-field">
-                      <span class="why-productmd-k">Register</span>
-                      <span class="why-productmd-v">Product. Design serves the task.</span>
+                      <span class="why-productmd-k">Registro</span>
+                      <span class="why-productmd-v">Produto. O design serve à tarefa.</span>
                     </div>
                     <div class="why-productmd-field">
-                      <span class="why-productmd-k">Brand voice</span>
-                      <span class="why-productmd-v">Calm, clinical, no hype.</span>
+                      <span class="why-productmd-k">Voz da marca</span>
+                      <span class="why-productmd-v">Calma, clínica, sem hype.</span>
                     </div>
                     <div class="why-productmd-field">
-                      <span class="why-productmd-k">Anti-references</span>
-                      <span class="why-productmd-v">Purple gradients. Glassmorphism. "Boost your productivity."</span>
+                      <span class="why-productmd-k">Antirreferências</span>
+                      <span class="why-productmd-v">Gradientes roxos. Glassmorphism. "Turbine sua produtividade."</span>
                     </div>
                   </div>
                 </div>
@@ -406,16 +406,16 @@ import '../styles/testimonials.css';
                at site/_parked/the-case.astro. -->
           <article class="ks-bento-tile ks-bento-tile--span-4" id="why-designmd">
             <span class="ks-bento-num" data-color="kinpaku">03</span>
-            <h3 class="why-panel-title">Travels as DESIGN.md.</h3>
-            <p class="why-panel-body"><code>/tektone document</code> writes one in the <a href="https://stitch.withgoogle.com/docs/design-md/overview/" target="_blank" rel="noopener">Google Stitch format</a>. Your visual system becomes portable.</p>
+            <h3 class="why-panel-title">Viaja como DESIGN.md.</h3>
+            <p class="why-panel-body">O <code>/tektone document</code> gera um no <a href="https://stitch.withgoogle.com/docs/design-md/overview/" target="_blank" rel="noopener">formato Google Stitch</a>. Seu sistema visual se torna portátil.</p>
             <div class="why-visual why-visual--designmd-v2">
               <div class="why-dm-header">
                 <span class="why-dm-filename">DESIGN.md</span>
-                <span class="why-dm-badge">Google Stitch spec</span>
+                <span class="why-dm-badge">Spec Google Stitch</span>
               </div>
               <div class="why-dm-grid">
                 <div class="why-dm-tile why-dm-tile--color" style="--c: var(--ks-kinpaku);">
-                  <div class="why-dm-tile-meta"><span>Primary</span><span>oklch(78% .12 82)</span></div>
+                  <div class="why-dm-tile-meta"><span>Primária</span><span>oklch(78% .12 82)</span></div>
                   <div class="why-dm-color-hero"></div>
                   <div class="why-dm-color-ramp">
                     <span style="background: oklch(22% .04 78)"></span>
@@ -429,75 +429,75 @@ import '../styles/testimonials.css';
                   </div>
                 </div>
                 <div class="why-dm-tile why-dm-tile--type">
-                  <div class="why-dm-tile-meta"><span>Wordmark</span><span>Spaced 400</span></div>
+                  <div class="why-dm-tile-meta"><span>Logotipo</span><span>Espaçado 400</span></div>
                   <div class="why-dm-type-specimen">IM</div>
                   <div class="why-dm-type-family">Avenir Next</div>
                 </div>
                 <div class="why-dm-tile why-dm-tile--type">
-                  <div class="why-dm-tile-meta"><span>Body</span><span>Regular 400</span></div>
+                  <div class="why-dm-tile-meta"><span>Corpo</span><span>Regular 400</span></div>
                   <div class="why-dm-type-specimen why-dm-type-specimen--sans">Aa</div>
                   <div class="why-dm-type-family">Avenir Next</div>
                 </div>
                 <div class="why-dm-tile why-dm-tile--components">
-                  <div class="why-dm-tile-meta"><span>Components</span><span>34</span></div>
+                  <div class="why-dm-tile-meta"><span>Componentes</span><span>34</span></div>
                   <div class="why-dm-comp-row">
-                    <span class="why-dm-comp-chip why-dm-comp-chip--primary">Primary</span>
+                    <span class="why-dm-comp-chip why-dm-comp-chip--primary">Primário</span>
                     <span class="why-dm-comp-chip">Ghost</span>
                   </div>
-                  <div class="why-dm-comp-input">Email address</div>
+                  <div class="why-dm-comp-input">Endereço de e-mail</div>
                 </div>
               </div>
-              <div class="why-dm-foot">Readable by every DESIGN.md-aware tool.</div>
+              <div class="why-dm-foot">Legível por toda ferramenta compatível com DESIGN.md.</div>
             </div>
           </article>
 
           <!-- T4: wide. Tuned to the agent you use. -->
           <article class="ks-bento-tile ks-bento-tile--span-8 why-panel--vizfirst" id="why-tuned">
             <span class="ks-bento-num" data-color="patina">04</span>
-            <h3 class="why-panel-title">Tuned to the agent you actually use.</h3>
-            <p class="why-panel-body">Plays to each agent's strengths and around its weaknesses. Below: Codex used image generation to draft Neo Mirai before <code>/tektone craft</code> turned it into shipped code.</p>
+            <h3 class="why-panel-title">Ajustado ao agente que você realmente usa.</h3>
+            <p class="why-panel-body">Aproveita os pontos fortes de cada agente e contorna suas fraquezas. Abaixo: o Codex usou geração de imagens para esboçar o Neo Mirai antes de o <code>/tektone craft</code> transformá-lo em código publicado.</p>
               <div class="why-visual why-visual--vizfirst">
                 <figure class="why-vz-plate why-vz-plate--hifi">
-                  <span class="why-vz-plate-kind">01 &middot; Visualize</span>
-                  <a class="why-vz-plate-frame" href="/cases/neo-mirai" aria-label="Read the Neo Mirai case study">
-                    <img src="assets/openai_image_2_hifi.jpg" alt="Auto-generated hi-fi landing-page mock in editorial warm-paper style." loading="lazy" width="864" height="1821" />
+                  <span class="why-vz-plate-kind">01 &middot; Visualizar</span>
+                  <a class="why-vz-plate-frame" href="/cases/neo-mirai" aria-label="Leia o estudo de caso Neo Mirai">
+                    <img src="assets/openai_image_2_hifi.jpg" alt="Mock de landing page hi-fi gerado automaticamente, em estilo editorial de papel quente." loading="lazy" width="864" height="1821" />
                   </a>
                 </figure>
                 <figure class="why-vz-plate why-vz-plate--brand">
-                  <span class="why-vz-plate-kind">02 &middot; Shape</span>
-                  <a class="why-vz-plate-frame" href="/cases/neo-mirai" aria-label="Read the Neo Mirai case study">
-                    <img src="assets/openai_image_2_brand.jpg" alt="Auto-generated brand toolkit: identity lockups, palette, type, icon system, and application mocks for a fictional AI design conference." loading="lazy" width="1536" height="1024" />
+                  <span class="why-vz-plate-kind">02 &middot; Moldar</span>
+                  <a class="why-vz-plate-frame" href="/cases/neo-mirai" aria-label="Leia o estudo de caso Neo Mirai">
+                    <img src="assets/openai_image_2_brand.jpg" alt="Kit de marca gerado automaticamente: travas de identidade, paleta, tipografia, sistema de ícones e mocks de aplicação para uma conferência fictícia de design de IA." loading="lazy" width="1536" height="1024" />
                   </a>
                 </figure>
                 <figure class="why-vz-plate why-vz-plate--live">
-                  <span class="why-vz-plate-kind">03 &middot; Live build</span>
-                  <a class="why-vz-plate-frame" href="/neo-mirai/" aria-label="Open the Neo Mirai live build">
-                    <img src="assets/cases/neo-mirai/live-fold.png" alt="Finished Neo Mirai website hero and agenda, implemented from the generated conference mock." loading="lazy" width="1440" height="1100" />
+                  <span class="why-vz-plate-kind">03 &middot; Build ao vivo</span>
+                  <a class="why-vz-plate-frame" href="/neo-mirai/" aria-label="Abra o build ao vivo do Neo Mirai">
+                    <img src="assets/cases/neo-mirai/live-fold.png" alt="Hero e agenda finalizados do site Neo Mirai, implementados a partir do mock de conferência gerado." loading="lazy" width="1440" height="1100" />
                   </a>
                 </figure>
               </div>
-              <p class="why-panel-meta"><a href="/cases/neo-mirai">Read the case &rarr;</a> &nbsp;&middot;&nbsp; <a href="/neo-mirai/">Open the live build &rarr;</a></p>
+              <p class="why-panel-meta"><a href="/cases/neo-mirai">Leia o caso &rarr;</a> &nbsp;&middot;&nbsp; <a href="/neo-mirai/">Abra o build ao vivo &rarr;</a></p>
           </article>
 
           <!-- T5: medium. Brand vs Product registers. -->
           <article class="ks-bento-tile ks-bento-tile--span-6" id="why-registers">
             <span class="ks-bento-num" data-color="kinpaku">05</span>
-            <h3 class="why-panel-title">Brand work is not product UI.</h3>
-            <p class="why-panel-body">A landing page and a dashboard play by different rules. Tektone runs in two registers, <em>brand</em> or <em>product</em>, and every command knows which.</p>
+            <h3 class="why-panel-title">Trabalho de marca não é UI de produto.</h3>
+            <p class="why-panel-body">Uma landing page e um dashboard seguem regras diferentes. O Tektone opera em dois registros, <em>marca</em> ou <em>produto</em>, e todo comando sabe qual é.</p>
               <div class="why-visual why-visual--registers">
                 <div class="why-register why-register--brand">
-                  <span class="why-register-label">Brand mode</span>
+                  <span class="why-register-label">Modo marca</span>
                   <div class="why-register-mock why-register-mock--brand">
-                    <span class="why-brand-hero-mono">Issue 04</span>
-                    <div class="why-brand-hero-title"><em>Shape</em> the story.</div>
+                    <span class="why-brand-hero-mono">Edição 04</span>
+                    <div class="why-brand-hero-title"><em>Molde</em> a história.</div>
                   </div>
                 </div>
                 <div class="why-register why-register--product">
-                  <span class="why-register-label">Product mode</span>
+                  <span class="why-register-label">Modo produto</span>
                   <div class="why-register-mock why-register-mock--product">
-                    <div class="why-product-row"><span class="why-product-k">Users</span><span class="why-product-v">12,482</span></div>
-                    <div class="why-product-row"><span class="why-product-k">Active now</span><span class="why-product-v">1,207</span></div>
-                    <div class="why-product-row"><span class="why-product-k">Conversion</span><span class="why-product-v">4.8%</span></div>
+                    <div class="why-product-row"><span class="why-product-k">Usuários</span><span class="why-product-v">12.482</span></div>
+                    <div class="why-product-row"><span class="why-product-k">Ativos agora</span><span class="why-product-v">1.207</span></div>
+                    <div class="why-product-row"><span class="why-product-k">Conversão</span><span class="why-product-v">4,8%</span></div>
                   </div>
                 </div>
               </div>
@@ -506,20 +506,20 @@ import '../styles/testimonials.css';
           <!-- T6: medium. CI/CD-ready. -->
           <article class="ks-bento-tile ks-bento-tile--span-6" id="why-ci">
             <span class="ks-bento-num" data-color="patina">06</span>
-            <h3 class="why-panel-title">Block slop before it ships.</h3>
-            <p class="why-panel-body">A detector you can wire into PR checks. 41 deterministic rules, no LLM, exit codes the build can read.</p>
+            <h3 class="why-panel-title">Barre o slop antes de publicar.</h3>
+            <p class="why-panel-body">Um detector que você conecta às verificações de PR. 41 regras determinísticas, sem LLM, com códigos de saída que o build entende.</p>
               <div class="why-visual why-visual--ci">
                 <div class="why-ci-window">
                   <div class="why-ci-header">
                     <span class="why-ci-branch">feat/pricing-page</span>
-                    <span class="why-ci-status why-ci-status--fail">&#x2717; failing</span>
+                    <span class="why-ci-status why-ci-status--fail">&#x2717; falhou</span>
                   </div>
                   <div class="why-ci-body">
                     <div class="why-ci-line"><span class="why-ci-cmd">$</span> npx tektone detect src/</div>
                     <div class="why-ci-issue"><span class="why-ci-x">&#x2717;</span> <code>src/Hero.tsx:42</code> gradient-text</div>
                     <div class="why-ci-issue"><span class="why-ci-x">&#x2717;</span> <code>src/Card.tsx:8</code> side-stripe-border</div>
                     <div class="why-ci-issue"><span class="why-ci-x">&#x2717;</span> <code>src/Button.tsx:17</code> ai-color-palette</div>
-                    <div class="why-ci-summary">3 anti-patterns &middot; exit 1</div>
+                    <div class="why-ci-summary">3 antipadrões &middot; exit 1</div>
                   </div>
                 </div>
               </div>
@@ -529,8 +529,8 @@ import '../styles/testimonials.css';
                production" section collapsed into this bento beat. -->
           <article class="ks-bento-tile ks-bento-tile--span-8" id="why-live">
             <span class="ks-bento-num" data-color="kinpaku">07</span>
-            <h3 class="why-panel-title">Iterate in your live app. <span class="why-panel-badge">BETA</span></h3>
-            <p class="why-panel-body">Pick any element in your running dev server, leave a comment or a stroke, hit Go. Three production-quality variants swap in via your framework's HMR.</p>
+            <h3 class="why-panel-title">Itere no seu app ao vivo. <span class="why-panel-badge">BETA</span></h3>
+            <p class="why-panel-body">Selecione qualquer elemento no seu servidor de desenvolvimento, deixe um comentário ou um traço e clique em Gerar. Três variações com qualidade de produção entram via o HMR do seu framework.</p>
             <div class="why-visual why-visual--live">
               <div class="why-live-frame">
                 <div class="why-live-chrome">
@@ -540,7 +540,7 @@ import '../styles/testimonials.css';
                 <div class="why-live-stage">
                   <div class="why-live-pick">
                     <span class="why-live-pick-tag">section.hero</span>
-                    <span class="why-live-pick-note">more elegant<span class="why-live-pick-caret"></span></span>
+                    <span class="why-live-pick-note">mais elegante<span class="why-live-pick-caret"></span></span>
                   </div>
                 </div>
                 <div class="why-live-ctx live-demo-ctx" data-phase="configuring">
@@ -553,27 +553,27 @@ import '../styles/testimonials.css';
                 </div>
               </div>
             </div>
-            <p class="why-panel-meta"><a href="/live-mode">See how Live Mode works &rarr;</a></p>
+            <p class="why-panel-meta"><a href="/live-mode">Veja como o Modo Ao Vivo funciona &rarr;</a></p>
           </article>
 
           <!-- T8: narrow. Accept writes to source. Pairs with T7 as the
                "writes back" beat that separates Live Mode from a mock. -->
           <article class="ks-bento-tile ks-bento-tile--span-4" id="why-writes">
             <span class="ks-bento-num" data-color="patina">08</span>
-            <h3 class="why-panel-title">Accept writes to source.</h3>
-            <p class="why-panel-body">Variants land in your real file as an ordinary edit, not a throwaway mock. A diff you can review, commit, or undo.</p>
+            <h3 class="why-panel-title">Aceitar grava no código-fonte.</h3>
+            <p class="why-panel-body">As variações chegam ao seu arquivo real como uma edição comum, não um mock descartável. Um diff que você pode revisar, commitar ou desfazer.</p>
             <div class="why-visual why-visual--writes">
               <div class="why-writes-card">
                 <div class="why-writes-head">
                   <span class="why-writes-check">&check;</span>
-                  <span class="why-writes-label">Wrote</span>
+                  <span class="why-writes-label">Gravou</span>
                   <span class="why-writes-file">src/Hero.astro</span>
                 </div>
                 <div class="why-writes-diff">
-                  <div class="why-writes-line why-writes-line--del">- "Welcome to Our Hotel"</div>
-                  <div class="why-writes-line why-writes-line--add">+ "Where the coast forgets time"</div>
-                  <div class="why-writes-line why-writes-line--del">- "Book Now"</div>
-                  <div class="why-writes-line why-writes-line--add">+ "Reserve your stay"</div>
+                  <div class="why-writes-line why-writes-line--del">- "Bem-vindo ao Nosso Hotel"</div>
+                  <div class="why-writes-line why-writes-line--add">+ "Onde a costa esquece o tempo"</div>
+                  <div class="why-writes-line why-writes-line--del">- "Reservar Agora"</div>
+                  <div class="why-writes-line why-writes-line--add">+ "Reserve sua estadia"</div>
                 </div>
               </div>
             </div>
@@ -587,16 +587,16 @@ import '../styles/testimonials.css';
     <section class="downloads-rebuild" id="downloads" aria-labelledby="downloads-title">
       <div class="downloads-rebuild-card">
       <div class="downloads-rebuild-head">
-        <h2 id="downloads-title" class="downloads-rebuild-title">Get started</h2>
+        <h2 id="downloads-title" class="downloads-rebuild-title">Começar</h2>
       </div>
 
       <div class="downloads-rebuild-install">
         <div class="downloads-rebuild-cmd-group">
-          <span class="downloads-rebuild-cmd-label">Install</span>
+          <span class="downloads-rebuild-cmd-label">Instalar</span>
           <div class="downloads-rebuild-cmd">
             <span class="downloads-rebuild-prompt" aria-hidden="true">$</span>
             <code>npx tektone skills install</code>
-            <button class="downloads-rebuild-copy" type="button" aria-label="Copy install command" data-copy="npx tektone skills install">
+            <button class="downloads-rebuild-copy" type="button" aria-label="Copiar comando de instalação" data-copy="npx tektone skills install">
               <svg class="downloads-rebuild-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -604,17 +604,17 @@ import '../styles/testimonials.css';
               <svg class="downloads-rebuild-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M20 6 9 17l-5-5"/>
               </svg>
-              <span>Copy</span>
+              <span>Copiar</span>
             </button>
           </div>
         </div>
 
         <div class="downloads-rebuild-cmd-group">
-          <span class="downloads-rebuild-cmd-label">First run</span>
+          <span class="downloads-rebuild-cmd-label">Primeira execução</span>
           <div class="downloads-rebuild-cmd">
             <span class="downloads-rebuild-prompt" aria-hidden="true">$</span>
             <code>/tektone init</code>
-            <button class="downloads-rebuild-copy" type="button" aria-label="Copy first run command" data-copy="/tektone init">
+            <button class="downloads-rebuild-copy" type="button" aria-label="Copiar comando de primeira execução" data-copy="/tektone init">
               <svg class="downloads-rebuild-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -622,17 +622,17 @@ import '../styles/testimonials.css';
               <svg class="downloads-rebuild-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M20 6 9 17l-5-5"/>
               </svg>
-              <span>Copy</span>
+              <span>Copiar</span>
             </button>
           </div>
         </div>
 
         <div class="downloads-rebuild-cmd-group">
-          <span class="downloads-rebuild-cmd-label downloads-rebuild-cmd-label--update">Update</span>
+          <span class="downloads-rebuild-cmd-label downloads-rebuild-cmd-label--update">Atualizar</span>
           <div class="downloads-rebuild-cmd downloads-rebuild-cmd--update">
             <span class="downloads-rebuild-prompt" aria-hidden="true">$</span>
             <code>npx tektone skills update</code>
-            <button class="downloads-rebuild-copy" type="button" aria-label="Copy update command" data-copy="npx tektone skills update">
+            <button class="downloads-rebuild-copy" type="button" aria-label="Copiar comando de atualização" data-copy="npx tektone skills update">
               <svg class="downloads-rebuild-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -640,24 +640,24 @@ import '../styles/testimonials.css';
               <svg class="downloads-rebuild-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M20 6 9 17l-5-5"/>
               </svg>
-              <span>Copy</span>
+              <span>Copiar</span>
             </button>
           </div>
         </div>
 
-        <p class="downloads-rebuild-note">Works with Cursor, Claude Code, GitHub Copilot, Gemini CLI, Codex CLI, and every other major AI coding harness. <code>install</code> sets up the build for your harness. Then run <code>/tektone init</code> inside your AI tool so the skill can save your project context. <code>update</code> pulls the latest version. Run <code>npx tektone skills check</code> to see if you're behind. Installed the Claude Code plugin? Update it from the <code>/plugin</code> menu instead.</p>
+        <p class="downloads-rebuild-note">Funciona com Cursor, Claude Code, GitHub Copilot, Gemini CLI, Codex CLI e todos os outros principais agentes de IA para código. O <code>install</code> configura o build para o seu agente. Depois rode <code>/tektone init</code> dentro da sua ferramenta de IA para que a habilidade salve o contexto do seu projeto. O <code>update</code> baixa a versão mais recente. Rode <code>npx tektone skills check</code> para ver se você está desatualizado. Instalou o plugin do Claude Code? Atualize pelo menu <code>/plugin</code>.</p>
 
         <details class="downloads-rebuild-alts">
           <summary class="downloads-rebuild-alts-summary">
             <svg class="downloads-rebuild-alts-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            <span>Other install methods</span>
+            <span>Outros métodos de instalação</span>
           </summary>
 
           <div class="downloads-rebuild-alt">
-            <span class="downloads-rebuild-alt-label">Claude Code plugin</span>
+            <span class="downloads-rebuild-alt-label">Plugin do Claude Code</span>
             <div class="downloads-rebuild-cmd downloads-rebuild-cmd--alt">
               <code>/plugin marketplace add pbakaus/tektone</code>
-              <button class="downloads-rebuild-copy" type="button" aria-label="Copy Claude Code plugin command" data-copy="/plugin marketplace add pbakaus/tektone">
+              <button class="downloads-rebuild-copy" type="button" aria-label="Copiar comando do plugin do Claude Code" data-copy="/plugin marketplace add pbakaus/tektone">
                 <svg class="downloads-rebuild-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -665,17 +665,17 @@ import '../styles/testimonials.css';
                 <svg class="downloads-rebuild-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M20 6 9 17l-5-5"/>
                 </svg>
-                <span>Copy</span>
+                <span>Copiar</span>
               </button>
             </div>
-            <span class="downloads-rebuild-alt-note">Then open <code>/plugin</code> in Claude Code and install Tektone from the list. Claude Code only.</span>
+            <span class="downloads-rebuild-alt-note">Depois abra <code>/plugin</code> no Claude Code e instale o Tektone a partir da lista. Apenas Claude Code.</span>
           </div>
 
           <div class="downloads-rebuild-alt">
             <span class="downloads-rebuild-alt-label">npx skills</span>
             <div class="downloads-rebuild-cmd downloads-rebuild-cmd--alt">
               <code>npx skills add pbakaus/tektone</code>
-              <button class="downloads-rebuild-copy" type="button" aria-label="Copy npx skills command" data-copy="npx skills add pbakaus/tektone">
+              <button class="downloads-rebuild-copy" type="button" aria-label="Copiar comando npx skills" data-copy="npx skills add pbakaus/tektone">
                 <svg class="downloads-rebuild-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                   <rect x="9" y="9" width="13" height="13" rx="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -683,37 +683,37 @@ import '../styles/testimonials.css';
                 <svg class="downloads-rebuild-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M20 6 9 17l-5-5"/>
                 </svg>
-                <span>Copy</span>
+                <span>Copiar</span>
               </button>
             </div>
-            <span class="downloads-rebuild-alt-note">The general-purpose skills installer. For now it installs one shared build for all harnesses rather than the build compiled for yours. Prefer <code>npx tektone skills install</code> above for the correct setup.</span>
+            <span class="downloads-rebuild-alt-note">O instalador de habilidades de uso geral. Por ora ele instala um único build compartilhado para todos os agentes, em vez do build compilado para o seu. Prefira o <code>npx tektone skills install</code> acima para a configuração correta.</span>
           </div>
         </details>
 
-        <p class="downloads-rebuild-secondary"><a href="/tutorials/getting-started">Read the setup guide</a> &middot; <a href="/changelog">See what's new</a> &middot; <a href="/faq">Got questions?</a></p>
+        <p class="downloads-rebuild-secondary"><a href="/tutorials/getting-started">Leia o guia de configuração</a> &middot; <a href="/changelog">Veja as novidades</a> &middot; <a href="/faq">Tem dúvidas?</a></p>
       </div>
 
 
       <ul class="downloads-rebuild-extras">
         <li>
-          <strong>Chrome extension</strong>
-          <span>Run the detector overlay on any page: your staging, a competitor, anything in the browser.</span>
-          <a href="https://chromewebstore.google.com/detail/tektone/bdkgmiklpdmaojlpflclinlofgjfpabf" target="_blank" rel="noopener">Install from the Chrome Web Store →</a>
+          <strong>Extensão para Chrome</strong>
+          <span>Rode o overlay do detector em qualquer página: seu staging, um concorrente, qualquer coisa no navegador.</span>
+          <a href="https://chromewebstore.google.com/detail/tektone/bdkgmiklpdmaojlpflclinlofgjfpabf" target="_blank" rel="noopener">Instalar pela Chrome Web Store →</a>
         </li>
         <li>
-          <strong>CLI for CI</strong>
-          <span><code>npx tektone detect src/</code> in a PR check. 41 deterministic rules. JSON output, exit codes for build gates.</span>
-          <a href="https://www.npmjs.com/package/tektone" target="_blank" rel="noopener">View on npm →</a>
+          <strong>CLI para CI</strong>
+          <span><code>npx tektone detect src/</code> em uma verificação de PR. 41 regras determinísticas. Saída em JSON e códigos de saída para gates de build.</span>
+          <a href="https://www.npmjs.com/package/tektone" target="_blank" rel="noopener">Ver no npm →</a>
         </li>
         <li>
-          <strong>Follow along</strong>
-          <span>The design thinking behind new commands and anti-patterns, in long form. Read the newsletter, or catch the shorter notes on X.</span>
-          <a href="https://tektonestyle.substack.com" target="_blank" rel="noopener" class="downloads-rebuild-link-primary">Read the newsletter →</a>
-          <a href="https://x.com/tektone_ai" target="_blank" rel="noopener" class="downloads-rebuild-link-secondary">Follow @tektone_ai on X →</a>
+          <strong>Acompanhe</strong>
+          <span>O raciocínio de design por trás de novos comandos e antipadrões, em formato longo. Leia a newsletter ou veja as notas mais curtas no X.</span>
+          <a href="https://tektonestyle.substack.com" target="_blank" rel="noopener" class="downloads-rebuild-link-primary">Ler a newsletter →</a>
+          <a href="https://x.com/tektone_ai" target="_blank" rel="noopener" class="downloads-rebuild-link-secondary">Seguir @tektone_ai no X →</a>
         </li>
       </ul>
 
-      <p class="downloads-rebuild-more">Learn more: <a href="/tutorials/getting-started">Getting started</a> &middot; <a href="/designing">Designing with Tektone</a> &middot; <a href="/docs">command docs</a></p>
+      <p class="downloads-rebuild-more">Saiba mais: <a href="/tutorials/getting-started">Primeiros passos</a> &middot; <a href="/designing">Projetar com o Tektone</a> &middot; <a href="/docs">docs de comandos</a></p>
       </div>
     </section>
 
