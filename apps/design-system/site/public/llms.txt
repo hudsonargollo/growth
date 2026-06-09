@@ -1,0 +1,62 @@
+# Tektone
+
+> Tektone is an open-source design skill, CLI, browser extension, and website for improving AI-generated frontend design with 23 commands, live browser iteration, and deterministic anti-pattern detection.
+
+Use the website pages below as the current public documentation. Use the GitHub repository when you need source code, implementation details, tests, or release history. The fastest install path is `npx tektone skills install` from a project root.
+
+## Start Here
+
+- [Home](https://tektone.design/): Product overview, install options, supported AI coding harnesses, and download entry points.
+- [Designing with Tektone](https://tektone.design/designing): The end-to-end workflow from setup and brief to iteration, polish, and maintenance.
+- [Documentation](https://tektone.design/docs): Command reference index for `/tektone` and its commands.
+- [Getting started](https://tektone.design/tutorials/getting-started): Install Tektone, run `/tektone init`, create project context, and start with a polish pass.
+- [Live Mode](https://tektone.design/live-mode): Browser-based UI iteration with element picking, annotations, generated variants, and source writeback.
+- [Slop](https://tektone.design/slop): Catalog of AI-generated UI anti-patterns and the detection overlay behind the CLI, extension, and critique workflow.
+
+## Tutorials
+
+- [Tutorials index](https://tektone.design/tutorials): Step-by-step guides for installation, live iteration, and visual critique.
+- [Iterate on UI with Live Mode](https://tektone.design/tutorials/iterate-live): Use `/tektone live` against a running dev server to generate and accept UI variants.
+- [Brand vs product](https://tektone.design/tutorials/brand-vs-product): Explain the setup choice between marketing surfaces and app surfaces.
+- [Critique with the visual overlay](https://tektone.design/tutorials/critique-with-overlay): Combine `/tektone critique`, deterministic detection, and the browser overlay.
+
+## Command Reference
+
+- [tektone](https://tektone.design/docs/tektone): Main command for recommendations, freeform design work, and loading the full design guide.
+- [init](https://tektone.design/docs/init): Set up project context with `PRODUCT.md`, optional `DESIGN.md`, Live Mode configuration, and next-command recommendations.
+- [craft](https://tektone.design/docs/craft): Shape, build, and visually iterate a new feature end to end.
+- [shape](https://tektone.design/docs/shape): Run a discovery interview and produce a design brief before code.
+- [live](https://tektone.design/docs/live): Select browser elements, generate UI variants, and write accepted changes back to source.
+- [document](https://tektone.design/docs/document): Generate a `DESIGN.md` file from the current visual system.
+- [extract](https://tektone.design/docs/extract): Consolidate repeated patterns, components, and design tokens.
+- [critique](https://tektone.design/docs/critique): Evaluate UX, hierarchy, cognitive load, brand fit, and anti-patterns.
+- [audit](https://tektone.design/docs/audit): Run technical checks for accessibility, performance, theming, responsiveness, and anti-patterns.
+- [polish](https://tektone.design/docs/polish): Perform a final quality pass for alignment, spacing, consistency, and micro-details.
+- [harden](https://tektone.design/docs/harden): Add production resilience for errors, edge cases, i18n, and text overflow.
+- [optimize](https://tektone.design/docs/optimize): Improve UI performance, rendering, images, animations, and bundle cost.
+- [adapt](https://tektone.design/docs/adapt): Adapt designs across screens, devices, contexts, and platforms.
+- [clarify](https://tektone.design/docs/clarify): Improve UX copy, labels, errors, empty states, and instructions.
+- [onboard](https://tektone.design/docs/onboard): Design onboarding, first-run experiences, empty states, and activation paths.
+- [typeset](https://tektone.design/docs/typeset): Improve typography, font choices, hierarchy, sizing, weight, and readability.
+- [layout](https://tektone.design/docs/layout): Improve composition, spacing, rhythm, alignment, and visual hierarchy.
+- [colorize](https://tektone.design/docs/colorize): Add strategic color without falling into generic AI palettes.
+- [animate](https://tektone.design/docs/animate): Add purposeful motion, transitions, feedback, and reduced-motion support.
+- [delight](https://tektone.design/docs/delight): Add memorable details and moments of joy without compromising usability.
+- [bolder](https://tektone.design/docs/bolder): Push safe designs toward stronger impact.
+- [quieter](https://tektone.design/docs/quieter): Reduce visual intensity while preserving quality.
+- [distill](https://tektone.design/docs/distill): Strip unnecessary complexity and focus the interface.
+- [overdrive](https://tektone.design/docs/overdrive): Build ambitious effects such as shaders, spring physics, and scroll-driven reveals.
+
+## Developer Resources
+
+- [GitHub repository](https://github.com/pbakaus/tektone): Source code, tests, issues, pull requests, and release workflow.
+- [Repository README](https://github.com/pbakaus/tektone#readme): Package overview, command list, install methods, and supported harnesses.
+- [Changelog](https://tektone.design/changelog): Release notes for the skill, CLI, extension, and detector.
+- [FAQ](https://tektone.design/faq): Installation paths, update commands, pinning, troubleshooting, and harness-specific setup.
+
+## Optional
+
+- [Neo Mirai case study](https://tektone.design/cases/neo-mirai): Example of Tektone turning generated references into a shipped website.
+- [Design system](https://tektone.design/design-system): Public style system reference for the Tektone website itself.
+- [Detector lab](https://tektone.design/detector): Fixture-backed detector examples for anti-pattern rules and visual checks.
+- [Privacy](https://tektone.design/privacy): Website analytics, download logging, and browser extension privacy notes.
