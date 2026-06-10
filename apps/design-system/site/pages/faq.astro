@@ -6,37 +6,37 @@ import '../styles/changelog-faq-kinpaku.css';
 
 <Base
   title="FAQ | Tektone"
-  description="Answers to common questions about installing Tektone, updating, pinning commands, troubleshooting, and onboarding to AI harnesses."
+  description="Respostas para as dúvidas mais comuns sobre instalar o Tektone, atualizar, fixar comandos, resolver problemas e começar a usar harnesses de IA."
   activeNav="docs"
   canonicalPath="/faq"
   bodyClass="sub-page kinpaku-chrome kinpaku-surface"
 >
   <div class="cf-page">
-    <p class="cf-eyebrow">Support</p>
-    <h1 class="cf-title">Frequently Asked Questions</h1>
-    <p class="cf-lede">Installation, updates, troubleshooting, and the questions newcomers ask first. Each answer is deep-linkable.</p>
+    <p class="cf-eyebrow">Suporte</p>
+    <h1 class="cf-title">Perguntas Frequentes</h1>
+    <p class="cf-lede">Instalação, atualizações, resolução de problemas e as perguntas que os novatos fazem primeiro. Cada resposta tem link direto.</p>
 
     <div class="cf-faq-list">
       <details id="install-location" class="cf-faq-item">
-        <summary class="cf-faq-question">Where do I put the downloaded files?</summary>
+        <summary class="cf-faq-question">Onde coloco os arquivos baixados?</summary>
         <div class="cf-faq-answer">
-          <p>The easiest way is <code>npx tektone skills install</code>, which detects your AI harness and installs the build compiled for it.</p>
-          <p>If you downloaded the <strong>universal ZIP</strong>, extract it to your <strong>project root</strong> (same level as your <code>package.json</code> or <code>src/</code> folder). It creates hidden folders for each supported tool: <code>.cursor/</code>, <code>.claude/</code>, <code>.gemini/</code>, <code>.codex/</code>, <code>.agents/</code>, and <code>.github/</code>.</p>
-          <p>Project-level installation takes precedence and lets you version control your skills.</p>
+          <p>O jeito mais fácil é <code>npx tektone skills install</code>, que detecta seu harness de IA e instala o build compilado para ele.</p>
+          <p>Se você baixou o <strong>ZIP universal</strong>, extraia-o na <strong>raiz do projeto</strong> (no mesmo nível do seu <code>package.json</code> ou da pasta <code>src/</code>). Ele cria pastas ocultas para cada ferramenta suportada: <code>.cursor/</code>, <code>.claude/</code>, <code>.gemini/</code>, <code>.codex/</code>, <code>.agents/</code> e <code>.github/</code>.</p>
+          <p>A instalação no nível do projeto tem precedência e permite versionar seus skills.</p>
         </div>
       </details>
 
       <details id="update" class="cf-faq-item">
-        <summary class="cf-faq-question">How do I update to the latest version?</summary>
+        <summary class="cf-faq-question">Como atualizo para a versão mais recente?</summary>
         <div class="cf-faq-answer">
-          <p>Run <code>npx tektone skills update</code> from your project root. It downloads the latest skills and cleans up deprecated files. Not sure you're behind? <code>npx tektone skills check</code> compares what you have installed against the latest release first.</p>
+          <p>Rode <code>npx tektone skills update</code> a partir da raiz do projeto. Ele baixa os skills mais recentes e limpa os arquivos descontinuados. Não tem certeza se está desatualizado? <code>npx tektone skills check</code> compara primeiro o que você tem instalado com a última versão.</p>
           <ul>
-            <li><strong>Reinstall:</strong> <code>npx tektone skills install --force</code> installs fresh.</li>
-            <li><strong>Claude Code plugin:</strong> Open <code>/plugin</code> in Claude Code.</li>
-            <li><strong>npx skills:</strong> <code>npx skills add pbakaus/tektone</code> also works, but installs one shared build for all harnesses rather than the one compiled for yours.</li>
-            <li><strong>Manual ZIP:</strong> Download from the homepage and extract to the project root.</li>
+            <li><strong>Reinstalar:</strong> <code>npx tektone skills install --force</code> instala do zero.</li>
+            <li><strong>Plugin do Claude Code:</strong> Abra <code>/plugin</code> no Claude Code.</li>
+            <li><strong>npx skills:</strong> <code>npx skills add pbakaus/tektone</code> também funciona, mas instala um build compartilhado para todos os harnesses em vez do compilado para o seu.</li>
+            <li><strong>ZIP manual:</strong> Baixe pela página inicial e extraia na raiz do projeto.</li>
           </ul>
-          <p>Your <code>PRODUCT.md</code> and <code>DESIGN.md</code> context files are never overwritten.</p>
+          <p>Seus arquivos de contexto <code>PRODUCT.md</code> e <code>DESIGN.md</code> nunca são sobrescritos.</p>
         </div>
       </details>
 

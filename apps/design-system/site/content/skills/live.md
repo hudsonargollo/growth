@@ -1,15 +1,15 @@
 ---
-tagline: "Iterate on UI in the browser. Pick an element, drop a comment, get three variants. Accept one and it writes to source."
+tagline: "Itere na UI direto no navegador. Escolha um elemento, deixe um comentário, receba três variantes. Aceite uma e ela é escrita no código-fonte."
 ---
 
 <div class="docs-live-callout">
   <span class="docs-live-callout-icon" aria-hidden="true">▸</span>
-  <span class="docs-live-callout-text">See it in action, with the animated demo, at <a href="/live-mode">/live-mode</a>. This page is the reference for what your AI harness reads when the command runs.</span>
+  <span class="docs-live-callout-text">Veja em ação, com a demo animada, em <a href="/live-mode">/live-mode</a>. Esta página é a referência do que seu harness de IA lê quando o comando roda.</span>
 </div>
 
 <div class="docs-live-callout">
   <span class="docs-live-callout-icon" aria-hidden="true">▸</span>
-  <span class="docs-live-callout-text"><strong>Status: alpha.</strong> Live Mode works end-to-end and is ready to try, but it still needs more testing against real-world repos and framework configs. Expect rough edges on uncommon setups, and please report what breaks.</span>
+  <span class="docs-live-callout-text"><strong>Status: alpha.</strong> O Live Mode funciona de ponta a ponta e já dá para experimentar, mas ainda precisa de mais testes contra repositórios reais e configurações de frameworks. Espere arestas em setups menos comuns, e por favor reporte o que quebrar.</span>
 </div>
 
 <div class="docs-viz-hero docs-viz-hero--plain">
@@ -23,21 +23,21 @@ tagline: "Iterate on UI in the browser. Pick an element, drop a comment, get thr
     <div class="docs-viz-live-stage docs-viz-live-stage--tall">
       <div class="docs-viz-live-target">
         <span class="docs-viz-live-kicker">No. 04</span>
-        <h3 class="docs-viz-live-title">Letters, <em>occasionally</em>.</h3>
-        <p class="docs-viz-live-body">A postcard from the editor, about once a month. No tracking pixels, no "just checking in."</p>
-        <button class="docs-viz-live-btn" type="button">Send me one</button>
+        <h3 class="docs-viz-live-title">Cartas, <em>de vez em quando</em>.</h3>
+        <p class="docs-viz-live-body">Um cartão-postal do editor, mais ou menos uma vez por mês. Sem pixels de rastreamento, sem "só passando para dar um oi."</p>
+        <button class="docs-viz-live-btn" type="button">Quero receber uma</button>
       </div>
       <div class="docs-viz-live-outline" aria-hidden="true"></div>
       <div class="docs-viz-live-ctx" aria-hidden="true">
-        <button class="docs-viz-live-ctx-nav" type="button" aria-label="Previous">‹</button>
+        <button class="docs-viz-live-ctx-nav" type="button" aria-label="Anterior">‹</button>
         <span class="docs-viz-live-ctx-counter">2 / 3</span>
-        <button class="docs-viz-live-ctx-nav" type="button" aria-label="Next">›</button>
+        <button class="docs-viz-live-ctx-nav" type="button" aria-label="Próximo">›</button>
         <span class="docs-viz-live-ctx-divider"></span>
-        <button class="docs-viz-live-ctx-accept" type="button">Accept</button>
+        <button class="docs-viz-live-ctx-accept" type="button">Aceitar</button>
       </div>
       <div class="docs-viz-live-gbar" aria-hidden="true">
         <span class="docs-viz-live-gbar-brand">/</span>
-        <span class="docs-viz-live-gbar-btn is-active">Pick</span>
+        <span class="docs-viz-live-gbar-btn is-active">Escolher</span>
         <span class="docs-viz-live-gbar-divider"></span>
         <span class="docs-viz-live-gbar-x">✕</span>
       </div>

@@ -1,32 +1,32 @@
 ---
-tagline: "Diagnose and fix UI performance from LCP to bundle size."
+tagline: "Diagnostique e corrija a performance da UI, do LCP ao tamanho do bundle."
 ---
 
-## When to use it
+## Quando usar
 
-`/tektone optimize` is for interfaces that feel slow. First paint takes forever, scrolling janks, images pop in late, interactions feel laggy, the bundle ships 800KB of JavaScript. Use it when the Web Vitals are bad or when users are complaining that things are sluggish.
+`/tektone optimize` é para interfaces que parecem lentas. O primeiro paint demora uma eternidade, o scroll trava, as imagens aparecem atrasadas, as interações ficam travadas, o bundle entrega 800KB de JavaScript. Use quando os Web Vitals estão ruins ou quando os usuários reclamam que as coisas estão lentas.
 
-Do not use it as premature optimization. If LCP is 1.1s and INP is 80ms, stop. The design work matters more.
+Não use como otimização prematura. Se o LCP está em 1,1s e o INP em 80ms, pare. O trabalho de design importa mais.
 
-## How it works
+## Como funciona
 
-The skill works through five perf dimensions:
+A skill atua sobre cinco dimensões de performance:
 
-1. **Loading and Web Vitals**: LCP, INP, CLS. Identify what is blocking the first paint, what is delaying interaction, what is shifting layout.
-2. **Rendering**: unnecessary re-renders, missing memoization, expensive reconciliation, layout thrash in loops.
-3. **Animations**: is anything animating layout properties, are transforms and opacity the only thing touched, does `will-change` help or hurt here.
-4. **Images and assets**: lazy loading, responsive images (`srcset`, `sizes`), modern formats (WebP, AVIF), dimensions set to prevent CLS.
-5. **Bundle size**: unused imports, oversized dependencies, missing code-splitting, dead code.
+1. **Loading e Web Vitals**: LCP, INP, CLS. Identifica o que está bloqueando o primeiro paint, o que está atrasando a interação, o que está deslocando o layout.
+2. **Renderização**: re-renders desnecessários, memoização ausente, reconciliação custosa, layout thrash em loops.
+3. **Animações**: há algo animando propriedades de layout, transforms e opacity são as únicas coisas tocadas, o `will-change` ajuda ou atrapalha aqui.
+4. **Imagens e assets**: lazy loading, imagens responsivas (`srcset`, `sizes`), formatos modernos (WebP, AVIF), dimensões definidas para prevenir CLS.
+5. **Tamanho do bundle**: imports não usados, dependências grandes demais, code-splitting ausente, código morto.
 
-The skill measures before and after. Every fix gets quantified. If a change does not move a metric, it gets rolled back.
+A skill mede antes e depois. Cada correção é quantificada. Se uma mudança não move uma métrica, ela é revertida.
 
-## Try it
+## Experimente
 
 ```
 /tektone optimize the homepage
 ```
 
-Expected shape:
+Formato esperado:
 
 ```
 LCP: 3.2s → 1.4s
@@ -49,8 +49,8 @@ Bundle: 340KB → 180KB
   - Dropped deprecated icon set (30KB)
 ```
 
-## Pitfalls
+## Armadilhas
 
-- **Optimizing before measuring.** Without baseline metrics, you cannot tell what helped. Run `/tektone optimize` with specific Web Vitals numbers, not vibes.
-- **Chasing tiny wins.** A 20ms improvement in INP that takes a week is rarely worth it. Optimize has diminishing returns; know when to stop.
-- **Forgetting to re-measure after every change.** The build could have made things worse in a way the skill did not predict. Verify.
+- **Otimizar antes de medir.** Sem métricas de baseline, você não tem como saber o que ajudou. Rode `/tektone optimize` com números específicos de Web Vitals, não com achismo.
+- **Correr atrás de ganhos minúsculos.** Uma melhora de 20ms no INP que leva uma semana raramente vale a pena. Otimização tem retornos decrescentes: saiba quando parar.
+- **Esquecer de medir de novo após cada mudança.** O build pode ter piorado as coisas de um jeito que a skill não previu. Verifique.

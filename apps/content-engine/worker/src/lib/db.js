@@ -1,17 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
-
-// Service role client — bypasses RLS. Use only for cron, admin ops, and JWT validation.
-export function getDb(env) {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  })
-}
-
-// Per-request user client — RLS policies apply automatically.
-// Use this for all tenant-scoped data queries in API routes.
-export function createUserClient(env, token) {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false },
-  })
-}
+/**
+ * db.js — data layer entry point.
+ *
+ * All persistent data now lives in Cloudflare KV (env.KV1).
+ * getDb() returns a KvClient that implements the Supabase JS query API subset
+ * used across the codebase — all service files continue calling getDb(env)
+ * with zero changes to their query chains.
+ *
+ * Supabase is kept ONLY for frontend auth (login gate).
+ * No Supabase DB calls are made by the worker anymore.
+ */
+export { getKvDb as getDb, getKvDb as createUserClient } from './kvdb.js'

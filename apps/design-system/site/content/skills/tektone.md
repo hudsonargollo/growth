@@ -1,47 +1,47 @@
 ---
-tagline: "Get a next-step recommendation, or describe design work in plain English."
+tagline: "Receba uma recomendação de próximo passo ou descreva o trabalho de design em português direto."
 ---
 
-## When to use it
+## Quando usar
 
-`/tektone` is the main command. Use it in two ways:
+`/tektone` é o comando principal. Use-o de duas formas:
 
-- Run `/tektone` by itself when you want the skill to inspect the project and recommend what to do next.
-- Add a plain-English request when you know the outcome but not the exact command.
+- Rode `/tektone` sozinho quando quiser que a skill inspecione o projeto e recomende o que fazer em seguida.
+- Adicione um pedido em português direto quando você souber o resultado, mas não o comando exato.
 
-Reach for `/tektone` directly when:
+Vá direto ao `/tektone` quando:
 
-- **You are not sure where to start.** It checks whether setup files exist, looks at the current project state, and recommends two or three next commands. It asks before running anything.
-- **You are not sure which command fits.** Describe what you want in plain English and let the skill pick the right approach.
-- **The work spans multiple disciplines.** "Redo this hero section" touches layout, type, color, and motion. One command cannot own that.
-- **You want freeform design help.** Use the main command when no specialist command maps cleanly to the work.
+- **Você não tem certeza por onde começar.** Ele verifica se os arquivos de setup existem, olha o estado atual do projeto e recomenda dois ou três próximos comandos. Ele pergunta antes de rodar qualquer coisa.
+- **Você não tem certeza de qual comando se encaixa.** Descreva o que você quer em português direto e deixe a skill escolher a melhor abordagem.
+- **O trabalho atravessa várias disciplinas.** "Refaça esta seção de hero" envolve layout, tipografia, cor e motion. Um único comando não consegue dar conta disso.
+- **Você quer ajuda livre de design.** Use o comando principal quando nenhum comando especialista mapeia de forma limpa para o trabalho.
 
-If this is a new project, start with `/tektone init`. That creates the setup files every other command reads.
+Se este for um projeto novo, comece pelo `/tektone init`. Ele cria os arquivos de setup que todos os outros comandos leem.
 
-## How it works
+## Como funciona
 
-Most AI-generated UIs fail the same way: generic fonts, purple gradients, card grids on card grids, glassmorphism everywhere. `/tektone` gives the model stronger design instructions before it writes code.
+A maioria das UIs geradas por IA falha do mesmo jeito: fontes genéricas, gradientes roxos, grids de cards sobre grids de cards, glassmorphism por toda parte. O `/tektone` dá ao modelo instruções de design mais fortes antes de ele escrever o código.
 
-Two files at your project root shape everything the skill does:
+Dois arquivos na raiz do seu projeto moldam tudo o que a skill faz:
 
-- **`PRODUCT.md`** says what the project is for: audience, product purpose, voice, anti-references, and whether the surface is brand or product.
-- **`DESIGN.md`** says how the interface should look: colors, typography, components, elevation, and design rules.
+- **`PRODUCT.md`** diz para que serve o projeto: público, propósito do produto, voz, antirreferências e se a superfície é brand ou product.
+- **`DESIGN.md`** diz como a interface deve parecer: cores, tipografia, componentes, elevação e regras de design.
 
-Every command reads both files before generating. The most important setup choice is **brand vs product**: is this a marketing surface where the impression is the product, or an app surface where design helps someone finish a task? The docs call this choice **register**. See [Brand vs product](/tutorials/brand-vs-product) for examples.
+Todo comando lê os dois arquivos antes de gerar. A escolha de setup mais importante é **brand vs product**: esta é uma superfície de marketing onde a impressão é o produto, ou uma superfície de app onde o design ajuda alguém a concluir uma tarefa? A documentação chama essa escolha de **register**. Veja [Brand vs product](/tutorials/brand-vs-product) para exemplos.
 
-On first use in a project, `/tektone` may route you into `init`: a short interview that writes `PRODUCT.md` and offers to write `DESIGN.md`. Future commands read those files without asking again.
+No primeiro uso em um projeto, o `/tektone` pode te encaminhar para o `init`: uma entrevista curta que escreve o `PRODUCT.md` e oferece escrever o `DESIGN.md`. Os comandos futuros leem esses arquivos sem perguntar de novo.
 
-## Try it
+## Experimente
 
-Run it with no command to get your bearings:
+Rode sem nenhum comando para se situar:
 
 ```
 /tektone
 ```
 
-It sizes up the project and points you at the best next move. For example: no `DESIGN.md` yet, run `document`; unresolved findings in files you are editing, run `polish`. It waits for you to choose.
+Ele avalia o projeto e te aponta o melhor próximo movimento. Por exemplo: ainda não há `DESIGN.md`, rode `document`; há achados não resolvidos nos arquivos que você está editando, rode `polish`. Ele espera você escolher.
 
-Or describe what you want and it does the work directly:
+Ou descreva o que você quer e ele faz o trabalho diretamente:
 
 ```
 /tektone redo this hero section
@@ -51,19 +51,19 @@ Or describe what you want and it does the work directly:
 /tektone build me a pricing page for a developer tool
 ```
 
-Both prompts are vague on purpose. `/tektone` will choose the right command or run the work directly, using your setup files when they exist.
+Os dois prompts são vagos de propósito. O `/tektone` vai escolher o comando certo ou rodar o trabalho diretamente, usando seus arquivos de setup quando eles existirem.
 
-For visual iteration in the browser rather than chat:
+Para iteração visual no navegador em vez do chat:
 
 ```
 /tektone live
 ```
 
-Pick any element on your running dev server. Drop a comment or stroke. Get three production-quality variants hot-swapped in via HMR. Accept the one you want and it writes back to source.
+Escolha qualquer elemento no seu dev server em execução. Deixe um comentário ou um traço. Receba três variantes de qualidade de produção trocadas a quente via HMR. Aceite a que você quiser e ele escreve de volta no código-fonte.
 
-## Pin commands back as shortcuts
+## Fixe comandos de volta como atalhos
 
-v3.0 consolidated 18 standalone skills into a single `/tektone` with 23 commands. If you miss the short form of a command, pin it back:
+A v3.0 consolidou 18 skills independentes em um único `/tektone` com 23 comandos. Se você sente falta da forma curta de um comando, fixe-o de volta:
 
 ```
 /tektone pin critique

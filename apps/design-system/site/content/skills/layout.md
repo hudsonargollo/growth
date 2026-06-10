@@ -1,41 +1,41 @@
 ---
-tagline: "Fix layout, spacing, and visual rhythm."
+tagline: "Corrija layout, espaçamento e ritmo visual."
 ---
 
-## When to use it
+## Quando usar
 
-`/tektone layout` is for pages where nothing is technically wrong but nothing is breathing either. Equal padding everywhere, monotonous card grids, content that runs edge to edge, hierarchy that relies on size alone. Reach for it when a layout "feels off" and you cannot articulate why.
+`/tektone layout` serve para páginas onde nada está tecnicamente errado, mas nada respira também. Padding igual em todo lugar, grids de cards monótonos, conteúdo que vai de ponta a ponta, hierarquia que se apoia só no tamanho. Recorra a ele quando um layout "parece estranho" e você não consegue dizer por quê.
 
-Good triggers: "everything feels crowded", "it reads like a wall", "I do not know where to look first".
+Bons gatilhos: "está tudo apertado", "parece uma parede de texto", "não sei para onde olhar primeiro".
 
-## How it works
+## Como funciona
 
-The skill runs through five layout dimensions:
+A skill percorre cinco dimensões de layout:
 
-1. **Spacing**: is the spacing scale consistent or are there random 13px gaps, are related elements grouped tightly with generous space between groups, is there any rhythm at all.
-2. **Visual hierarchy**: does the eye land on the primary action within 2 seconds, is the hierarchy doing real work or is everything shouting.
-3. **Grid and structure**: is there an underlying grid or is the layout random, are elements aligned to baselines.
-4. **Rhythm**: does the page alternate between tight and generous spacing, or is everything uniform.
-5. **Density**: is the layout cramped or is it wasteful, does density match the content type.
+1. **Espaçamento**: a escala de espaçamento é consistente ou existem gaps aleatórios de 13px, os elementos relacionados estão agrupados de forma justa com espaço generoso entre os grupos, há algum ritmo afinal.
+2. **Hierarquia visual**: o olho encontra a ação principal em até 2 segundos, a hierarquia está fazendo um trabalho real ou está tudo gritando.
+3. **Grid e estrutura**: existe um grid por baixo ou o layout é aleatório, os elementos estão alinhados às baselines.
+4. **Ritmo**: a página alterna entre espaçamento justo e generoso, ou está tudo uniforme.
+5. **Densidade**: o layout está apertado ou desperdiça espaço, a densidade combina com o tipo de conteúdo.
 
-Fixes usually involve rebuilding the spacing scale, introducing asymmetry, collapsing monotonous grids into a mixed layout with hero and supporting elements, and giving the primary action real space.
+As correções normalmente envolvem reconstruir a escala de espaçamento, introduzir assimetria, colapsar grids monótonos em um layout misto com elementos hero e de apoio, e dar espaço de verdade para a ação principal.
 
-## Try it
+## Experimente
 
 ```
 /tektone layout the settings page
 ```
 
-Typical changes:
+Mudanças típicas:
 
-- Spacing scale unified to 8 / 16 / 24 / 48 / 96px
-- Section breaks at 48px, row gaps at 16px, form field groups at 8px
-- Primary actions pulled out of the form flow with 32px buffer
-- Decorative borders removed, replaced with spacing-driven grouping
-- Sidebar and main column proportions rebalanced (280 / flex vs 25 / 75)
+- Escala de espaçamento unificada em 8 / 16 / 24 / 48 / 96px
+- Quebras de seção em 48px, gaps de linha em 16px, grupos de campos de formulário em 8px
+- Ações principais retiradas do fluxo do formulário com 32px de folga
+- Bordas decorativas removidas, substituídas por agrupamento via espaçamento
+- Proporções da sidebar e da coluna principal reequilibradas (280 / flex vs 25 / 75)
 
-## Pitfalls
+## Armadilhas
 
-- **Confusing arrange with distill.** If the problem is too many things, run `/tektone distill` first. Layout is for arranging what is already the right set.
-- **Expecting it to rescue a broken grid.** If the page has no grid at all, arrange will build one. Just know that the diff is going to be larger than you expect.
-- **Ignoring the hierarchy verdict.** If arrange says "nothing is primary", no amount of spacing work fixes that. You need a content decision, not a layout tweak.
+- **Confundir organizar com destilar.** Se o problema é coisas demais, rode `/tektone distill` primeiro. Layout serve para organizar o que já é o conjunto certo.
+- **Esperar que ele resgate um grid quebrado.** Se a página não tem grid algum, o arrange vai construir um. Só saiba que o diff vai ser maior do que você espera.
+- **Ignorar o veredito de hierarquia.** Se o arrange diz "nada é principal", nenhum trabalho de espaçamento resolve isso. Você precisa de uma decisão de conteúdo, não de um ajuste de layout.

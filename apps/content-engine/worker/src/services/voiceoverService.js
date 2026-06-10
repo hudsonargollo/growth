@@ -6,11 +6,27 @@ import { uid } from '../lib/uid.js'
 export const OPENAI_VOICES = [
   { id: 'nova',    label: 'Nova',    lang: 'PT/EN', gender: 'F', description: 'quente e natural' },
   { id: 'shimmer', label: 'Shimmer', lang: 'PT/EN', gender: 'F', description: 'clara e articulada' },
+  { id: 'coral',   label: 'Coral',   lang: 'PT/EN', gender: 'F', description: 'amigável e expressiva' },
+  { id: 'sage',    label: 'Sage',    lang: 'PT/EN', gender: 'F', description: 'calma e madura' },
   { id: 'alloy',   label: 'Alloy',   lang: 'PT/EN', gender: 'N', description: 'equilibrada e versátil' },
+  { id: 'ash',     label: 'Ash',     lang: 'PT/EN', gender: 'M', description: 'firme e confiante' },
   { id: 'echo',    label: 'Echo',    lang: 'PT/EN', gender: 'M', description: 'suave e conversacional' },
   { id: 'onyx',    label: 'Onyx',    lang: 'PT/EN', gender: 'M', description: 'grave e autoritativa' },
   { id: 'fable',   label: 'Fable',   lang: 'PT/EN', gender: 'M', description: 'expressiva e narrativa' },
 ]
+
+// Default playback speed for narrations. Modern short-form video reads too slow at
+// 1.0×, so we ship a 1.2× default. ElevenLabs caps speed at 1.2; OpenAI allows up to 4.0.
+export const DEFAULT_VOICE_SPEED = 1.2
+
+/** Clamp a requested speed to the provider's supported range. */
+function clampSpeed(speed, provider) {
+  const s = Number(speed)
+  if (!Number.isFinite(s)) return 1
+  // ElevenLabs: 0.7–1.2 (voice_settings.speed). OpenAI: 0.25–4.0.
+  if (provider === 'elevenlabs') return Math.min(1.2, Math.max(0.7, s))
+  return Math.min(4.0, Math.max(0.25, s))
+}
 
 export const ELEVENLABS_VOICES = [
   { id: 'pFZP5JQG7iQjIQuC4Bku', label: 'Valentina', lang: 'PT-BR', gender: 'F', description: 'voz feminina brasileira natural' },
@@ -77,39 +93,87 @@ export function base64ToArrayBuffer(b64) {
 
 // ── Text helpers ──────────────────────────────────────────────────────────────
 
-// Section types that are visual-only / metadata — never spoken
+// Section types and label keywords that are visual-only / metadata — never spoken
 const SKIP_SECTION_TYPES = new Set(['title', 'thumbnail', 'metadata', 'seo'])
 
+// Labels that indicate a section is purely visual/metadata even when type is 'intro'
+const SKIP_LABEL_KEYWORDS = ['título seo', 'titulo seo', 'seo title', 'título', 'thumbnail']
+
+function isSkippedSection(s) {
+  if (SKIP_SECTION_TYPES.has(s.type ?? '')) return true
+  const labelLow = (s.label ?? '').toLowerCase()
+  if (SKIP_LABEL_KEYWORDS.some(k => labelLow.includes(k))) return true
+  // Any "title"/"seo" label (accent-insensitive) is metadata — never spoken
+  const labelNorm = labelLow.normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/\b(titulo|seo|title)\b/.test(labelNorm)) return true
+  // Duration 0 sections are always metadata (e.g. PRAC SEO title sections)
+  if (Number(s.duration) === 0) return true
+  return false
+}
+
+// Normalize a script language string → 'pt' | 'es' | 'en'
+function langOf(language) {
+  const l = (language ?? 'pt').toLowerCase()
+  return l.startsWith('en') ? 'en' : l.startsWith('es') ? 'es' : 'pt'
+}
+
 /**
- * Normalise currency symbols so a Portuguese TTS engine never reads "dólares".
- * Only applied when the script language is PT (default).
- *
- * Rules (PT only):
- *   $X  / USD X  → R$ X      (Amazon prices formatted in USD → treat as BRL)
- *   "dólares"    → "reais"   (hard block — if LLM slipped it through, fix it)
- *   "dólar"      → "real"
+ * Convert written prices into spoken form in the script's language, so the TTS
+ * engine never reads currency symbols literally.
+ *   PT:  "R$199,99"  → "199 reais e 99 centavos"
+ *   EN:  "$199.99"   → "199 dollars and 99 cents"
+ *   ES:  "€199,99"   → "199 euros con 99 céntimos"
+ *        "$199" (MX) → "199 pesos"
  */
-function normaliseCurrencyPT(text) {
+function normaliseCurrency(text, lang = 'pt') {
+  const minor = lang === 'es' ? 'céntimos' : lang === 'en' ? 'cents' : 'centavos'
+  const conj  = lang === 'es' ? 'con'      : lang === 'en' ? 'and'   : 'e'
+  const NAME = {
+    BRL: ['real', 'reais'],
+    EUR: ['euro', 'euros'],
+    MXN: ['peso', 'pesos'],
+    USD: (lang === 'pt' || lang === 'es') ? ['dólar', 'dólares'] : ['dollar', 'dollars'],
+  }
+  // A bare "$" means USD (en), peso (es/Mexico), or — defensively — real (pt)
+  const bareDollar = lang === 'es' ? 'MXN' : lang === 'en' ? 'USD' : 'BRL'
+
+  // Parse "1.299,99" / "1,299.99" / "199" → [major, cents]
+  function parseAmount(raw) {
+    const s = raw.trim()
+    const m = s.match(/^(.+?)[.,](\d{2})$/)   // trailing 2-digit decimal
+    if (m) return [parseInt(m[1].replace(/[.,]/g, '') || '0', 10), parseInt(m[2], 10)]
+    return [parseInt(s.replace(/[.,]/g, '') || '0', 10), 0]
+  }
+  function build(cur, raw) {
+    const [major, cents] = parseAmount(raw)
+    if (isNaN(major)) return raw
+    const [sing, plur] = NAME[cur] || NAME.USD
+    const mWord = major === 1 ? sing : plur
+    return cents > 0 ? `${major} ${mWord} ${conj} ${cents} ${minor}` : `${major} ${mWord}`
+  }
+
   return text
-    // "$99,90" or "$99.90" or "$99" → "R$ 99,90" / "R$ 99.90" / "R$ 99"
-    .replace(/\$\s*(\d[\d.,]*)/g, 'R$ $1')
-    // "USD 99" or "USD99" → "R$ 99"
-    .replace(/USD\s*(\d[\d.,]*)/gi, 'R$ $1')
-    // Residual word forms (strict, case-insensitive)
-    .replace(/\bdólares\b/gi, 'reais')
-    .replace(/\bdólar\b/gi,   'real')
-    // Bare "$" with no number following (unlikely but safe)
-    .replace(/\$/g, 'R$')
+    .replace(/MX\$\s*([\d.,]+)/g, (_, n) => build('MXN', n))
+    .replace(/R\$\s*([\d.,]+)/g,  (_, n) => build('BRL', n))
+    .replace(/US\$\s*([\d.,]+)/g, (_, n) => build('USD', n))
+    .replace(/USD\s*([\d.,]+)/gi, (_, n) => build('USD', n))
+    .replace(/€\s*([\d.,]+)/g,    (_, n) => build('EUR', n))
+    .replace(/([\d.,]+)\s*€/g,    (_, n) => build('EUR', n))   // suffix "199,99 €"
+    .replace(/\$\s*([\d.,]+)/g,   (_, n) => build(bareDollar, n))
+    // Strip any leftover bare symbols
+    .replace(/[R$€]\$?/g, '')
 }
 
 /**
  * Clean a raw script string so it reads naturally when spoken by a TTS engine.
  * Removes markdown syntax, stage directions, section headers, and formatting symbols.
- * @param {string}  raw
- * @param {boolean} ptLanguage – when true, apply Portuguese currency normalisation
+ * @param {string} raw
+ * @param {string} lang – 'pt' | 'es' | 'en' (drives spoken-currency conversion)
  */
-function cleanForTTS(raw, ptLanguage = false) {
+function cleanForTTS(raw, lang = 'pt') {
   let text = raw
+    // Remove raw URLs — never spoken aloud
+    .replace(/https?:\/\/\S+/g, '')
     // Remove full lines that are ONLY stage directions / production notes in brackets
     .replace(/^\s*\[.*?\]\s*$/gm, '')
     // Remove inline stage directions between brackets (e.g. [corte rápido])
@@ -124,14 +188,16 @@ function cleanForTTS(raw, ptLanguage = false) {
     .replace(/^[-_]{3,}\s*$/gm, '')
     // Remove markdown-style list bullets at line start
     .replace(/^\s*[-*•]\s+/gm, '')
+    // Remove "Link na descrição: <anything>" lines — visual-only CTA
+    .replace(/^.*[Ll]ink\s+(na\s+descrição|in\s+the\s+description|no\s+comentário|in\s+bio).*$/gm, '')
     // Collapse 3+ blank lines to 2
     .replace(/\n{3,}/g, '\n\n')
     // Trim each line
     .split('\n').map((l) => l.trim()).join('\n')
     .trim()
 
-  // ── PT-only: ensure no dollar/USD references reach the TTS engine ──
-  if (ptLanguage) text = normaliseCurrencyPT(text)
+  // Convert written prices → spoken form in the script's language
+  text = normaliseCurrency(text, lang)
 
   return text
 }
@@ -144,8 +210,7 @@ function cleanForTTS(raw, ptLanguage = false) {
  * – Applies Portuguese currency normalisation when language is PT.
  */
 function scriptToText(script) {
-  const language  = (script.language ?? 'pt').toLowerCase()
-  const isPT      = !language.startsWith('en')
+  const lang      = langOf(script.language)
   const sections  = script.sections ?? []
   const titleText = (script.title ?? '').trim().toLowerCase()
 
@@ -153,7 +218,7 @@ function scriptToText(script) {
   if (sections.length > 0) {
     raw = sections
       // Drop visual-only sections (title cards, thumbnail copy, etc.)
-      .filter((s) => !SKIP_SECTION_TYPES.has(s.type ?? ''))
+      .filter((s) => !isSkippedSection(s))
       .map((s) => {
         let content = s.content ?? ''
         // Strip the script title if it's the literal first line of a section
@@ -172,7 +237,7 @@ function scriptToText(script) {
     raw = script.text ?? ''
   }
 
-  return cleanForTTS(raw, isPT)
+  return cleanForTTS(raw, lang)
 }
 
 function estimateDuration(byteLength, format = 'mp3') {
@@ -184,7 +249,7 @@ function estimateDuration(byteLength, format = 'mp3') {
 
 // ── OpenAI TTS ────────────────────────────────────────────────────────────────
 
-async function generateOpenAI(env, { text, voiceId, model = 'tts-1' }) {
+async function generateOpenAI(env, { text, voiceId, model = 'tts-1', speed = DEFAULT_VOICE_SPEED }) {
   const { resolveKey } = await import('../lib/resolveKey.js')
   const key = await resolveKey(env, 'OPENAI_API_KEY')
   if (!key) throw new Error('OPENAI_API_KEY não configurada — adicione em Configurações')
@@ -198,7 +263,8 @@ async function generateOpenAI(env, { text, voiceId, model = 'tts-1' }) {
     body: JSON.stringify({
       model,               // tts-1 or tts-1-hd
       input: text,
-      voice: voiceId,      // alloy | echo | fable | onyx | nova | shimmer
+      voice: voiceId,      // alloy | echo | fable | onyx | nova | shimmer | ash | coral | sage
+      speed: clampSpeed(speed, 'openai'),  // 0.25–4.0, default 1.2×
       response_format: 'mp3',
     }),
   })
@@ -213,7 +279,7 @@ async function generateOpenAI(env, { text, voiceId, model = 'tts-1' }) {
 
 // ── ElevenLabs TTS ────────────────────────────────────────────────────────────
 
-async function generateElevenLabs(env, { text, voiceId, stability, similarityBoost }) {
+async function generateElevenLabs(env, { text, voiceId, stability, similarityBoost, speed = DEFAULT_VOICE_SPEED }) {
   const { resolveKey } = await import('../lib/resolveKey.js')
   const key = await resolveKey(env, 'ELEVENLABS_API_KEY')
   if (!key) throw new Error('ELEVENLABS_API_KEY não configurada — adicione em Configurações')
@@ -228,7 +294,7 @@ async function generateElevenLabs(env, { text, voiceId, stability, similarityBoo
     body: JSON.stringify({
       text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability, similarity_boost: similarityBoost },
+      voice_settings: { stability, similarity_boost: similarityBoost, speed: clampSpeed(speed, 'elevenlabs') },
     }),
   })
 
@@ -449,6 +515,7 @@ export async function generateVoiceover(env, {
   model       = 'tts-1',
   stability   = 0.75,
   similarityBoost = 0.80,
+  speed       = DEFAULT_VOICE_SPEED,
 }) {
   const db = getDb(env)
 
@@ -486,13 +553,13 @@ export async function generateVoiceover(env, {
   let audioContentType = 'audio/mpeg'
 
   if (provider === 'openai') {
-    audioBuffer = await generateOpenAI(env, { text: textToSynth, voiceId: voiceId ?? 'nova', model })
+    audioBuffer = await generateOpenAI(env, { text: textToSynth, voiceId: voiceId ?? 'nova', model, speed })
   } else if (provider === 'google') {
     audioBuffer      = await generateGoogle(env, { text: textToSynth, voiceId: voiceId ?? 'Aoede' })
     audioExt         = 'wav'
     audioContentType = 'audio/wav'
   } else {
-    audioBuffer = await generateElevenLabs(env, { text: textToSynth, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost })
+    audioBuffer = await generateElevenLabs(env, { text: textToSynth, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost, speed })
   }
 
   // Build a human-readable filename from the script title
@@ -522,6 +589,7 @@ export async function generateVoiceover(env, {
     bitrate:        '128kbps',
     stability,
     similarityBoost,
+    speed,
     status:         'completed',
   }
 
@@ -570,6 +638,7 @@ export async function generateVoiceoverSections(env, {
   model           = 'tts-1',
   stability       = 0.75,
   similarityBoost = 0.80,
+  speed           = DEFAULT_VOICE_SPEED,
 }) {
   const db = getDb(env)
 
@@ -577,9 +646,8 @@ export async function generateVoiceoverSections(env, {
     .from('scripts').select('id, text, sections, language, blueprintId, title').eq('id', scriptId).single()
   if (fetchErr || !script) throw new Error(`Roteiro ${scriptId} não encontrado`)
 
-  const language = (script.language ?? 'pt').toLowerCase()
-  const isPT     = !language.startsWith('en')
-  const rawSections = (script.sections ?? []).filter((s) => !SKIP_SECTION_TYPES.has(s.type ?? '') && s.content?.trim())
+  const lang = langOf(script.language)
+  const rawSections = (script.sections ?? []).filter((s) => !isSkippedSection(s) && s.content?.trim())
   if (!rawSections.length) throw new Error('Roteiro sem seções — gere o roteiro primeiro')
 
   const MAX_CHARS    = provider === 'openai' ? 4096 : 5000
@@ -597,18 +665,18 @@ export async function generateVoiceoverSections(env, {
 
   for (let i = 0; i < rawSections.length; i++) {
     const sec     = rawSections[i]
-    let   text    = cleanForTTS(sec.content, isPT)
+    let   text    = cleanForTTS(sec.content, lang)
     if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS)
     if (!text) continue
 
     let audioBuffer
     try {
       if (provider === 'openai') {
-        audioBuffer = await generateOpenAI(env, { text, voiceId: voiceId ?? 'nova', model })
+        audioBuffer = await generateOpenAI(env, { text, voiceId: voiceId ?? 'nova', model, speed })
       } else if (isGoogle) {
         audioBuffer = await generateGoogle(env, { text, voiceId: voiceId ?? 'Aoede' })
       } else {
-        audioBuffer = await generateElevenLabs(env, { text, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost })
+        audioBuffer = await generateElevenLabs(env, { text, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost, speed })
       }
     } catch (e) {
       console.error(`[voiceover/sections] TTS failed for section ${i} (${sec.label}):`, e.message)
@@ -633,6 +701,7 @@ export async function generateVoiceoverSections(env, {
       bitrate:        '128kbps',
       stability,
       similarityBoost,
+      speed,
       sectionLabel:   sec.label,
       sectionIndex:   i,
       status:         'completed',
@@ -640,7 +709,7 @@ export async function generateVoiceoverSections(env, {
 
     let { data: saved, error: insErr } = await db.from('voiceovers').insert(fullRow).select().single()
     if (insErr && isColErr(insErr)) {
-      const { charCount: _c, sectionLabel: _sl, sectionIndex: _si, ...baseRow } = fullRow
+      const { charCount: _c, sectionLabel: _sl, sectionIndex: _si, speed: _sp, ...baseRow } = fullRow
       const { data: d2, error: e2 } = await db.from('voiceovers').insert(baseRow).select().single()
       if (!e2) saved = d2
     }
@@ -649,6 +718,71 @@ export async function generateVoiceoverSections(env, {
   }
 
   return results
+}
+
+// ── Voice preview ─────────────────────────────────────────────────────────────
+
+// Short, language-matched sample so the user can hear a voice before committing.
+const PREVIEW_SAMPLE = {
+  pt: 'Olá! Esta é uma prévia da minha voz. É assim que vou narrar o seu vídeo.',
+  es: '¡Hola! Esta es una muestra de mi voz. Así narraré tu video.',
+  en: 'Hi there! This is a preview of my voice. This is how I will narrate your video.',
+}
+
+/**
+ * Synthesize a short fixed sample for a given voice so the picker can play a
+ * preview. Returns the raw audio buffer + content type (no DB write, no upload).
+ */
+export async function generateVoicePreview(env, {
+  provider        = 'elevenlabs',
+  voiceId,
+  model           = 'tts-1',
+  stability       = 0.75,
+  similarityBoost = 0.80,
+  speed           = DEFAULT_VOICE_SPEED,
+  lang            = 'pt',
+}) {
+  const text = PREVIEW_SAMPLE[langOf(lang)] ?? PREVIEW_SAMPLE.pt
+
+  if (provider === 'openai') {
+    const buffer = await generateOpenAI(env, { text, voiceId: voiceId ?? 'nova', model, speed })
+    return { buffer, contentType: 'audio/mpeg' }
+  }
+  if (provider === 'google') {
+    const buffer = await generateGoogle(env, { text, voiceId: voiceId ?? 'Aoede' })
+    return { buffer, contentType: 'audio/wav' }
+  }
+  const buffer = await generateElevenLabs(env, {
+    text, voiceId: voiceId ?? ELEVENLABS_VOICES[0].id, stability, similarityBoost, speed,
+  })
+  return { buffer, contentType: 'audio/mpeg' }
+}
+
+/**
+ * Fetch the live ElevenLabs voice library for the configured account so the UI
+ * can offer every available voice (premade + cloned), not just the curated few.
+ * Returns null when no key is set or the request fails, so callers fall back to
+ * the static ELEVENLABS_VOICES list.
+ */
+export async function fetchElevenLabsVoices(env) {
+  const { resolveKey } = await import('../lib/resolveKey.js')
+  const key = await resolveKey(env, 'ELEVENLABS_API_KEY')
+  if (!key) return null
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } })
+    if (!res.ok) return null
+    const json   = await res.json()
+    const voices = (json.voices ?? []).map((v) => {
+      const labels = v.labels ?? {}
+      const gender = labels.gender === 'female' ? 'F' : labels.gender === 'male' ? 'M' : 'N'
+      const lang   = (labels.language || labels.accent || 'multi').toString().toUpperCase()
+      const desc   = [labels.descriptive, labels.accent, labels.use_case].filter(Boolean).join(' · ')
+      return { id: v.voice_id, label: v.name, lang, gender, description: desc || v.category || '' }
+    })
+    return voices.length ? voices : null
+  } catch {
+    return null
+  }
 }
 
 export async function listVoiceovers(env) {

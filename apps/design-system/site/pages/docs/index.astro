@@ -27,80 +27,80 @@ for (const cat of CATEGORY_ORDER) {
 }
 
 const session = [
-  { slug: 'shape', verb: 'Plan' },
-  { slug: 'craft', verb: 'Build' },
-  { slug: 'critique', verb: 'Review' },
-  { slug: 'polish', verb: 'Refine' },
+  { slug: 'shape', verb: 'Planejar' },
+  { slug: 'craft', verb: 'Construir' },
+  { slug: 'critique', verb: 'Revisar' },
+  { slug: 'polish', verb: 'Refinar' },
 ];
 
 const startSteps = [
   {
-    label: 'Install',
+    label: 'Instalar',
     command: 'npx tektone skills install',
-    line: 'Run this from the project root, then reload your AI coding tool.',
+    line: 'Rode isto a partir da raiz do projeto e recarregue sua ferramenta de código com IA.',
   },
   {
-    label: 'Set context',
+    label: 'Definir contexto',
     command: '/tektone init',
-    line: 'Answer the short setup interview. Say yes when it offers DESIGN.md.',
+    line: 'Responda à breve entrevista de setup. Diga sim quando ela oferecer o DESIGN.md.',
   },
   {
-    label: 'Try it',
+    label: 'Experimentar',
     command: '/tektone polish the pricing page',
-    line: 'Pick any page or component that already exists.',
+    line: 'Escolha qualquer página ou componente que já exista.',
   },
 ];
 
 const choices = [
   {
-    need: 'Set up a project',
+    need: 'Configurar um projeto',
     command: '/tektone init',
     href: '/docs/init',
-    line: 'Create PRODUCT.md and DESIGN.md.',
+    line: 'Crie o PRODUCT.md e o DESIGN.md.',
   },
   {
-    need: 'Improve an existing page',
+    need: 'Melhorar uma página existente',
     command: '/tektone polish',
     href: '/docs/polish',
-    line: 'Fix spacing, type, states, copy, and consistency.',
+    line: 'Ajuste espaçamento, tipografia, estados, copy e consistência.',
   },
   {
-    need: 'Find design issues',
+    need: 'Encontrar problemas de design',
     command: '/tektone critique',
     href: '/docs/critique',
-    line: 'Get the highest-priority design problems.',
+    line: 'Receba os problemas de design de maior prioridade.',
   },
   {
-    need: 'Check implementation quality',
+    need: 'Verificar a qualidade da implementação',
     command: '/tektone audit',
     href: '/docs/audit',
-    line: 'Check accessibility, responsiveness, performance, and detector findings.',
+    line: 'Verifique acessibilidade, responsividade, performance e os achados do detector.',
   },
   {
-    need: 'Point at UI in the browser',
+    need: 'Apontar para a UI no navegador',
     command: '/tektone live',
     href: '/docs/live',
-    line: 'Pick an element, generate variants, accept one into source.',
+    line: 'Escolha um elemento, gere variantes, aceite uma no código.',
   },
   {
-    need: 'Build a new feature',
+    need: 'Construir um novo recurso',
     command: '/tektone craft',
     href: '/docs/craft',
-    line: 'Plan, build, and visually check the feature.',
+    line: 'Planeje, construa e verifique o recurso visualmente.',
   },
 ];
 
 const chains: { id: string; a: string; b: string; arrow: string; line: string }[] = [
-  { id: 'bolder-quieter', a: 'bolder', b: 'quieter', arrow: '↔', line: 'Two halves of voice. Loud or restrained, never neutral.' },
-  { id: 'audit-harden', a: 'audit', b: 'harden', arrow: '→', line: 'Find the technical issues. Then fix them.' },
-  { id: 'critique-polish', a: 'critique', b: 'polish', arrow: '→', line: 'Review the work. Then refine it.' },
-  { id: 'shape-craft', a: 'shape', b: 'craft', arrow: '→', line: 'Plan the feature. Then build the plan.' },
+  { id: 'bolder-quieter', a: 'bolder', b: 'quieter', arrow: '↔', line: 'Duas metades da voz. Alta ou contida, nunca neutra.' },
+  { id: 'audit-harden', a: 'audit', b: 'harden', arrow: '→', line: 'Encontre os problemas técnicos. Depois corrija-os.' },
+  { id: 'critique-polish', a: 'critique', b: 'polish', arrow: '→', line: 'Revise o trabalho. Depois refine-o.' },
+  { id: 'shape-craft', a: 'shape', b: 'craft', arrow: '→', line: 'Planeje o recurso. Depois construa o plano.' },
 ];
 ---
 
 <Base
   title="Docs | Tektone"
-  description="Start using /tektone: install, run init, create project context, then choose the right command for the job."
+  description="Comece a usar o /tektone: instale, rode o init, crie o contexto do projeto e escolha o comando certo para a tarefa."
   activeNav="docs"
   canonicalPath="/docs"
   bodyClass="sub-page skills-layout-page docs-kinpaku kinpaku-chrome"
@@ -113,8 +113,8 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
 
         <section class="docs-start-rail" aria-labelledby="docs-start-h">
           <header class="docs-start-rail-head">
-            <h1 class="docs-start-rail-title" id="docs-start-h">Start with <span>/tektone</span>.</h1>
-            <p class="docs-start-rail-lede">Install, run setup, then try one command on an existing page.</p>
+            <h1 class="docs-start-rail-title" id="docs-start-h">Comece com <span>/tektone</span>.</h1>
+            <p class="docs-start-rail-lede">Instale, rode o setup e experimente um comando em uma página existente.</p>
           </header>
 
           <div class="docs-start-rail-sequence">
@@ -122,7 +122,7 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
               <div class="ksd-divider ksd-divider--double-notch"></div>
             </div>
 
-            <ol class="docs-start-rail-steps docs-start-rail-steps--number-gutter docs-start-rail-steps--inner-inset" aria-label="Quick start steps">
+            <ol class="docs-start-rail-steps docs-start-rail-steps--number-gutter docs-start-rail-steps--inner-inset" aria-label="Passos de início rápido">
               {startSteps.map((step, i) => (
                 <li class="docs-start-rail-step">
                   <span class="docs-start-rail-num">{String(i + 1).padStart(2, "0")}</span>
@@ -138,12 +138,12 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
             </div>
           </div>
 
-          <p class="docs-start-rail-note">Full walkthrough: <a href="/tutorials/getting-started">Getting started</a>.</p>
+          <p class="docs-start-rail-note">Passo a passo completo: <a href="/tutorials/getting-started">Primeiros passos</a>.</p>
         </section>
 
         <section class="docs-chooser-section" aria-labelledby="docs-chooser-h">
           <header class="docs-chooser-head">
-            <h2 class="docs-chooser-title" id="docs-chooser-h">Choose a command.</h2>
+            <h2 class="docs-chooser-title" id="docs-chooser-h">Escolha um comando.</h2>
           </header>
 
           <div class="docs-chooser-list">
@@ -160,11 +160,11 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
         <!-- Live mode: visual iteration -->
         <section class="docs-live" aria-labelledby="docs-live-h">
           <div class="docs-live-copy">
-            <h2 class="docs-live-title" id="docs-live-h">Iterate where you can see it.</h2>
-            <p class="docs-live-lede">Use Live Mode when an issue is easier to point at than describe. Pick an element, generate variants, accept one into source.</p>
+            <h2 class="docs-live-title" id="docs-live-h">Itere onde você consegue ver.</h2>
+            <p class="docs-live-lede">Use o Live Mode quando um problema é mais fácil de apontar do que descrever. Escolha um elemento, gere variantes, aceite uma no código.</p>
             <p class="docs-live-cta">
               <a class="ks-button ks-button-primary" href="/docs/live">
-                Read the live docs
+                Leia a documentação do live
                 <span class="ks-button-arrow" aria-hidden="true">
                   <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M0 4h14M10 0l4 4-4 4"/></svg>
                 </span>
@@ -182,15 +182,15 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
               </div>
               <div class="docs-live-stage">
                 <div class="docs-live-target">
-                  <div class="docs-live-target-title">Hero headline</div>
-                  <div class="docs-live-target-sub">Variant 2 of 3</div>
+                  <div class="docs-live-target-title">Título do hero</div>
+                  <div class="docs-live-target-sub">Variante 2 de 3</div>
                 </div>
                 <div class="docs-live-bar">
-                  <span class="docs-live-bar-prev">Prev</span>
+                  <span class="docs-live-bar-prev">Anterior</span>
                   <span class="docs-live-bar-counter">2 / 3</span>
-                  <span class="docs-live-bar-next">Next</span>
+                  <span class="docs-live-bar-next">Próxima</span>
                   <span class="docs-live-bar-divider"></span>
-                  <span class="docs-live-bar-accept">Accept</span>
+                  <span class="docs-live-bar-accept">Aceitar</span>
                 </div>
               </div>
             </div>
@@ -200,11 +200,11 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
         <!-- A typical session: linear workflow -->
         <section class="docs-flow-section">
           <header class="docs-flow-head">
-            <h2 class="docs-flow-title">Full session path.</h2>
-            <p class="docs-flow-sub">Plan, build, review, refine.</p>
+            <h2 class="docs-flow-title">Caminho completo da sessão.</h2>
+            <p class="docs-flow-sub">Planejar, construir, revisar, refinar.</p>
           </header>
 
-          <ol class="docs-flow" aria-label="Typical session">
+          <ol class="docs-flow" aria-label="Sessão típica">
             {session.map((step, i) => (
               <li class="docs-flow-step">
                 <a class="docs-flow-link" href={`/docs/${step.slug}`}>
@@ -222,15 +222,15 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
           </ol>
 
           <p class="docs-flow-alt">
-            Already shipped? Use <a href="/docs/polish">/tektone polish</a> on the page that needs work, or <a href="/docs/audit">/tektone audit</a> for checks.
+            Já está em produção? Use <a href="/docs/polish">/tektone polish</a> na página que precisa de ajustes, ou <a href="/docs/audit">/tektone audit</a> para verificações.
           </p>
         </section>
 
         <!-- Pairs and chains: the schema -->
         <section class="docs-chains-section">
           <header class="docs-chains-head">
-            <h2 class="docs-chains-title">Useful command pairs.</h2>
-            <p class="docs-chains-sub">Use these when one pass is not enough.</p>
+            <h2 class="docs-chains-title">Pares de comandos úteis.</h2>
+            <p class="docs-chains-sub">Use estes quando uma passagem não basta.</p>
           </header>
 
           <div class="docs-chains-grid">
@@ -250,7 +250,7 @@ const chains: { id: string; a: string; b: string; arrow: string; line: string }[
         <!-- Full reference: the cheatsheet -->
         <section class="docs-reference-section" aria-labelledby="docs-reference-h">
           <header class="docs-reference-head">
-            <h2 class="docs-reference-title" id="docs-reference-h">Full command reference.</h2>
+            <h2 class="docs-reference-title" id="docs-reference-h">Referência completa de comandos.</h2>
           </header>
 
           <div class="docs-reference">

@@ -29,3 +29,13 @@ services:
         value: gpt-4o-mini
       - key: COMMENT_CRON
         value: "0 */4 * * *"
+      - key: ML_APP_ID
+        sync: false
+      - key: ML_CLIENT_SECRET
+        sync: false
+      - key: ML_PROXY_URL
+        sync: false
+      - key: ML_PROXY_SECRET
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false

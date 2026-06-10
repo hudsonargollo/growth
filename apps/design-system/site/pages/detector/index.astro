@@ -17,164 +17,164 @@ const FIXTURES = [
   {
     file: 'border-baseline.html',
     group: 'Borders',
-    title: 'Border side tabs',
-    summary: 'Side-by-side positive and negative cases for colored side borders and rounded accent borders.',
+    title: 'Abas laterais de borda',
+    summary: 'Casos positivos e negativos lado a lado para bordas laterais coloridas e bordas de destaque arredondadas.',
   },
   {
     file: 'partial-component.html',
     group: 'Baseline',
-    title: 'Partial component',
-    summary: 'Component-like HTML where page-level rules must stay quiet.',
+    title: 'Componente parcial',
+    summary: 'HTML em estilo de componente onde as regras de nível de página devem permanecer silenciosas.',
   },
   {
     file: 'linked-stylesheet.html',
     group: 'Static CSS',
-    title: 'Linked stylesheet',
-    summary: 'Local CSS inlining, selector matching, and cascade coverage.',
+    title: 'Folha de estilo vinculada',
+    summary: 'Inlining de CSS local, correspondência de seletores e cobertura de cascata.',
   },
   {
     file: 'modern-color-borders.html',
     group: 'Borders',
-    title: 'Modern color borders',
-    summary: 'OKLCH, LAB, LCH, HSL, HWB, and custom-property border cases.',
+    title: 'Bordas com cores modernas',
+    summary: 'Casos de borda em OKLCH, LAB, LCH, HSL, HWB e custom properties.',
   },
   {
     file: 'color.html',
     group: 'Color',
-    title: 'Color and contrast',
-    summary: 'Solid contrast, gray-on-color, gradient stops, links, buttons, and emoji skips.',
+    title: 'Cor e contraste',
+    summary: 'Contraste sólido, cinza sobre cor, paradas de gradiente, links, botões e skips de emoji.',
   },
   {
     file: 'visual-contrast.html',
     group: 'Color',
-    title: 'Visual contrast fallback',
-    summary: 'Image-background text cases for the Puppeteer pixel-diff contrast pass.',
+    title: 'Fallback de contraste visual',
+    summary: 'Casos de texto sobre imagem de fundo para a passagem de contraste por pixel-diff do Puppeteer.',
   },
   {
     file: 'cream-palette.html',
     group: 'Color',
-    title: 'Cream / beige palette',
-    summary: 'Warm cream/beige page background: the default "tasteful" AI surface, flagged page-level.',
+    title: 'Paleta creme / bege',
+    summary: 'Fundo de página em creme/bege quente: a superfície "de bom gosto" padrão da IA, sinalizada em nível de página.',
   },
   {
     file: 'legitimate-borders.html',
     group: 'Borders',
-    title: 'Legitimate borders',
-    summary: 'Border patterns that should pass despite being visually close to side tabs.',
+    title: 'Bordas legítimas',
+    summary: 'Padrões de borda que devem passar apesar de serem visualmente próximos das abas laterais.',
   },
   {
     file: 'typography.html',
     group: 'Typography',
-    title: 'Typography side by side',
-    summary: 'Element-level typography checks with visible flag/pass highlights.',
+    title: 'Tipografia lado a lado',
+    summary: 'Checagens de tipografia em nível de elemento com destaques visíveis de sinalização/aprovação.',
   },
   {
     file: 'quality.html',
     group: 'Typography',
-    title: 'Quality and readability',
-    summary: 'Text quality checks, plus browser-only line length in the live pane.',
+    title: 'Qualidade e legibilidade',
+    summary: 'Checagens de qualidade de texto, mais a largura de linha só no navegador no painel ao vivo.',
   },
   {
     file: 'italic-serif-display.html',
     group: 'Typography',
-    title: 'Italic serif display',
-    summary: 'Large decorative serif italics versus legitimate emphasis.',
+    title: 'Display serifado em itálico',
+    summary: 'Itálicos serifados decorativos e grandes versus ênfase legítima.',
   },
   {
     file: 'hero-eyebrow-chip.html',
     group: 'Typography',
-    title: 'Hero eyebrow chip',
-    summary: 'Uppercase micro-labels and pills above hero headings.',
+    title: 'Chip de eyebrow no hero',
+    summary: 'Microrrótulos e pills em caixa alta acima de títulos de hero.',
   },
   {
     file: 'layout.html',
     group: 'Layout',
     title: 'Layout',
-    summary: 'Nested cards and page-level layout patterns.',
+    summary: 'Cards aninhados e padrões de layout em nível de página.',
   },
   {
     file: 'repeated-section-kickers.html',
     group: 'Layout',
-    title: 'Repeated section kickers',
-    summary: 'Repeated scaffolding labels that create AI-page rhythm.',
+    title: 'Kickers de seção repetidos',
+    summary: 'Rótulos de scaffolding repetidos que criam o ritmo de página de IA.',
   },
   {
     file: 'icon-tile-stack.html',
     group: 'Layout',
-    title: 'Icon tile stack',
-    summary: 'Large icon tiles stacked over headings.',
+    title: 'Pilha de tiles de ícone',
+    summary: 'Tiles de ícone grandes empilhados sobre os títulos.',
   },
   {
     file: 'oversized-h1.html',
     group: 'Typography',
-    title: 'Oversized H1',
-    summary: 'Comically large hero headlines carrying almost no copy, versus large type that earns its size.',
+    title: 'H1 superdimensionado',
+    summary: 'Títulos de hero comicamente grandes carregando quase nenhum texto, versus tipografia grande que justifica seu tamanho.',
   },
   {
     file: 'extreme-negative-tracking.html',
     group: 'Typography',
-    title: 'Extreme negative tracking',
-    summary: 'Letter-spacing crushed past legibility, versus the optical tightening display type legitimately wants.',
+    title: 'Tracking negativo extremo',
+    summary: 'Letter-spacing comprimido além da legibilidade, versus o aperto óptico que a tipografia de display legitimamente pede.',
   },
   {
     file: 'clipped-overflow-container.html',
     group: 'Layout',
-    title: 'Clipped overflow container',
-    summary: 'Clipping ancestors (overflow hidden/clip) that swallow positioned children, versus real scroll regions.',
+    title: 'Container com overflow cortado',
+    summary: 'Ancestrais que cortam (overflow hidden/clip) e engolem filhos posicionados, versus regiões de scroll reais.',
   },
   {
     file: 'text-overflow.html',
     group: 'Browser layout',
-    title: 'Text overflow',
-    summary: 'Browser-only: content forced wider than its box, versus genuine horizontal scroll regions.',
+    title: 'Overflow de texto',
+    summary: 'Só no navegador: conteúdo forçado a ficar mais largo que sua caixa, versus regiões de scroll horizontal genuínas.',
   },
   {
     file: 'gpt-tells.html',
     group: 'Provider tells',
-    title: 'GPT tells (gated --gpt)',
-    summary: 'Provider-specific idioms surfaced only under --gpt: hairline border + wide shadow, repeating-gradient stripes, "X theater" copy.',
+    title: 'Indícios de GPT (restrito a --gpt)',
+    summary: 'Idiomas específicos do provedor exibidos apenas sob --gpt: borda fina + sombra larga, listras de repeating-gradient, texto "X theater".',
   },
   {
     file: 'gemini-tells.html',
     group: 'Provider tells',
-    title: 'Gemini tells (gated --gemini)',
-    summary: 'Provider-specific idiom surfaced only under --gemini: image hover-zoom transforms.',
+    title: 'Indícios de Gemini (restrito a --gemini)',
+    summary: 'Idioma específico do provedor exibido apenas sob --gemini: transforms de hover-zoom em imagens.',
   },
   {
     file: 'cramped-padding.html',
     group: 'Browser layout',
-    title: 'Cramped padding',
-    summary: 'Browser-only padding checks that need real element rectangles.',
+    title: 'Padding apertado',
+    summary: 'Checagens de padding só no navegador que precisam de retângulos de elemento reais.',
   },
   {
     file: 'flush-against-border.html',
     group: 'Browser layout',
-    title: 'Cramped padding (wrapper)',
-    summary: 'The wrapper variant of cramped-padding: container with text-bearing children sits flush against its visible boundary (border, outline, or non-transparent background).',
+    title: 'Padding apertado (wrapper)',
+    summary: 'A variante de wrapper do padding apertado: um container com filhos que carregam texto encosta rente à sua borda visível (border, outline ou fundo não transparente).',
   },
   {
     file: 'body-text-viewport-edge.html',
     group: 'Browser layout',
-    title: 'Viewport-edge body text',
-    summary: 'Browser-only body text that bleeds to the viewport edge.',
+    title: 'Texto de corpo na borda do viewport',
+    summary: 'Texto de corpo só no navegador que vaza até a borda do viewport.',
   },
   {
     file: 'motion.html',
     group: 'Motion',
     title: 'Motion',
-    summary: 'Bounce easing and layout-property transitions.',
+    summary: 'Easing com bounce e transições de propriedades de layout.',
   },
   {
     file: 'glow.html',
     group: 'Motion',
-    title: 'Dark glow',
-    summary: 'Chromatic shadows on dark surfaces versus safe shadows.',
+    title: 'Glow escuro',
+    summary: 'Sombras cromáticas em superfícies escuras versus sombras seguras.',
   },
   {
     file: 'overlay-positioning.html',
     group: 'Overlay',
-    title: 'Overlay positioning',
-    summary: 'Edge cases for the browser overlay itself.',
+    title: 'Posicionamento de overlay',
+    summary: 'Casos extremos do próprio overlay do navegador.',
   },
 ];
 
@@ -314,17 +314,17 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
 
 <Base
   title="Detector Lab | Tektone"
-  description="A fixture browser and timing dashboard for Tektone's anti-pattern detector."
+  description="Um navegador de fixtures e dashboard de tempos para o detector de antipadrões da Tektone."
   bodyClass="sub-page detector-lab-page"
   mainClass="detector-main-shell"
   noIndex
   hideHeader
   hideFooter
 >
-  <section class="detector-workbench" aria-label="Detector fixture explorer">
-    <aside class="detector-fixture-nav" aria-label="Fixture navigation">
+  <section class="detector-workbench" aria-label="Explorador de fixtures do detector">
+    <aside class="detector-fixture-nav" aria-label="Navegação de fixtures">
       <div class="detector-nav-head">
-        <a class="detector-home-link ks-brand" href="/" aria-label="Back to Tektone">
+        <a class="detector-home-link ks-brand" href="/" aria-label="Voltar para a Tektone">
           <span class="ks-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M5 2.5 L13.5 2.5 L5.5 21.5 L5 21.5 Q2.5 21.5 2.5 19 L2.5 5 Q2.5 2.5 5 2.5 Z"/>
@@ -334,22 +334,22 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
           <span class="ks-wordmark">Tektone</span>
         </a>
         <h1>Detector Lab</h1>
-        <p>Internal fixture browser and speed surface.</p>
-        <dl class="detector-summary-grid" aria-label="Detector benchmark summary">
+        <p>Navegador de fixtures interno e superfície de velocidade.</p>
+        <dl class="detector-summary-grid" aria-label="Resumo do benchmark do detector">
           <div>
             <dt>Fixtures</dt>
             <dd>{fixtureData.length}</dd>
           </div>
           <div>
-            <dt>Static</dt>
+            <dt>Estático</dt>
             <dd>{displayMs(totalStaticMs)}</dd>
           </div>
           <div>
-            <dt>Findings</dt>
+            <dt>Achados</dt>
             <dd>{totalFindings}</dd>
           </div>
           <div>
-            <dt>Slowest</dt>
+            <dt>Mais lento</dt>
             <dd>{slowestRow?.ruleId || 'none'}</dd>
           </div>
         </dl>
@@ -385,8 +385,8 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
           <p data-fixture-summary>{fixtureData[0].summary}</p>
         </div>
         <div class="detector-preview-actions">
-          <a href={fixtureData[0].url} target="_blank" rel="noopener" data-open-fixture>Open fixture</a>
-          <button type="button" data-rerun-browser>Run browser scan</button>
+          <a href={fixtureData[0].url} target="_blank" rel="noopener" data-open-fixture>Abrir fixture</a>
+          <button type="button" data-rerun-browser>Rodar scan do navegador</button>
         </div>
       </header>
 
@@ -396,39 +396,39 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
             <div class="detector-frame-wrap">
               <iframe
                 src={fixtureData[0].url}
-                title={`${fixtureData[0].title} detector fixture`}
+                title={`Fixture do detector ${fixtureData[0].title}`}
                 data-fixture-frame
               ></iframe>
             </div>
           </div>
 
-          <aside class="detector-metrics" aria-label="Detector timings">
+          <aside class="detector-metrics" aria-label="Tempos do detector">
             <section class="detector-metric-panel" aria-labelledby="browser-timing-title">
               <div class="detector-panel-head">
-                <p class="detector-panel-label">Live browser</p>
-                <h2 id="browser-timing-title">Current iframe scan</h2>
+                <p class="detector-panel-label">Navegador ao vivo</p>
+                <h2 id="browser-timing-title">Scan atual do iframe</h2>
               </div>
               <dl class="detector-live-stats">
                 <div>
-                  <dt>Pure detect</dt>
-                  <dd data-browser-ms>waiting</dd>
+                  <dt>Detecção pura</dt>
+                  <dd data-browser-ms>aguardando</dd>
                 </div>
                 <div>
-                  <dt>Findings</dt>
-                  <dd data-browser-findings>waiting</dd>
+                  <dt>Achados</dt>
+                  <dd data-browser-findings>aguardando</dd>
                 </div>
                 <div>
-                  <dt>Visual candidates</dt>
-                  <dd data-browser-visual-candidates>waiting</dd>
+                  <dt>Candidatos visuais</dt>
+                  <dd data-browser-visual-candidates>aguardando</dd>
                 </div>
               </dl>
-              <div class="detector-rule-pills" data-browser-rules aria-label="Browser findings by rule"></div>
+              <div class="detector-rule-pills" data-browser-rules aria-label="Achados do navegador por regra"></div>
             </section>
 
             <section class="detector-metric-panel" aria-labelledby="static-fixture-title">
               <div class="detector-panel-head">
-                <p class="detector-panel-label">Static HTML/CSS</p>
-                <h2 id="static-fixture-title">Selected fixture</h2>
+                <p class="detector-panel-label">HTML/CSS estático</p>
+                <h2 id="static-fixture-title">Fixture selecionada</h2>
               </div>
               <dl class="detector-live-stats">
                 <div>
@@ -436,34 +436,34 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
                   <dd data-static-ms>{displayMs(fixtureData[0].staticTotalMs)}</dd>
                 </div>
                 <div>
-                  <dt>Findings</dt>
+                  <dt>Achados</dt>
                   <dd data-static-findings>{fixtureData[0].staticFindings}</dd>
                 </div>
               </dl>
-              <div class="detector-rule-pills" data-static-rules aria-label="Static findings by rule"></div>
+              <div class="detector-rule-pills" data-static-rules aria-label="Achados estáticos por regra"></div>
             </section>
           </aside>
         </div>
 
-        <section class="detector-tables" aria-label="Detector timing tables">
+        <section class="detector-tables" aria-label="Tabelas de tempos do detector">
           <div class="detector-table-panel">
             <header>
               <div>
-                <p class="detector-panel-label">Per fixture</p>
-                <h2 data-selected-table-title>{fixtureData[0].title} timings</h2>
+                <p class="detector-panel-label">Por fixture</p>
+                <h2 data-selected-table-title>Tempos de {fixtureData[0].title}</h2>
               </div>
-              <p>Rows come directly from the profiling API.</p>
+              <p>As linhas vêm diretamente da API de profiling.</p>
             </header>
             <div class="detector-table-scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Phase</th>
-                    <th>Check</th>
-                    <th>Calls</th>
+                    <th>Fase</th>
+                    <th>Checagem</th>
+                    <th>Chamadas</th>
                     <th>Total</th>
                     <th>P95</th>
-                    <th>Findings</th>
+                    <th>Achados</th>
                   </tr>
                 </thead>
                 <tbody data-selected-timings></tbody>
@@ -474,22 +474,22 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
           <div class="detector-table-panel">
             <header>
               <div>
-                <p class="detector-panel-label">All fixtures</p>
-                <h2>Slowest checks</h2>
+                <p class="detector-panel-label">Todas as fixtures</p>
+                <h2>Checagens mais lentas</h2>
               </div>
-              <p>Aggregated across every fixture in this lab.</p>
+              <p>Agregadas em todas as fixtures deste lab.</p>
             </header>
             <div class="detector-table-scroll">
               <table>
                 <thead>
                   <tr>
                     <th>Engine</th>
-                    <th>Phase</th>
-                    <th>Check</th>
-                    <th>Calls</th>
+                    <th>Fase</th>
+                    <th>Checagem</th>
+                    <th>Chamadas</th>
                     <th>Total</th>
                     <th>P95</th>
-                    <th>Findings</th>
+                    <th>Achados</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -611,7 +611,7 @@ const dashboardJson = JSON.stringify(dashboardData).replace(/</g, '\\u003c');
       browserVisualCandidatesEl.textContent = visualAnalyses.length > 0
         ? `${visualCandidates.length} (${visualFailures} fail, ${visualPasses} pass, ${visualUnresolved} unresolved, ${formatMs(summary.visualElapsed)})`
         : String(visualCandidates.length);
-      renderPills(browserRulesEl, ruleRows, 'No browser findings');
+      renderPills(browserRulesEl, ruleRows, 'Nenhum achado do navegador');
     }
 
     function bindVisualResolutionUpdates(win) {

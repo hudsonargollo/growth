@@ -6,7 +6,7 @@ import '../../styles/designing-kinpaku.css';
 
 <Base
   title="Designing with Tektone"
-  description="The core loop: start, iterate, polish, maintain. How to use Tektone end-to-end, from a blank file to shipped feature to paid-down design debt."
+  description="O loop central: começar, iterar, polir, manter. Como usar o Tektone de ponta a ponta, de um arquivo em branco à feature publicada e à dívida de design quitada."
   activeNav="designing"
   canonicalPath="/designing"
   bodyClass="sub-page designing-page-body designing-kinpaku kinpaku-chrome"
@@ -16,28 +16,28 @@ import '../../styles/designing-kinpaku.css';
   <section class="designing-hero">
     <header class="designing-page-header">
       <h1 class="designing-page-title">Designing <em>with Tektone</em></h1>
-      <p class="designing-page-lede">Use Tektone in four phases: set context, improve what exists, check before shipping, and keep the design system from drifting.</p>
+      <p class="designing-page-lede">Use o Tektone em quatro fases: definir o contexto, melhorar o que existe, conferir antes de publicar e evitar que o design system desvie do rumo.</p>
     </header>
 
     <div class="designing-loop-wrap" aria-label="The four-phase loop">
-    <span class="designing-loop-wrap-eyebrow">The core loop</span>
+    <span class="designing-loop-wrap-eyebrow">O loop central</span>
     <div class="designing-loop">
 
       <a class="designing-loop-node designing-loop-node--start" href="#start">
-        <span class="designing-loop-name">Start</span>
-        <span class="designing-loop-hint">From a blank file, through a brief, to a designed feature.</span>
+        <span class="designing-loop-name">Começar</span>
+        <span class="designing-loop-hint">De um arquivo em branco, passando por um briefing, até uma feature desenhada.</span>
       </a>
       <a class="designing-loop-node designing-loop-node--iterate" href="#iterate">
-        <span class="designing-loop-name">Iterate</span>
-        <span class="designing-loop-hint">Refine in place. Command line or in the browser.</span>
+        <span class="designing-loop-name">Iterar</span>
+        <span class="designing-loop-hint">Refine no lugar. Pela linha de comando ou no navegador.</span>
       </a>
       <a class="designing-loop-node designing-loop-node--polish" href="#polish">
-        <span class="designing-loop-name">Polish</span>
-        <span class="designing-loop-hint">The pre-ship gauntlet. Audit, clarify, harden.</span>
+        <span class="designing-loop-name">Polir</span>
+        <span class="designing-loop-hint">A prova de fogo antes de publicar. Audit, clarify, harden.</span>
       </a>
       <a class="designing-loop-node designing-loop-node--maintain" href="#maintain">
-        <span class="designing-loop-name">Maintain</span>
-        <span class="designing-loop-hint">Pay down design debt before it solidifies.</span>
+        <span class="designing-loop-name">Manter</span>
+        <span class="designing-loop-hint">Quite a dívida de design antes que ela se solidifique.</span>
       </a>
       <div class="designing-loop-wheel" aria-hidden="true">
         <svg class="designing-loop-wheel-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
@@ -73,16 +73,16 @@ import '../../styles/designing-kinpaku.css';
 
   <div class="designing-loop-track">
   <nav class="designing-phasenav" aria-label="Loop phases">
-    <a class="designing-phasenav-link" href="#start">Start</a>
-    <a class="designing-phasenav-link" href="#iterate">Iterate</a>
-    <a class="designing-phasenav-link" href="#polish">Polish</a>
-    <a class="designing-phasenav-link" href="#maintain">Maintain</a>
+    <a class="designing-phasenav-link" href="#start">Começar</a>
+    <a class="designing-phasenav-link" href="#iterate">Iterar</a>
+    <a class="designing-phasenav-link" href="#polish">Polir</a>
+    <a class="designing-phasenav-link" href="#maintain">Manter</a>
   </nav>
 
   <section class="ks-section designing-phase" id="start">
     <header class="ks-section-head designing-phase-head">
-      <h2 class="designing-phase-title">Start with context.</h2>
-      <p class="ks-section-sub designing-phase-sub">Before asking an agent to design, give it the basics: who the interface is for, what it should feel like, what it should avoid, and whether this is a marketing surface or an app screen. <code>/tektone init</code> saves that context first. Then use <code>/tektone shape</code> for a brief or <code>/tektone craft</code> for the full build.</p>
+      <h2 class="designing-phase-title">Comece pelo contexto.</h2>
+      <p class="ks-section-sub designing-phase-sub">Antes de pedir a um agente que desenhe, dê a ele o básico: para quem é a interface, qual sensação ela deve transmitir, o que deve evitar e se isso é uma superfície de marketing ou uma tela de aplicativo. O <code>/tektone init</code> salva esse contexto primeiro. Depois, use <code>/tektone shape</code> para um briefing ou <code>/tektone craft</code> para o build completo.</p>
       <div class="designing-phase-commands">
         <a class="designing-phase-cmd" href="/docs/init">/tektone init</a>
         <a class="designing-phase-cmd" href="/docs/shape">/tektone shape</a>
@@ -96,84 +96,84 @@ import '../../styles/designing-kinpaku.css';
           <div class="docs-viz-file" style="margin:0">
             <div class="docs-viz-file-header">
               <span class="docs-viz-file-name">PRODUCT.md</span>
-              <span class="docs-viz-file-status">Written by init</span>
+              <span class="docs-viz-file-status">Escrito pelo init</span>
             </div>
             <div class="docs-viz-file-body">
               <div class="docs-viz-file-row">
                 <span class="docs-viz-file-k">Register</span>
-                <span class="docs-viz-file-v">Product. Design serves the task.</span>
+                <span class="docs-viz-file-v">Product. O design serve à tarefa.</span>
               </div>
               <div class="docs-viz-file-row">
                 <span class="docs-viz-file-k">Users</span>
-                <span class="docs-viz-file-v">SREs on call, reading fast, often in the dark.</span>
+                <span class="docs-viz-file-v">SREs de plantão, lendo rápido, muitas vezes no escuro.</span>
               </div>
               <div class="docs-viz-file-row">
                 <span class="docs-viz-file-k">Voice</span>
-                <span class="docs-viz-file-v">Calm, clinical, no hype.</span>
+                <span class="docs-viz-file-v">Calma, clínica, sem hype.</span>
               </div>
               <div class="docs-viz-file-row">
                 <span class="docs-viz-file-k">Anti-references</span>
-                <span class="docs-viz-file-v">Purple gradients. Glassmorphism. Hype.</span>
+                <span class="docs-viz-file-v">Gradientes roxos. Glassmorphism. Hype.</span>
               </div>
             </div>
           </div>
           <div class="designing-start-grid-prose">
-            <p>Init runs a short setup interview about audience, brand/product lane, voice, and anti-references. It writes <code>PRODUCT.md</code> and, if there's code to scan, offers a <code>DESIGN.md</code>. Every later command reads both files before generating.</p>
+            <p>O init conduz uma breve entrevista de configuração sobre público, faixa de brand/product, voz e anti-references. Ele escreve o <code>PRODUCT.md</code> e, se houver código para escanear, oferece um <code>DESIGN.md</code>. Todo comando seguinte lê os dois arquivos antes de gerar.</p>
           </div>
         </div>
       </div>
 
       <div class="designing-start-step">
-        <p class="designing-start-step-note">For blank-slate work, a visual reference helps more than a long prompt. <code>shape</code> can draft a brand toolkit for review, and <code>craft</code> can code toward a hi-fi mock instead of a paragraph. Neo Mirai is the full loop: generated direction, implemented page, browser iteration.</p>
+        <p class="designing-start-step-note">Para trabalho do zero, uma referência visual ajuda mais do que um prompt longo. O <code>shape</code> pode rascunhar um kit de brand para revisão, e o <code>craft</code> pode codar em direção a um mock hi-fi em vez de um parágrafo. Neo Mirai é o loop completo: direção gerada, página implementada, iteração no navegador.</p>
 
         <div class="designing-visualize-spread">
           <figure class="designing-visualize-plate designing-visualize-plate--brand">
-            <a class="designing-visualize-plate-frame" href="/cases/neo-mirai" aria-label="Read the Neo Mirai case study">
-              <img src="/assets/openai_image_2_brand.jpg" alt="Auto-generated brand toolkit plate: identity lockups, colour palette, type specimens, icon system, and application mocks for a fictional AI design conference, rendered in warm earth tones." loading="lazy" width="1536" height="1024" />
+            <a class="designing-visualize-plate-frame" href="/cases/neo-mirai" aria-label="Ler o estudo de caso Neo Mirai">
+              <img src="/assets/openai_image_2_brand.jpg" alt="Prancha de kit de brand gerada automaticamente: lockups de identidade, paleta de cores, espécimes tipográficos, sistema de ícones e mocks de aplicação para uma conferência fictícia de design de IA, em tons terrosos quentes." loading="lazy" width="1536" height="1024" />
             </a>
             <figcaption class="designing-visualize-plate-cap">
               <span class="designing-visualize-plate-kind">Shape</span>
-              <p class="designing-visualize-plate-note">Brand toolkit. Identity, palette, type, icon language, applications, social tiles, UI direction. One plate, reviewable at a glance. Approved decisions get written into <code>DESIGN.md</code>.</p>
+              <p class="designing-visualize-plate-note">Kit de brand. Identidade, paleta, tipografia, linguagem de ícones, aplicações, tiles sociais, direção de UI. Uma prancha, revisável de relance. As decisões aprovadas são escritas no <code>DESIGN.md</code>.</p>
             </figcaption>
           </figure>
 
           <figure class="designing-visualize-plate designing-visualize-plate--hifi">
-            <a class="designing-visualize-plate-frame" href="/cases/neo-mirai" aria-label="Read the Neo Mirai case study">
-              <img src="/assets/openai_image_2_hifi.jpg" alt="Auto-generated hi-fi landing-page mock: a long vertical editorial comp for a fictional Tokyo AI design conference, in warm earth tones with committed serif display type." loading="lazy" width="864" height="1821" />
+            <a class="designing-visualize-plate-frame" href="/cases/neo-mirai" aria-label="Ler o estudo de caso Neo Mirai">
+              <img src="/assets/openai_image_2_hifi.jpg" alt="Mock de landing page hi-fi gerado automaticamente: uma comp editorial vertical e longa para uma conferência fictícia de design de IA em Tóquio, em tons terrosos quentes com tipografia serifada de display marcante." loading="lazy" width="864" height="1821" />
             </a>
             <figcaption class="designing-visualize-plate-cap">
               <span class="designing-visualize-plate-kind">Visualize</span>
-              <p class="designing-visualize-plate-note">Hi-fi reference. The destination, before the first line of CSS. Craft codes toward a concrete image, not an abstract brief. That is the step change.</p>
+              <p class="designing-visualize-plate-note">Referência hi-fi. O destino, antes da primeira linha de CSS. O craft coda em direção a uma imagem concreta, não a um briefing abstrato. É essa a mudança de patamar.</p>
             </figcaption>
           </figure>
 
           <figure class="designing-visualize-plate designing-visualize-plate--live">
-            <a class="designing-visualize-plate-frame" href="/neo-mirai/" aria-label="Open the Neo Mirai live site">
-              <img src="/assets/cases/neo-mirai/live-page.png" alt="Full-page screenshot of the implemented Neo Mirai website." loading="lazy" width="1440" height="3013" />
+            <a class="designing-visualize-plate-frame" href="/neo-mirai/" aria-label="Abrir o site Neo Mirai no ar">
+              <img src="/assets/cases/neo-mirai/live-page.png" alt="Captura de tela de página inteira do site Neo Mirai implementado." loading="lazy" width="1440" height="3013" />
             </a>
             <figcaption class="designing-visualize-plate-cap">
               <span class="designing-visualize-plate-kind">Ship</span>
-              <p class="designing-visualize-plate-note">Live build. The mock became semantic markup, regenerated assets, responsive fixes, nav state, speaker carousel behavior, and browser-verified polish. <a href="/neo-mirai/">Open the live site</a>.</p>
+              <p class="designing-visualize-plate-note">Build no ar. O mock virou markup semântico, assets regenerados, ajustes responsivos, estado de nav, comportamento do carrossel de palestrantes e polimento verificado no navegador. <a href="/neo-mirai/">Abra o site no ar</a>.</p>
             </figcaption>
           </figure>
         </div>
 
-        <p class="designing-visualize-foot">The first two plates were generated by <strong>OpenAI GPT Image 2</strong>. The third is the implemented Neo Mirai page. <strong>Gemini Nano Banana Pro</strong>, <strong>Imagen 4 Ultra</strong>, and <strong>Grok Imagen</strong> work the same way, via Codex, Gemini CLI, and compatible harnesses.</p>
+        <p class="designing-visualize-foot">As duas primeiras pranchas foram geradas pelo <strong>OpenAI GPT Image 2</strong>. A terceira é a página Neo Mirai implementada. <strong>Gemini Nano Banana Pro</strong>, <strong>Imagen 4 Ultra</strong> e <strong>Grok Imagen</strong> funcionam da mesma forma, via Codex, Gemini CLI e harnesses compatíveis.</p>
       </div>
     </div>
   </section>
 
   <section class="ks-section designing-phase" id="iterate">
     <header class="ks-section-head designing-phase-head">
-      <h2 class="designing-phase-title">Refine what's there.</h2>
-      <p class="ks-section-sub designing-phase-sub">Once something exists, you're iterating. There are two paths: specific commands for named dimensions, or Live Mode for visual exploration.</p>
+      <h2 class="designing-phase-title">Refine o que já existe.</h2>
+      <p class="ks-section-sub designing-phase-sub">Quando algo já existe, você está iterando. Há dois caminhos: comandos específicos para dimensões nomeadas, ou o Live Mode para exploração visual.</p>
     </header>
 
     <div class="designing-phase-body">
       <div class="designing-iterate-split">
         <div class="designing-iterate-col">
-          <h3 class="designing-iterate-name">When the edit has a name.</h3>
-          <p class="designing-iterate-when">Type a command and let the skill encode a specific discipline. Best when you know the word: typography, layout, color, motion.</p>
+          <h3 class="designing-iterate-name">Quando a edição tem nome.</h3>
+          <p class="designing-iterate-when">Digite um comando e deixe a skill codificar uma disciplina específica. Melhor quando você sabe a palavra: tipografia, layout, cor, movimento.</p>
           <div class="designing-iterate-terminal" aria-hidden="true">
             <div class="designing-iterate-terminal-line"><span class="designing-iterate-terminal-prompt">$</span><span>/tektone polish pricing</span></div>
             <div class="designing-iterate-terminal-line"><span class="designing-iterate-terminal-prompt">$</span><span>/tektone bolder hero</span></div>
@@ -182,8 +182,8 @@ import '../../styles/designing-kinpaku.css';
         </div>
 
         <div class="designing-iterate-col">
-          <h3 class="designing-iterate-name">When the edit is easier to point at.</h3>
-          <p class="designing-iterate-when">Run <code>/tektone live</code> in your AI tool and it drops this picker onto your running dev server. Point at any element, draw or type what you want, hit Go. Three production-quality variants; accept one and it writes back to source.</p>
+          <h3 class="designing-iterate-name">Quando é mais fácil apontar para a edição.</h3>
+          <p class="designing-iterate-when">Rode <code>/tektone live</code> na sua ferramenta de IA e ele coloca este seletor sobre o seu dev server em execução. Aponte para qualquer elemento, desenhe ou digite o que quer e clique em Go. Três variantes com qualidade de produção; aceite uma e ela é escrita de volta no código-fonte.</p>
           <div class="designing-iterate-live" aria-hidden="true">
             <div class="docs-viz-live-frame" style="max-width:100%">
               <div class="docs-viz-live-chrome">
@@ -195,8 +195,8 @@ import '../../styles/designing-kinpaku.css';
               <div class="docs-viz-live-stage">
                 <div class="docs-viz-live-target">
                   <span class="docs-viz-live-kicker">No. 04</span>
-                  <h4 class="docs-viz-live-title">Letters, <em>occasionally</em>.</h4>
-                  <button class="docs-viz-live-btn" type="button">Send me one</button>
+                  <h4 class="docs-viz-live-title">Cartas, <em>de vez em quando</em>.</h4>
+                  <button class="docs-viz-live-btn" type="button">Me envie uma</button>
                 </div>
                 <div class="docs-viz-live-outline"></div>
                 <div class="docs-viz-live-ctx">
@@ -205,7 +205,7 @@ import '../../styles/designing-kinpaku.css';
                   <button class="docs-viz-live-ctx-nav" type="button">&#x203A;</button>
                   <span class="docs-viz-live-ctx-divider"></span>
                   <button class="docs-viz-live-ctx-discard" type="button">&#x2715;</button>
-                  <button class="docs-viz-live-ctx-accept" type="button">Accept</button>
+                  <button class="docs-viz-live-ctx-accept" type="button">Aceitar</button>
                 </div>
                 <div class="docs-viz-live-gbar">
                   <span class="docs-viz-live-gbar-mark">
@@ -213,15 +213,15 @@ import '../../styles/designing-kinpaku.css';
                   </span>
                   <span class="docs-viz-live-gbar-btn is-active">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-                    <span>Pick</span>
+                    <span>Selecionar</span>
                   </span>
                   <span class="docs-viz-live-gbar-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                    <span>Insert</span>
+                    <span>Inserir</span>
                   </span>
                   <span class="docs-viz-live-gbar-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <span>Detect</span>
+                    <span>Detectar</span>
                   </span>
                   <span class="docs-viz-live-gbar-btn">
                     <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1" opacity="0.5"/></svg>
@@ -239,26 +239,26 @@ import '../../styles/designing-kinpaku.css';
       </div>
 
       <table class="designing-iterate-table">
-        <caption>When to reach for which</caption>
+        <caption>Quando usar cada um</caption>
         <tbody>
           <tr>
-            <th scope="row">Fix something "off" that you can't name</th>
+            <th scope="row">Corrigir algo "estranho" que você não consegue nomear</th>
             <td><a href="/live-mode">/tektone live</a></td>
           </tr>
           <tr>
-            <th scope="row">Apply a specific discipline: type, layout, color, motion</th>
+            <th scope="row">Aplicar uma disciplina específica: tipo, layout, cor, movimento</th>
             <td><a href="/docs/typeset">/typeset</a> &middot; <a href="/docs/layout">/layout</a> &middot; <a href="/docs/colorize">/colorize</a> &middot; <a href="/docs/animate">/animate</a></td>
           </tr>
           <tr>
-            <th scope="row">Explore three directions side by side</th>
+            <th scope="row">Explorar três direções lado a lado</th>
             <td><a href="/live-mode">/tektone live</a></td>
           </tr>
           <tr>
-            <th scope="row">Ask "is this any good?"</th>
+            <th scope="row">Perguntar "isso está bom?"</th>
             <td><a href="/docs/critique">/tektone critique</a></td>
           </tr>
           <tr>
-            <th scope="row">Bring a safe design to life, or tone a shouting one down</th>
+            <th scope="row">Dar vida a um design tímido, ou abaixar o tom de um que grita</th>
             <td><a href="/docs/bolder">/bolder</a> &middot; <a href="/docs/quieter">/quieter</a></td>
           </tr>
         </tbody>
@@ -268,14 +268,14 @@ import '../../styles/designing-kinpaku.css';
 
   <section class="ks-section designing-phase" id="polish">
     <header class="ks-section-head designing-phase-head">
-      <h2 class="designing-phase-title">The pre-ship gauntlet.</h2>
-      <p class="ks-section-sub designing-phase-sub">Three commands before anything ships. They don't redesign, they find what's left to fix. Point them at a narrow target: one section reviewed closely beats a whole page reviewed at a glance, the way a lens sharpens as it tightens.</p>
+      <h2 class="designing-phase-title">A prova de fogo antes de publicar.</h2>
+      <p class="ks-section-sub designing-phase-sub">Três comandos antes de qualquer coisa ir para o ar. Eles não redesenham, eles encontram o que falta corrigir. Aponte para um alvo estreito: uma seção revisada de perto vence uma página inteira revisada de relance, do mesmo jeito que uma lente fica mais nítida ao fechar o foco.</p>
     </header>
 
     <div class="designing-phase-body">
       <div class="designing-polish">
         <div class="designing-polish-band">
-          <span class="designing-polish-band-label">Pre-ship</span>
+          <span class="designing-polish-band-label">Antes de publicar</span>
           <div class="designing-polish-band-cmds">
             <a href="/docs/audit">audit</a>
             <a href="/docs/clarify">clarify</a>
@@ -285,16 +285,16 @@ import '../../styles/designing-kinpaku.css';
         </div>
         <div class="designing-polish-grid">
           <div class="designing-polish-col">
-            <h3 class="designing-polish-name">Score it.</h3>
-            <p class="designing-polish-desc">Five dimensions scored 0 to 4: accessibility, performance, theming, responsive, anti-patterns. Findings tagged P0 to P3.</p>
+            <h3 class="designing-polish-name">Dê uma nota.</h3>
+            <p class="designing-polish-desc">Cinco dimensões pontuadas de 0 a 4: acessibilidade, performance, theming, responsividade, antipadrões. Achados marcados de P0 a P3.</p>
           </div>
           <div class="designing-polish-col">
-            <h3 class="designing-polish-name">Rewrite the copy.</h3>
-            <p class="designing-polish-desc">Labels, error messages, empty-state prose, microcopy. Tuned to the audience from PRODUCT.md.</p>
+            <h3 class="designing-polish-name">Reescreva o texto.</h3>
+            <p class="designing-polish-desc">Labels, mensagens de erro, texto de estado vazio, microcopy. Ajustados ao público definido no PRODUCT.md.</p>
           </div>
           <div class="designing-polish-col">
-            <h3 class="designing-polish-name">Stress-test reality.</h3>
-            <p class="designing-polish-desc">60-character names, German product titles, prices in the billions, 500s, offline. Production data is messy.</p>
+            <h3 class="designing-polish-name">Estresse a realidade.</h3>
+            <p class="designing-polish-desc">Nomes de 60 caracteres, títulos de produto em alemão, preços na casa dos bilhões, erros 500, offline. Os dados de produção são bagunçados.</p>
           </div>
         </div>
       </div>
@@ -303,8 +303,8 @@ import '../../styles/designing-kinpaku.css';
 
   <section class="ks-section designing-phase" id="maintain">
     <header class="ks-section-head designing-phase-head">
-      <h2 class="designing-phase-title">Design debt is real. Pay it down.</h2>
-      <p class="ks-section-sub designing-phase-sub">Features ship, drift happens. Two commands close the gap before it solidifies.</p>
+      <h2 class="designing-phase-title">A dívida de design é real. Quite ela.</h2>
+      <p class="ks-section-sub designing-phase-sub">Features são publicadas, o desvio acontece. Dois comandos fecham a lacuna antes que ela se solidifique.</p>
     </header>
 
     <div class="designing-phase-body">
@@ -314,19 +314,19 @@ import '../../styles/designing-kinpaku.css';
           <div class="designing-maintain-stage">
             <div class="designing-extract-viz" aria-hidden="true">
               <div class="designing-extract-before">
-                <span class="designing-extract-btn">Subscribe</span>
-                <span class="designing-extract-btn">Submit</span>
-                <span class="designing-extract-btn">Join</span>
-                <span class="designing-extract-btn">Send</span>
-                <span class="designing-extract-btn">Go</span>
+                <span class="designing-extract-btn">Assinar</span>
+                <span class="designing-extract-btn">Enviar</span>
+                <span class="designing-extract-btn">Entrar</span>
+                <span class="designing-extract-btn">Mandar</span>
+                <span class="designing-extract-btn">Ir</span>
                 <span class="designing-extract-btn">OK</span>
               </div>
               <span class="designing-extract-arrow">&rarr;</span>
               <span class="designing-extract-after">Button</span>
             </div>
           </div>
-          <h3 class="designing-maintain-name">Consolidate drift.</h3>
-          <p class="designing-maintain-desc">Find patterns used three or more times with the same intent. Propose tokens and primitives.</p>
+          <h3 class="designing-maintain-name">Consolide o desvio.</h3>
+          <p class="designing-maintain-desc">Encontre padrões usados três ou mais vezes com a mesma intenção. Proponha tokens e primitivos.</p>
         </article>
 
         <article class="ks-bento-tile ks-bento-tile--span-6">

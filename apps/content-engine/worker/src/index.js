@@ -1,15 +1,15 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-import { runMiningSession, getCatalog, getCatalogStats, getSessions, fetchMLTrends, updateSession, mlFetch, getMLToken } from './services/miningService.js'
+import { runMiningSession, getCatalog, getCatalogStats, getSessions, fetchMLTrends } from './services/miningService.js'
 import { generateNicheReport }                                from './services/nicheService.js'
 import { getDb }                                              from './lib/db.js'
-import { generateScript, listScripts, regenerateSection, generateShorts } from './services/scriptService.js'
+import { generateScript, listScripts, regenerateSection } from './services/scriptService.js'
 import { getChannelProfile, upsertChannelProfile }            from './services/channelProfileService.js'
 import { listBlueprints, getBlueprint, upsertBlueprint, deleteBlueprint } from './services/blueprintService.js'
-import { generateVoiceover, listVoiceovers, generateVoiceoverSections, OPENAI_VOICES, ELEVENLABS_VOICES } from './services/voiceoverService.js'
+import { generateVoiceover, listVoiceovers, generateVoiceoverSections, generateVoicePreview, fetchElevenLabsVoices, OPENAI_VOICES, ELEVENLABS_VOICES, GOOGLE_TTS_VOICES, DEFAULT_VOICE_SPEED } from './services/voiceoverService.js'
 import { sendDelivery, listDeliveries }                       from './services/deliveryService.js'
-import { runCommentAgent, listCommentJobs, reviewComment, postReadyJob, checkYouTubeConnected } from './services/commentAgent.js'
+import { runCommentAgent, listCommentJobs, reviewComment } from './services/commentAgent.js'
 import { resolveAndTrack, listShortLinks }                   from './services/shortLinkService.js'
 import credentialsRouter                                      from './routes/credentials.js'
 import apikeysRouter                                          from './routes/apikeys.js'
@@ -18,6 +18,7 @@ import youtubeRouter                                          from './routes/you
 import mlOAuthRouter                                          from './routes/mercadolivre.js'
 import migrateRouter                                         from './routes/migrate.js'
 import videoRouter                                           from './routes/video.js'
+import storyboardRouter                                      from './routes/storyboard.js'
 import { uid }                                               from './lib/uid.js'
 
 const app = new Hono()
@@ -80,6 +81,29 @@ app.put('/api/mining/config', async (c) => {
   await c.env.KV1.put(MINING_CONFIG_KEY, JSON.stringify(updated))
   return c.json(updated)
 })
+
+// GET /api/mining/amazon-test?q=...&region=br — validate the Amazon Creators API in
+// isolation before wiring it into mining. Returns mapped sample + raw body so we can
+// confirm auth works and refine field paths from a real response.
+app.get('/api/mining/amazon-test', async (c) => {
+  const q      = c.req.query('q') ?? 'fone bluetooth'
+  const region = c.req.query('region') ?? 'br'
+  try {
+    const { searchAmazonCreators } = await import('./services/amazonCreatorsService.js')
+    const result = await searchAmazonCreators(c.env, { query: q, region, limit: 5 })
+    return c.json({
+      query:  q,
+      region,
+      error:  result.error,
+      count:  result.products.length,
+      sample: result.products.slice(0, 5),
+      raw:    result.raw,   // remove once field paths are confirmed
+    })
+  } catch (e) {
+    return c.json({ error: `exception: ${e.message}` }, 500)
+  }
+})
+
 // DELETE /api/mining/sessions/:id — delete a single session + its products
 app.delete('/api/mining/sessions/:id', async (c) => {
   const db  = getDb(c.env)
@@ -112,7 +136,9 @@ app.patch('/api/mining/sessions/:id', async (c) => {
     const updates = {}
     if (body.name      !== undefined) updates.name      = body.name
     if (body.projectId !== undefined) updates.projectId = body.projectId
-    const data = await updateSession(c.env, c.req.param('id'), updates)
+    const db = getDb(c.env)
+    const { data, error } = await db.from('mining_sessions').update(updates).eq('id', c.req.param('id')).select().single()
+    if (error) throw new Error(error.message)
     return c.json(data)
   } catch (e) {
     return c.json({ error: e.message }, 400)
@@ -251,15 +277,21 @@ app.get('/api/mining/trends', async (c) => {
   }
 })
 app.post('/api/mining/run', async (c) => {
-  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all', sortBy = 'relevance' } = await c.req.json()
+  const { marketplace = 'google_shopping', category = 'electronics', siteFilter = 'all', sortBy = 'relevance', region = 'pt' } = await c.req.json()
   try {
-    const result = await runMiningSession(c.env, { marketplace, category, siteFilter, sortBy })
+    const result = await runMiningSession(c.env, { marketplace, category, siteFilter, sortBy, region })
     return c.json(result)
   } catch (e) {
     const msg = e?.message || e?.toString() || 'Unknown error'
     console.error('[mining/run]', msg, e?.stack)
     return c.json({ error: msg }, 500)
   }
+})
+
+// ── Mining regions — region/language config for the mining UI ─────────────────
+app.get('/api/mining/regions', async (c) => {
+  const { REGIONS } = await import('./services/miningService.js')
+  return c.json({ regions: Object.values(REGIONS) })
 })
 
 // ── Mining ingest — receives browser-fetched ML results, scores + saves ──────
@@ -434,7 +466,9 @@ app.post('/api/scripts/:id/sections/:index/regenerate', async (c) => {
 // POST /api/scripts/:id/generate-shorts — generate N short scripts from a longform parent
 app.post('/api/scripts/:id/generate-shorts', async (c) => {
   try {
-    const shorts = await generateShorts(c.env, c.req.param('id'))
+    const { generateShorts: _genShorts } = await import('./services/scriptService.js').catch(() => ({}))
+    if (!_genShorts) return c.json({ error: 'generateShorts não implementado' }, 501)
+    const shorts = await _genShorts(c.env, c.req.param('id'))
     return c.json({ shorts, count: shorts.length })
   } catch (e) {
     return c.json({ error: e.message }, 400)
@@ -516,24 +550,45 @@ app.get('/api/voiceover', async (c) => {
   const voiceovers = await listVoiceovers(c.env)
   return c.json({ voiceovers })
 })
-app.get('/api/voiceover/voices', (c) => {
-  return c.json({ openai: OPENAI_VOICES, elevenlabs: ELEVENLABS_VOICES })
+app.get('/api/voiceover/voices', async (c) => {
+  // Prefer the account's live ElevenLabs library (premade + cloned voices),
+  // keeping the curated PT-BR voices first; fall back to the static list.
+  const dynamic = await fetchElevenLabsVoices(c.env)
+  let elevenlabs = ELEVENLABS_VOICES
+  if (dynamic) {
+    const seen = new Set(ELEVENLABS_VOICES.map((v) => v.id))
+    elevenlabs = [...ELEVENLABS_VOICES, ...dynamic.filter((v) => !seen.has(v.id))]
+  }
+  return c.json({ openai: OPENAI_VOICES, elevenlabs, google: GOOGLE_TTS_VOICES, defaultSpeed: DEFAULT_VOICE_SPEED })
 })
+
+// POST /api/voiceover/preview — synthesize a short sample of a voice (no DB write)
+app.post('/api/voiceover/preview', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const { provider = 'elevenlabs', voiceId, model, stability = 0.75, similarityBoost = 0.80, speed = DEFAULT_VOICE_SPEED, lang = 'pt' } = body
+  try {
+    const { buffer, contentType } = await generateVoicePreview(c.env, { provider, voiceId, model, stability, similarityBoost, speed, lang })
+    return new Response(buffer, { headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=3600' } })
+  } catch (e) {
+    return c.json({ error: e.message }, 400)
+  }
+})
+
 app.post('/api/voiceover/generate', async (c) => {
   const body = await c.req.json()
-  const { scriptId, provider = 'openai', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80 } = body
+  const { scriptId, provider = 'openai', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80, speed = DEFAULT_VOICE_SPEED } = body
   if (!scriptId) return c.json({ error: 'scriptId é obrigatório' }, 400)
-  const result = await generateVoiceover(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost })
+  const result = await generateVoiceover(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost, speed })
   return c.json(result)
 })
 
 // POST /api/voiceover/generate-sections — generate one audio file per script section
 app.post('/api/voiceover/generate-sections', async (c) => {
   const body = await c.req.json().catch(() => ({}))
-  const { scriptId, provider = 'elevenlabs', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80 } = body
+  const { scriptId, provider = 'elevenlabs', voiceId, voiceLabel, model, stability = 0.75, similarityBoost = 0.80, speed = DEFAULT_VOICE_SPEED } = body
   if (!scriptId) return c.json({ error: 'scriptId é obrigatório' }, 400)
   try {
-    const sections = await generateVoiceoverSections(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost })
+    const sections = await generateVoiceoverSections(c.env, { scriptId, provider, voiceId, voiceLabel, model, stability, similarityBoost, speed })
     return c.json({ sections, count: sections.length })
   } catch (e) {
     return c.json({ error: e.message }, 400)
@@ -593,7 +648,7 @@ app.get('/api/comments', async (c) => {
   try {
     const [jobs, youtubeConnected] = await Promise.all([
       listCommentJobs(c.env),
-      checkYouTubeConnected(c.env),
+      Promise.resolve(false), // checkYouTubeConnected — not yet exported
     ])
     return c.json({ jobs: jobs ?? [], youtubeConnected })
   } catch (e) {
@@ -615,7 +670,9 @@ app.post('/api/comments/:id/reject', async (c) => {
 // Manually post a 'ready' reply to YouTube
 app.post('/api/comments/:id/post', async (c) => {
   try {
-    const result = await postReadyJob(c.env, c.req.param('id'))
+    const { postReadyJob: _postReady } = await import('./services/commentAgent.js').catch(() => ({}))
+    if (!_postReady) return c.json({ error: 'postReadyJob não implementado' }, 501)
+    const result = await _postReady(c.env, c.req.param('id'))
     return c.json(result)
   } catch (e) {
     return c.json({ error: e.message }, 400)
@@ -804,18 +861,40 @@ app.post('/api/products/:id/affiliate-links', async (c) => {
     } catch { return url }
   }
 
-  const isAmazon = marketplace === 'amazon' || productUrl.includes('amazon.com')
-  const isML     = marketplace === 'mercadolivre' || marketplace === 'mercadolivre_direct' || productUrl.includes('mercadolivre.com')
+  // Detect marketplace ONLY from the actual productUrl — marketplace field can say "amazon"
+  // even when productUrl is a Google Shopping redirect, which would generate wrong affiliate links.
+  const isAmazon = productUrl.includes('amazon.com')
+  const isML     = productUrl.includes('mercadolivre.com') || productUrl.includes('mercadolibre.com')
 
-  const amazonAffiliateLink = isAmazon ? applyAmazonTag(productUrl, amazonTag)  : (product.amazonAffiliateLink ?? null)
-  const mlAffiliateLink     = isML     ? applyMlTag(productUrl, mlAffiliateId)   : (product.mlAffiliateLink ?? null)
-  const affiliateLink       = amazonAffiliateLink || mlAffiliateLink || productUrl
+  // For Google Shopping products (productUrl is a google.com URL), we can't auto-generate
+  // proper affiliate links from it — preserve whatever is already saved on the product.
+  // For real ML/Amazon URLs, apply the affiliate tags.
+  const amazonAffiliateLink = isAmazon
+    ? applyAmazonTag(productUrl, amazonTag)
+    : (product.amazonAffiliateLink ?? null)
 
-  const update = { affiliateLink, amazonAffiliateLink, mlAffiliateLink }
+  const mlAffiliateLink = isML
+    ? applyMlTag(productUrl, mlAffiliateId)
+    : (product.mlAffiliateLink ?? null)
+
+  // Best link for sharing: prefer ML/Amazon affiliate over raw productUrl
+  const affiliateLink = mlAffiliateLink || amazonAffiliateLink || productUrl
+
+  // Never overwrite a manually-saved link with null — only update fields we actually generated
+  const update = { affiliateLink }
+  if (amazonAffiliateLink !== null) update.amazonAffiliateLink = amazonAffiliateLink
+  if (mlAffiliateLink     !== null) update.mlAffiliateLink     = mlAffiliateLink
+
   const { data: updated, error: saveErr } = await db.from('products').update(update).eq('id', id).select().single()
   if (saveErr) return c.json({ error: saveErr.message }, 500)
 
-  return c.json({ ...update, id: updated.id })
+  // Return full link state (merge generated + existing) so frontend can display all fields
+  return c.json({
+    affiliateLink:       updated.affiliateLink,
+    mlAffiliateLink:     updated.mlAffiliateLink     ?? null,
+    amazonAffiliateLink: updated.amazonAffiliateLink ?? null,
+    id: updated.id,
+  })
 })
 
 // ── Products (delete) ─────────────────────────────────────────────────────────
@@ -855,6 +934,7 @@ app.route('/api/youtube',     youtubeRouter)
 app.route('/api/ml',          mlOAuthRouter)
 app.route('/api/admin',       migrateRouter)
 app.route('/api/video',       videoRouter)
+app.route('/api/storyboard', storyboardRouter)
 
 // ── Voiceover preview (streams 3-second TTS sample for voice selection UI) ────
 app.get('/api/voiceover/preview/:voiceId', async (c) => {

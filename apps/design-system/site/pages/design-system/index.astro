@@ -8,7 +8,7 @@ import '../../styles/design-system.css';
 
 <Base
   title="Tektone Design System"
-  description="Neo kinpaku design system for Tektone: tokens, components, states, and patterns."
+  description="Design system Neo kinpaku para a Tektone: tokens, componentes, estados e padrões."
   canonicalPath="/design-system"
   bodyClass="kinpaku-system-page"
   mainId="design-system-main"
@@ -23,8 +23,8 @@ import '../../styles/design-system.css';
   <section class="ks-hero" aria-labelledby="system-title">
     <div class="ks-hero-art" aria-hidden="true"></div>
 
-    <header class="ks-topbar" aria-label="Design system navigation">
-      <a class="ks-brand" href="/" aria-label="Tektone home">
+    <header class="ks-topbar" aria-label="Navegação do design system">
+      <a class="ks-brand" href="/" aria-label="Início Tektone">
         <span class="ks-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M5 2.5 L13.5 2.5 L5.5 21.5 L5 21.5 Q2.5 21.5 2.5 19 L2.5 5 Q2.5 2.5 5 2.5 Z"/>
@@ -33,20 +33,20 @@ import '../../styles/design-system.css';
         </span>
         <span class="ks-wordmark">TEKTONE</span>
       </a>
-      <nav class="ks-nav" aria-label="Design system sections">
-        <a href="#mark">Mark</a>
-        <a href="#foundations" aria-current="page">Foundations</a>
-        <a href="#containers">Patterns</a>
-        <a href="#actions">Actions</a>
-        <a href="#components">Components</a>
-        <a href="#proof">Proof</a>
+      <nav class="ks-nav" aria-label="Seções do design system">
+        <a href="#mark">Marca</a>
+        <a href="#foundations" aria-current="page">Fundamentos</a>
+        <a href="#containers">Padrões</a>
+        <a href="#actions">Ações</a>
+        <a href="#components">Componentes</a>
+        <a href="#proof">Prova</a>
       </nav>
       <button
         type="button"
         class="theme-toggle"
         data-theme-toggle
-        aria-label="Theme: auto, matching your system. Click to switch to light mode."
-        title="Theme: auto (matches system)"
+        aria-label="Tema: automático, seguindo o sistema. Clique para mudar para o modo claro."
+        title="Tema: automático (segue o sistema)"
       >
         <svg class="theme-toggle-icon--auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -61,7 +61,7 @@ import '../../styles/design-system.css';
         </svg>
       </button>
       <a class="ks-button ks-button-primary" href="#actions">
-        Start audit
+        Iniciar auditoria
         <span class="ks-button-arrow" aria-hidden="true">
           <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
             <path d="M0 4h14M10 0l4 4-4 4"/>
@@ -71,27 +71,27 @@ import '../../styles/design-system.css';
     </header>
 
     <div class="ks-hero-body">
-      <p class="ks-hero-eyebrow">Neo kinpaku system</p>
+      <p class="ks-hero-eyebrow">Sistema Neo kinpaku</p>
       <h1 id="system-title" class="ks-hero-wordmark">TEKTONE</h1>
-      <p class="ks-hero-line">Detect visual debt before it ships. Kinpaku gold carries the brand. Verdigris patina carries signal, status, and precision.</p>
+      <p class="ks-hero-line">Detecte dívida visual antes de ir para produção. O ouro kinpaku carrega a marca. A pátina verdigris carrega sinal, status e precisão.</p>
       <div class="ks-hero-actions">
         <a class="ks-button ks-button-primary" href="#actions">
-          Start audit
+          Iniciar auditoria
           <span class="ks-button-arrow" aria-hidden="true">
             <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
               <path d="M0 4h14M10 0l4 4-4 4"/>
             </svg>
           </span>
         </a>
-        <a class="ks-button ks-button-secondary" href="#components">See rules</a>
+        <a class="ks-button ks-button-secondary" href="#components">Ver regras</a>
       </div>
-      <aside class="ks-hero-note" aria-label="System principle">
+      <aside class="ks-hero-note" aria-label="Princípio do sistema">
         <span class="ks-hero-note-pin" aria-hidden="true"></span>
-        <p>AI builds fast. Tektone keeps it intentional.</p>
+        <p>A IA constrói rápido. A Tektone mantém tudo intencional.</p>
       </aside>
     </div>
 
-    <nav class="ks-category-rail" aria-label="Audit categories">
+    <nav class="ks-category-rail" aria-label="Categorias de auditoria">
       <a href="#foundations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
           <rect x="3" y="3" width="8" height="8"/>
@@ -105,20 +105,20 @@ import '../../styles/design-system.css';
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
           <path d="M4 6V4h16v2M12 4v16M9 20h6"/>
         </svg>
-        Type
+        Tipografia
       </a>
       <a href="#foundations">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <path d="M12 3v18M3 12h18"/>
         </svg>
-        Color
+        Cor
       </a>
       <a href="#actions">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
           <path d="M3 9c4 0 4-3 8-3s4 3 8 3M3 15c4 0 4-3 8-3s4 3 8 3"/>
         </svg>
-        Motion
+        Movimento
       </a>
       <a href="#components">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
@@ -126,7 +126,7 @@ import '../../styles/design-system.css';
           <circle cx="12" cy="8" r="2"/>
           <path d="M8 21l4-5 4 5M9 13l3 3 3-3"/>
         </svg>
-        Access
+        Acessibilidade
       </a>
     </nav>
   </section>
@@ -138,13 +138,13 @@ import '../../styles/design-system.css';
        ============================================================ -->
   <section class="ks-section" id="mark" aria-labelledby="mark-title">
     <div class="ks-section-head">
-      <p class="ks-section-eyebrow">Mark</p>
-      <h2 id="mark-title">The carved tile. A solid square split by the slash.</h2>
-      <p class="ks-section-sub">A filled tile cut clean through by a diagonal slash, so the slash reads as negative space rather than a thin line. It carries the slash-command DNA, holds its own as solid mass in a partner roster, and the two offset halves nod to before / after. The slash echoes the kintsugi seam in the hero. Earlier slash-and-flake iterations live on <a href="/design-system/explorations" style="color: var(--ks-kinpaku); border-bottom: 1px solid currentColor;">/design-system/explorations</a>.</p>
+      <p class="ks-section-eyebrow">Marca</p>
+      <h2 id="mark-title">O ladrilho entalhado. Um quadrado sólido dividido pela barra.</h2>
+      <p class="ks-section-sub">Um ladrilho preenchido cortado limpidamente por uma barra diagonal, de modo que a barra se leia como espaço negativo, e não como uma linha fina. Ela carrega o DNA do slash-command, sustenta-se como massa sólida em uma lista de parceiros, e as duas metades deslocadas fazem um aceno ao antes / depois. A barra ecoa a costura kintsugi do hero. As iterações anteriores de barra e folha vivem em <a href="/design-system/explorations" style="color: var(--ks-kinpaku); border-bottom: 1px solid currentColor;">/design-system/explorations</a>.</p>
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">The mark · single fill, scales from favicon to billboard</span>
+      <span class="ks-subsection-label">A marca · preenchimento único, escala do favicon ao outdoor</span>
       <div class="ks-mark-scale" aria-hidden="true">
         {[64, 38, 24, 16].map((size) => (
           <figure class="ks-mark-scale-item">
@@ -156,12 +156,12 @@ import '../../styles/design-system.css';
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">Logo · download for press, decks, and slides</span>
+      <span class="ks-subsection-label">Logo · download para imprensa, decks e slides</span>
       <div class="ks-logo-grid">
         <figure class="ks-logo-tile is-dark">
-          <img src="/assets/brand/tektone-logo-on-dark.svg" alt="Tektone logo, gold on dark" width="510" height="120">
+          <img src="/assets/brand/tektone-logo-on-dark.svg" alt="Logo da Tektone, ouro sobre escuro" width="510" height="120">
           <figcaption>
-            <span class="ks-logo-tile-label">On dark</span>
+            <span class="ks-logo-tile-label">Sobre escuro</span>
             <span class="ks-logo-tile-links">
               <a href="/assets/brand/tektone-logo-on-dark.svg" download>SVG</a>
               <a href="/assets/brand/tektone-logo-on-dark.png" download>PNG</a>
@@ -169,9 +169,9 @@ import '../../styles/design-system.css';
           </figcaption>
         </figure>
         <figure class="ks-logo-tile is-light">
-          <img src="/assets/brand/tektone-logo-on-light.svg" alt="Tektone logo, ink on light" width="510" height="120">
+          <img src="/assets/brand/tektone-logo-on-light.svg" alt="Logo da Tektone, tinta sobre claro" width="510" height="120">
           <figcaption>
-            <span class="ks-logo-tile-label">On light</span>
+            <span class="ks-logo-tile-label">Sobre claro</span>
             <span class="ks-logo-tile-links">
               <a href="/assets/brand/tektone-logo-on-light.svg" download>SVG</a>
               <a href="/assets/brand/tektone-logo-on-light.png" download>PNG</a>
@@ -179,7 +179,7 @@ import '../../styles/design-system.css';
           </figcaption>
         </figure>
       </div>
-      <p class="ks-logo-note">Wordmark is outlined to paths in the SVG, so it renders identically on any machine. PNGs are transparent at 4× retina.</p>
+      <p class="ks-logo-note">O logotipo está convertido em paths no SVG, então renderiza de forma idêntica em qualquer máquina. Os PNGs são transparentes em 4× retina.</p>
     </div>
   </section>
 
@@ -189,62 +189,62 @@ import '../../styles/design-system.css';
        ============================================================ -->
   <section class="ks-section" id="foundations" aria-labelledby="foundations-title">
     <div class="ks-section-head">
-      <p class="ks-section-eyebrow">Foundations</p>
-      <h2 id="foundations-title">Two anchor colors carry the brand. Material plus solid for each.</h2>
+      <p class="ks-section-eyebrow">Fundamentos</p>
+      <h2 id="foundations-title">Duas cores âncora carregam a marca. Material e sólido para cada uma.</h2>
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">Color · brand anchors with their material counterparts</span>
-      <div class="ks-pair-grid" aria-label="Brand anchors">
-        <div class="ks-pair" aria-label="Kinpaku material + solid">
+      <span class="ks-subsection-label">Cor · âncoras da marca com suas contrapartes materiais</span>
+      <div class="ks-pair-grid" aria-label="Âncoras da marca">
+        <div class="ks-pair" aria-label="Kinpaku material + sólido">
           <span class="ks-pair-chip is-kinpaku-leaf" aria-hidden="true"></span>
           <span class="ks-pair-chip is-kinpaku-solid" aria-hidden="true"></span>
           <span class="ks-pair-name">Kinpaku</span>
-          <span class="ks-pair-role">Primary accent · gold-leaf texture for brand-bearing surfaces, solid for actions and rules</span>
+          <span class="ks-pair-role">Destaque primário · textura de folha de ouro para superfícies que carregam a marca, sólido para ações e regras</span>
           <span class="ks-pair-value" data-token-value="--ks-kinpaku"></span>
         </div>
-        <div class="ks-pair" aria-label="Verdigris material + solid">
+        <div class="ks-pair" aria-label="Verdigris material + sólido">
           <span class="ks-pair-chip is-patina-leaf" aria-hidden="true"></span>
           <span class="ks-pair-chip is-patina-solid" aria-hidden="true"></span>
           <span class="ks-pair-name">Verdigris</span>
-          <span class="ks-pair-role">Secondary accent · patina texture for material moments, solid for state and contrast</span>
+          <span class="ks-pair-role">Destaque secundário · textura de pátina para momentos materiais, sólido para estado e contraste</span>
           <span class="ks-pair-value" data-token-value="--ks-patina"></span>
         </div>
       </div>
 
-      <div class="ks-swatch-grid" aria-label="Supporting color tokens" style="margin-top: 32px;">
+      <div class="ks-swatch-grid" aria-label="Tokens de cor de apoio" style="margin-top: 32px;">
         <div class="ks-swatch">
           <span class="ks-swatch-chip is-ink"></span>
           <span class="ks-swatch-name">Lacquer</span>
-          <span class="ks-swatch-role">Page ground</span>
+          <span class="ks-swatch-role">Fundo da página</span>
           <span class="ks-swatch-value" data-token-value="--ks-lacquer"></span>
         </div>
         <div class="ks-swatch">
           <span class="ks-swatch-chip is-surface"></span>
           <span class="ks-swatch-name">Surface</span>
-          <span class="ks-swatch-role">Raised areas</span>
+          <span class="ks-swatch-role">Áreas elevadas</span>
           <span class="ks-swatch-value" data-token-value="--ks-lacquer-raised"></span>
         </div>
         <div class="ks-swatch">
           <span class="ks-swatch-chip is-champagne"></span>
           <span class="ks-swatch-name">Champagne</span>
-          <span class="ks-swatch-role">Headlines</span>
+          <span class="ks-swatch-role">Títulos</span>
           <span class="ks-swatch-value" data-token-value="--ks-champagne"></span>
         </div>
         <div class="ks-swatch">
           <span class="ks-swatch-chip is-vermilion"></span>
           <span class="ks-swatch-name">Vermilion</span>
-          <span class="ks-swatch-role">Warning only</span>
+          <span class="ks-swatch-role">Apenas alertas</span>
           <span class="ks-swatch-value" data-token-value="--ks-vermilion"></span>
         </div>
       </div>
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">Typography · production scale, read from --ks-type-* tokens</span>
+      <span class="ks-subsection-label">Tipografia · escala de produção, lida dos tokens --ks-type-*</span>
       <div class="ks-type-stack">
         <div class="ks-type-row">
-          <span class="ks-type-label">Wordmark</span>
+          <span class="ks-type-label">Logotipo</span>
           <div>
             <span class="ks-type-sample" data-scale="wordmark">TEKTONE</span>
             <p class="ks-type-spec-line" data-type-scale="wordmark"></p>
@@ -253,28 +253,28 @@ import '../../styles/design-system.css';
         <div class="ks-type-row">
           <span class="ks-type-label">Display · h1</span>
           <div>
-            <span class="ks-type-sample" data-scale="display">Tune interfaces while they run.</span>
+            <span class="ks-type-sample" data-scale="display">Ajuste interfaces enquanto elas rodam.</span>
             <p class="ks-type-spec-line" data-type-scale="display"></p>
           </div>
         </div>
         <div class="ks-type-row">
           <span class="ks-type-label">Headline · h2</span>
           <div>
-            <span class="ks-type-sample" data-scale="headline">Ready to drop in.</span>
+            <span class="ks-type-sample" data-scale="headline">Pronto para usar.</span>
             <p class="ks-type-spec-line" data-type-scale="headline"></p>
           </div>
         </div>
         <div class="ks-type-row">
           <span class="ks-type-label">Body</span>
           <div>
-            <span class="ks-type-sample" data-scale="body">Specific audit evidence, clear command language, no decorative hedging. Long copy on dark surfaces breathes at line-height 1.8 with a 65ch measure.</span>
+            <span class="ks-type-sample" data-scale="body">Evidência de auditoria específica, linguagem de comando clara, sem rodeios decorativos. Textos longos em superfícies escuras respiram com line-height 1.8 e medida de 65ch.</span>
             <p class="ks-type-spec-line" data-type-scale="body"></p>
           </div>
         </div>
         <div class="ks-type-row">
           <span class="ks-type-label">Mono · label</span>
           <div>
-            <span class="ks-type-sample" data-scale="mono">LAYOUT · TYPE · COLOR · MOTION · ACCESS</span>
+            <span class="ks-type-sample" data-scale="mono">LAYOUT · TIPOGRAFIA · COR · MOVIMENTO · ACESSIBILIDADE</span>
             <p class="ks-type-spec-line" data-type-scale="mono"></p>
           </div>
         </div>
@@ -282,8 +282,8 @@ import '../../styles/design-system.css';
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">Motion · one ease for everything</span>
-      <p class="ks-section-sub" style="margin-top: 0;">All transitions on the site use a single easing curve, exposed as <code data-token-value="--ks-ease" class="ks-mono-inline">cubic-bezier(0.2, 0.8, 0.2, 1)</code>. Defaults to 180ms unless a slower motion is justified by the surface (modals, page transitions). Reach for <code>var(--ks-ease)</code>, not bespoke cubic-beziers.</p>
+      <span class="ks-subsection-label">Movimento · um easing para tudo</span>
+      <p class="ks-section-sub" style="margin-top: 0;">Todas as transições do site usam uma única curva de easing, exposta como <code data-token-value="--ks-ease" class="ks-mono-inline">cubic-bezier(0.2, 0.8, 0.2, 1)</code>. O padrão é 180ms, a menos que um movimento mais lento seja justificado pela superfície (modais, transições de página). Use <code>var(--ks-ease)</code>, não cubic-beziers sob medida.</p>
     </div>
   </section>
 
@@ -294,31 +294,31 @@ import '../../styles/design-system.css';
        ============================================================ -->
   <section class="ks-section" id="containers" aria-labelledby="containers-title">
     <div class="ks-section-head">
-      <p class="ks-section-eyebrow">Container patterns</p>
-      <h2 id="containers-title">Group content without cards in cards.</h2>
-      <p class="ks-section-sub">When you need to organize a row of related items, reach for a kit primitive before reinventing a card. The canonical answer is the bento (below). The three studies underneath are alternative framings kept for cases where a bento doesn't fit (single item, marginalia, kinpaku-anchored).</p>
+      <p class="ks-section-eyebrow">Padrões de container</p>
+      <h2 id="containers-title">Agrupe conteúdo sem cards dentro de cards.</h2>
+      <p class="ks-section-sub">Quando você precisa organizar uma linha de itens relacionados, use uma primitiva do kit antes de reinventar um card. A resposta canônica é o bento (abaixo). Os três estudos logo abaixo são enquadramentos alternativos mantidos para casos em que um bento não se encaixa (item único, marginália, ancorado em kinpaku).</p>
     </div>
 
     <div class="ks-subsection">
-      <span class="ks-subsection-label">Canonical · .ks-bento-tile</span>
+      <span class="ks-subsection-label">Canônico · .ks-bento-tile</span>
       <article class="ks-canonical">
         <div class="ks-canonical-frame">
           <div class="ks-bento ks-canonical-bento" aria-hidden="true">
             <div class="ks-bento-tile ks-bento-tile--span-8">
               <span class="ks-bento-num">01</span>
-              <p class="ksp-eyebrow" style="margin: 0;">Respects your design system</p>
-              <h3 class="ksp-title" style="margin: 6px 0 0;">Inherits tokens, components, conventions.</h3>
+              <p class="ksp-eyebrow" style="margin: 0;">Respeita seu design system</p>
+              <h3 class="ksp-title" style="margin: 6px 0 0;">Herda tokens, componentes, convenções.</h3>
             </div>
             <div class="ks-bento-tile ks-bento-tile--span-4">
               <span class="ks-bento-num" data-color="patina">02</span>
-              <p class="ksp-eyebrow" style="margin: 0;">Real product context</p>
-              <h3 class="ksp-title" style="margin: 6px 0 0;">PRODUCT.md, loaded.</h3>
+              <p class="ksp-eyebrow" style="margin: 0;">Contexto real do produto</p>
+              <h3 class="ksp-title" style="margin: 6px 0 0;">PRODUCT.md, carregado.</h3>
             </div>
           </div>
         </div>
         <footer class="ks-canonical-foot">
-          <p><strong>Reach for this when:</strong> grouping 2-6 related items in a section. Mix span-4, span-6, span-8 across a 12-column grid. Tiles sit on a dark plinth that shows through as inset gutters.</p>
-          <p class="ks-canonical-meta"><span class="ks-canonical-used">Used in production:</span> <a href="/#why">home /#why</a> · 6-tile bento</p>
+          <p><strong>Use isto quando:</strong> agrupar de 2 a 6 itens relacionados em uma seção. Misture span-4, span-6, span-8 em um grid de 12 colunas. Os tiles ficam sobre um plinto escuro que aparece como calhas embutidas.</p>
+          <p class="ks-canonical-meta"><span class="ks-canonical-used">Usado em produção:</span> <a href="/#why">home /#why</a> · bento de 6 tiles</p>
         </footer>
       </article>
     </div>

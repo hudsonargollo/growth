@@ -5,9 +5,27 @@ import {
   Pencil, RefreshCw, Copy, Check, X,
   Loader2, BookTemplate, Package, Clock,
   Layers, ChevronDown as ChevronDownIcon, Zap,
+  Search, Sparkles, Trophy, Swords, Medal, Microscope, AlertTriangle,
+  ExternalLink, ShoppingCart,
 } from 'lucide-react'
 import PageHeader from '../components/PageHeader.jsx'
+import LanguageFollowUp from '../components/LanguageFollowUp.jsx'
 import { useApi, timeAgo } from '../hooks/useApi.js'
+import { humanize, scriptDisplayName } from '../lib/humanize.js'
+import { LANGUAGES, otherLanguages, normalizeLang } from '../lib/languages.js'
+
+// Format a product price in its own currency (USD→$, EUR→€, MXN→MX$, BRL→R$)
+function fmtPrice(price, currency = 'BRL', digits = 2) {
+  if (!price) return '—'
+  const cur = currency || 'BRL'
+  const locale = cur === 'BRL' ? 'pt-BR' : cur === 'EUR' ? 'es-ES' : cur === 'MXN' ? 'es-MX' : cur === 'CAD' ? 'en-CA' : 'en-US'
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: cur, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(price)
+  } catch {
+    const sym = ({ BRL: 'R$', USD: '$', EUR: '€', MXN: 'MX$', CAD: 'CA$' })[cur] || `${cur} `
+    return `${sym}${Number(price).toFixed(digits)}`
+  }
+}
 
 // ── Friendly error messages ───────────────────────────────────────────────────
 
@@ -35,115 +53,118 @@ export function friendlyError(raw = '') {
   return clean.split('.')[0].slice(0, 120) || 'Algo deu errado. Tente novamente.'
 }
 
+// Brief pause so the success state (green check) is visible before the overlay hides.
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 // ── AI Processing Overlay ─────────────────────────────────────────────────────
 
 const SCRIPT_STEPS = [
-  { icon: '🔍', label: 'Analisando produtos e mercado…' },
-  { icon: '🧠', label: 'Estruturando o roteiro com IA…' },
-  { icon: '✍️', label: 'Escrevendo seções e hooks…' },
-  { icon: '🎯', label: 'Refinando CTAs e gatilhos…' },
-  { icon: '✨', label: 'Finalizando e revisando…' },
+  { icon: Search,    label: 'Analisando os produtos selecionados — preços, avaliações, diferenciais e o cenário competitivo do nicho para encontrar os melhores ângulos de venda…' },
+  { icon: Layers,    label: 'Estruturando a narrativa: definindo a ordem ideal dos produtos, os pontos de retenção e o arco do vídeo do início ao fim…' },
+  { icon: Pencil,    label: 'Escrevendo o roteiro seção por seção — a abertura, os ganchos de retenção, o desenvolvimento e as transições entre cada produto…' },
+  { icon: Zap,       label: 'Refinando o texto: ajustando os CTAs, a prova social, a ancoragem de preço e o ritmo de leitura para máxima conversão…' },
+  // Final step — held on screen until generation actually finishes.
+  { icon: Sparkles,  label: 'Finalizando e revisando os últimos detalhes do roteiro. Isso pode levar mais alguns segundos — mantenha esta janela aberta…' },
 ]
 
-export function AILoadingOverlay({ show, steps = SCRIPT_STEPS, title = 'Gerando Roteiro' }) {
+/**
+ * Full-screen processing overlay.
+ * - Cycles through `steps`, holding on the LAST step until `done` flips true.
+ * - When `done`, swaps to an animated green check before the parent hides it.
+ */
+export function AILoadingOverlay({ show, done = false, steps = SCRIPT_STEPS, title = 'Gerando Roteiro', doneLabel = 'Concluído' }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [dots, setDots]               = useState('')
-  const [particles, setParticles]     = useState([])
 
   useEffect(() => {
     if (!show) { setCurrentStep(0); return }
-    const dotsInterval = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 400)
-    const stepInterval = setInterval(() => setCurrentStep(s => (s + 1) % steps.length), 2200)
-    setParticles(Array.from({ length: 18 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 4 + 2,
-      duration: Math.random() * 4 + 3,
-      delay: Math.random() * 3,
-    })))
+    const dotsInterval = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 420)
+    // Advance through steps but HOLD on the last one until generation finishes.
+    const stepInterval = setInterval(() => setCurrentStep(s => Math.min(s + 1, steps.length - 1)), 2600)
     return () => { clearInterval(dotsInterval); clearInterval(stepInterval) }
   }, [show, steps.length])
 
   if (!show) return null
 
+  const Icon = steps[currentStep]?.icon ?? Search
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: 'rgba(9, 9, 11, 0.88)', backdropFilter: 'blur(12px)' }}>
+      style={{ background: 'rgba(9, 9, 11, 0.90)', backdropFilter: 'blur(14px)' }}>
       <style>{`
-        @keyframes floatUp {
-          0%   { transform: translateY(0px) scale(1);   opacity: 0.6; }
-          50%  { transform: translateY(-30px) scale(1.2); opacity: 1; }
-          100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
-        }
-        @keyframes pulseRing {
-          0%   { transform: scale(0.8); opacity: 0.8; }
-          100% { transform: scale(2.2); opacity: 0; }
-        }
-        @keyframes stepIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes barFill {
-          0%   { width: 5%; }
-          100% { width: 85%; }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .ai-particle  { animation: floatUp var(--dur) var(--delay) ease-in infinite; }
-        .ai-step-in   { animation: stepIn 0.4s ease both; }
-        .ai-bar       { animation: barFill 12s ease-out forwards; }
-        .ai-shimmer   {
-          background: linear-gradient(90deg, #8B5CF6 0%, #CCFF00 40%, #8B5CF6 80%);
-          background-size: 200% auto;
-          animation: shimmer 2s linear infinite;
-        }
+        @keyframes pulseRing { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(2.1); opacity: 0; } }
+        @keyframes stepIn   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer  { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes popIn    { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes checkDraw{ from { stroke-dashoffset: 32; } to { stroke-dashoffset: 0; } }
+        @keyframes spin     { to { transform: rotate(360deg); } }
+        .ov-step-in  { animation: stepIn 0.4s ease both; }
+        .ov-shimmer  { background: linear-gradient(90deg, #8B5CF6 0%, #CCFF00 45%, #8B5CF6 85%); background-size: 200% auto; animation: shimmer 1.8s linear infinite; }
+        .ov-pop      { animation: popIn 0.45s cubic-bezier(0.2,0.9,0.3,1.3) both; }
+        .ov-check    { stroke-dasharray: 32; animation: checkDraw 0.5s ease 0.15s forwards; }
+        .ov-spin     { animation: spin 1.4s linear infinite; }
       `}</style>
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {particles.map(p => (
-          <div key={p.id} className="ai-particle absolute rounded-full"
-            style={{
-              left: `${p.x}%`, top: `${p.y}%`,
-              width: p.size, height: p.size,
-              '--dur': `${p.duration}s`, '--delay': `${p.delay}s`,
-              background: p.id % 3 === 0 ? '#6366f1' : p.id % 3 === 1 ? '#a78bfa' : '#34d399',
-              opacity: 0.6,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative flex flex-col items-center gap-8 px-12 py-10 rounded-3xl max-w-sm w-full mx-4"
+      <div className="relative flex flex-col items-center gap-7 px-12 py-10 rounded-3xl max-w-md w-full mx-4"
         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+
+        {/* Center icon — pulsing brand mark while loading, green check when done */}
         <div className="relative flex items-center justify-center w-24 h-24">
-          <div className="absolute w-24 h-24 rounded-full border border-violet-500/30"
-            style={{ animation: 'pulseRing 2s ease-out infinite' }} />
-          <div className="absolute w-24 h-24 rounded-full border border-violet-500/20"
-            style={{ animation: 'pulseRing 2s ease-out 0.6s infinite' }} />
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-            style={{ background: '#CCFF00', boxShadow: '0 0 40px rgba(204,255,0,0.35)' }}>
-            🤖
+          {!done && (
+            <>
+              <div className="absolute w-24 h-24 rounded-full border border-violet-500/30" style={{ animation: 'pulseRing 2s ease-out infinite' }} />
+              <div className="absolute w-24 h-24 rounded-full border border-violet-500/20" style={{ animation: 'pulseRing 2s ease-out 0.6s infinite' }} />
+            </>
+          )}
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center ov-pop"
+            key={done ? 'done' : 'load'}
+            style={{ background: done ? '#00FFB9' : '#CCFF00', boxShadow: done ? '0 0 44px rgba(0,255,185,0.45)' : '0 0 40px rgba(204,255,0,0.35)' }}>
+            {done ? (
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <path className="ov-check" d="M5 13l4 4L19 7" stroke="#07070B" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <Zap size={26} style={{ color: '#07070B' }} strokeWidth={2.5} className="ov-spin" />
+            )}
           </div>
         </div>
+
+        {/* Title */}
         <div className="text-center space-y-1">
-          <h2 className="text-white font-bold text-xl tracking-tight">{title}</h2>
-          <p className="text-white/40 text-xs">Powered by IA · aguarde alguns segundos</p>
+          <h2 className="text-white font-bold text-xl tracking-tight">{done ? doneLabel : title}</h2>
+          <p className="text-white/35 text-xs">{done ? 'Tudo pronto.' : 'Isso pode levar alguns segundos — não feche esta janela.'}</p>
         </div>
-        <div key={currentStep} className="ai-step-in flex items-center gap-3 px-4 py-3 rounded-xl w-full"
-          style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
-          <span className="text-xl shrink-0">{steps[currentStep].icon}</span>
-          <span className="text-sm text-white/60">{steps[currentStep].label}<span className="text-violet-400">{dots}</span></span>
+
+        {/* Current step / done message */}
+        <div key={done ? 'doneStep' : currentStep} className="ov-step-in flex items-center gap-3 px-4 py-3 rounded-xl w-full"
+          style={{
+            background: done ? 'rgba(0,255,185,0.10)' : 'rgba(99,102,241,0.12)',
+            border: `1px solid ${done ? 'rgba(0,255,185,0.25)' : 'rgba(99,102,241,0.2)'}`,
+          }}>
+          {done
+            ? <Check size={18} className="shrink-0" style={{ color: '#00FFB9' }} />
+            : <Icon size={18} className="shrink-0 text-violet-300" />
+          }
+          <span className="text-sm" style={{ color: done ? 'rgba(0,255,185,0.85)' : 'rgba(255,255,255,0.62)' }}>
+            {done ? 'Processo finalizado com sucesso.' : <>{steps[currentStep].label}<span className="text-violet-400">{dots}</span></>}
+          </span>
         </div>
+
+        {/* Progress bar */}
         <div className="w-full space-y-2">
           <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-            <div className="ai-bar h-full rounded-full ai-shimmer" />
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: done ? '100%' : `${Math.round(((currentStep + 1) / steps.length) * 92)}%`,
+                background: done ? '#00FFB9' : undefined,
+              }}
+              {...(!done ? { className: 'h-full rounded-full ov-shimmer transition-all duration-500' } : {})}
+            />
           </div>
-          <div className="flex justify-between text-[10px] text-white/60">
+          <div className="flex justify-between gap-1">
             {steps.map((s, i) => (
-              <span key={i} className={`transition-colors duration-500 ${i <= currentStep ? 'text-violet-400' : ''}`}>●</span>
+              <span key={i} className="flex-1 h-1 rounded-full transition-colors duration-500"
+                style={{ background: done || i <= currentStep ? (done ? '#00FFB9' : '#8B5CF6') : 'rgba(255,255,255,0.08)' }} />
             ))}
           </div>
         </div>
@@ -246,7 +267,7 @@ function SectionRow({ section, index, total, onChange, onRemove, onMove }) {
           >
             <span className="text-[10px] font-bold uppercase tracking-wide"
               style={{ color: hasPrompt ? style.text : 'rgba(255,255,255,0.22)' }}>
-              {hasPrompt ? '✦ Prompt' : '+ Prompt da seção'}
+              {hasPrompt ? 'Prompt' : '+ Prompt da seção'}
             </span>
             {hasPrompt && (
               <span className="text-[9px] text-white/25 flex-1 truncate">
@@ -362,8 +383,14 @@ function BlueprintEditor({ blueprint, onChange }) {
 
 function ProductPicker({ selected, onToggle, maxSelect }) {
   const { data } = useApi('/mining/catalog')
-  const products  = data?.products ?? []
   const [search, setSearch] = useState('')
+
+  // Newest products first (by createdAt, falling back to lastSeen)
+  const products = [...(data?.products ?? [])].sort((a, b) => {
+    const ta = new Date(a.createdAt ?? a.lastSeen ?? 0).getTime()
+    const tb = new Date(b.createdAt ?? b.lastSeen ?? 0).getTime()
+    return tb - ta
+  })
 
   const filtered = products.filter(p => !search || p.title.toLowerCase().includes(search.toLowerCase()))
   const atLimit  = maxSelect != null && selected.length >= maxSelect
@@ -381,7 +408,7 @@ function ProductPicker({ selected, onToggle, maxSelect }) {
           ) : (
             <span className="text-xs text-white/35">{selected.length} selecionado{selected.length !== 1 ? 's' : ''}</span>
           )}
-          {atLimit && <span className="text-[10px] text-[#CCFF00] font-semibold">✓ Completo</span>}
+          {atLimit && <span className="text-[10px] text-[#CCFF00] font-semibold inline-flex items-center gap-1"><Check size={11} /> Completo</span>}
         </div>
         <input
           type="text" value={search}
@@ -411,7 +438,7 @@ function ProductPicker({ selected, onToggle, maxSelect }) {
           const active   = selected.includes(p.id)
           const disabled = !active && atLimit
           return (
-            <button key={p.id} onClick={() => !disabled && onToggle(p.id)}
+            <button key={p.id} onClick={() => !disabled && onToggle(p.id, p)}
               className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
                 active
                   ? 'border-[#8B5CF6]/40 bg-[#8B5CF6]/[0.10]'
@@ -430,8 +457,8 @@ function ProductPicker({ selected, onToggle, maxSelect }) {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-white/75 truncate leading-tight">{p.title}</p>
                 <p className="text-[10px] text-white/30 mt-0.5">
-                  {p.price ? `R$${Number(p.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}
-                  {p.rating ? ` · ${p.rating}★` : ''}
+                  {p.price ? fmtPrice(p.price, p.currency) : '—'}
+                  {p.rating ? ` · ${p.rating}` : ''}
                 </p>
               </div>
               {active && (
@@ -454,6 +481,33 @@ function wordCount(text) {
   return text ? text.trim().split(/\s+/).filter(Boolean).length : 0
 }
 
+// Known boilerplate phrases the LLM sometimes injects — strip them entirely
+const BOILERPLATE_PATTERNS = [
+  /\*?Este vídeo contém links de afiliados\..*?Obrigado[.!]?\*?/gis,
+  /\*?This video contains affiliate links\..*?Thank you[.!]?\*?/gis,
+  /\*?Aviso de afiliado:.*?\*/gis,
+  /\*?Affiliate disclosure:.*?\*/gis,
+]
+
+/** Strip markdown formatting and boilerplate for clean display */
+function cleanMarkdown(raw = '') {
+  let t = raw
+  // Remove affiliate/disclosure boilerplate first
+  for (const pat of BOILERPLATE_PATTERNS) t = t.replace(pat, '')
+  return t
+    .replace(/https?:\/\/\S+/g, '')               // remove raw URLs
+    .replace(/^#{1,6}\s*/gm, '')                   // ## headings
+    .replace(/^[-*_]{3,}\s*$/gm, '')               // --- horizontal rules
+    .replace(/\*\*\*(.*?)\*\*\*/gs, '$1')          // ***bold italic***
+    .replace(/\*\*(.*?)\*\*/gs, '$1')              // **bold**
+    .replace(/\*(.*?)\*/gs, '$1')                  // *italic*
+    .replace(/_{2}(.*?)_{2}/gs, '$1')              // __underline__
+    .replace(/_(.*?)_/gs, '$1')                    // _italic_
+    .replace(/^\s*[-*•]\s+/gm, '')                 // list bullets
+    .replace(/\n{3,}/g, '\n\n')                    // collapse excess blank lines
+    .trim()
+}
+
 function SectionCard({ section, index, total, scriptId, onUpdate }) {
   const [open, setOpen]             = useState(true)
   const [editing, setEditing]       = useState(false)
@@ -465,8 +519,9 @@ function SectionCard({ section, index, total, scriptId, onUpdate }) {
   const [saving, setSaving]         = useState(false)
   const textareaRef                 = useRef(null)
   const sty = getSectionStyle(section.type)
-  const text = section.content ?? content
-  const wc   = wordCount(text)
+  const rawText = section.content ?? content
+  const text    = cleanMarkdown(rawText)
+  const wc   = wordCount(rawText)
 
   // auto-resize textarea
   useEffect(() => {
@@ -664,7 +719,9 @@ function SectionCard({ section, index, total, scriptId, onUpdate }) {
 // ── Inline rename ─────────────────────────────────────────────────────────────
 
 function InlineTitle({ scriptId, initialTitle, blueprintId, onRenamed }) {
-  const display = initialTitle || blueprintId || 'Sem título'
+  const display = (initialTitle && initialTitle !== blueprintId)
+    ? initialTitle
+    : humanize(blueprintId) || 'Sem título'
   const [editing, setEditing] = useState(false)
   const [draft, setDraft]     = useState(display)
   const [saving, setSaving]   = useState(false)
@@ -710,15 +767,149 @@ function InlineTitle({ scriptId, initialTitle, blueprintId, onRenamed }) {
   )
 }
 
+// ── Product Modal ─────────────────────────────────────────────────────────────
+// Shown when the user clicks a product chip in the ScriptViewer header strip.
+// Displays the product image, title, price, and links to both marketplaces (_blank).
+
+function ProductModal({ product, onClose }) {
+  if (!product) return null
+
+  // Resolve the best available link per marketplace.
+  const mlLink  = product.mlAffiliateLink
+    || (product.marketplace === 'mercadolivre' ? (product.affiliateLink || product.productUrl) : null)
+  const amzLink = product.amazonAffiliateLink
+    || (product.marketplace === 'amazon' ? (product.affiliateLink || product.productUrl) : null)
+  const fallback = !mlLink && !amzLink ? (product.productUrl || product.affiliateLink) : null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(10px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{ background: '#111118', border: '1px solid rgba(255,255,255,0.10)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Image */}
+        <div className="relative bg-white">
+          {product.imageUrl
+            ? <img src={product.imageUrl} alt={product.title}
+                className="w-full h-44 object-contain p-4" />
+            : <div className="w-full h-32 flex items-center justify-center">
+                <Package size={32} style={{ color: '#ccc' }} />
+              </div>
+          }
+          <button onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 rounded-full"
+            style={{ background: 'rgba(0,0,0,0.50)', color: 'rgba(255,255,255,0.85)' }}>
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Info */}
+        <div className="p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-white/85 leading-snug line-clamp-2">{product.title}</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              {product.price > 0 && (
+                <span className="text-base font-bold" style={{ color: '#CCFF00' }}>
+                  {fmtPrice(product.price, product.currency)}
+                </span>
+              )}
+              {product.rating > 0 && (
+                <span className="text-xs text-white/35">
+                  {product.rating} ★{product.reviewCount > 0 ? ` · ${Number(product.reviewCount).toLocaleString('pt-BR')} avaliações` : ''}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Marketplace links */}
+          <div className="space-y-2 pt-1">
+            {mlLink && (
+              <a href={mlLink} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(255,230,0,0.09)', border: '1px solid rgba(255,230,0,0.22)', color: '#FFE600' }}>
+                <span className="flex items-center gap-2">
+                  <ShoppingCart size={14} />
+                  Ver no Mercado Livre
+                </span>
+                <ExternalLink size={12} style={{ opacity: 0.55 }} />
+              </a>
+            )}
+            {amzLink && (
+              <a href={amzLink} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: 'rgba(255,153,0,0.09)', border: '1px solid rgba(255,153,0,0.22)', color: '#FF9900' }}>
+                <span className="flex items-center gap-2">
+                  <Package size={14} />
+                  Ver na Amazon
+                </span>
+                <ExternalLink size={12} style={{ opacity: 0.55 }} />
+              </a>
+            )}
+            {fallback && (
+              <a href={fallback} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.60)' }}>
+                <span className="flex items-center gap-2"><ExternalLink size={14} />Ver produto</span>
+                <ExternalLink size={12} style={{ opacity: 0.45 }} />
+              </a>
+            )}
+          </div>
+
+          {/* Google review images — pulled at mining time, used as B-roll in video gen */}
+          {Array.isArray(product.reviewImages) && product.reviewImages.length > 0 && (
+            <div className="pt-1">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-white/30 mb-1.5">
+                Imagens de avaliação (Google)
+              </p>
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {product.reviewImages.slice(0, 6).map((img, i) => (
+                  <a key={i} href={img.url} target="_blank" rel="noopener noreferrer"
+                    title={img.title || img.source || 'Imagem de avaliação'}
+                    className="shrink-0 rounded-lg overflow-hidden block"
+                    style={{ width: 56, height: 56, border: '1px solid rgba(255,255,255,0.10)', background: '#fff' }}>
+                    <img src={img.thumb || img.url} alt={img.title || ''}
+                      className="w-full h-full object-cover" loading="lazy" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 // ── Script Viewer ─────────────────────────────────────────────────────────────
 
 function ScriptViewer({ script, onUpdate, onClose }) {
   const sections = script.sections ?? []
-  const [copyAll, setCopyAll]   = useState(false)
-  const [rawMode, setRawMode]   = useState(false)
-  const [rawText, setRawText]   = useState('')
-  const [rawSaving, setRawSaving] = useState(false)
-  const [title, setTitle]       = useState(script.title || script.blueprintId || '')
+  const [copyAll, setCopyAll]       = useState(false)
+  const [rawMode, setRawMode]       = useState(false)
+  const [rawText, setRawText]       = useState('')
+  const [rawSaving, setRawSaving]   = useState(false)
+  const [title, setTitle]           = useState(scriptDisplayName(script))
+  const [products, setProducts]     = useState([])
+  const [pickedProduct, setPickedProduct] = useState(null)
+
+  // Load products used to generate this script
+  useEffect(() => {
+    const ids = script.productIds
+    if (!ids?.length) return
+    fetch('/api/mining/catalog')
+      .then(r => r.json())
+      .then(data => {
+        const all = data?.products ?? []
+        setProducts(all.filter(p => ids.includes(p.id)))
+      })
+      .catch(() => {})
+  }, [script.id])
 
   const fullText = sections.length > 0
     ? sections.map(s => `[${s.label.toUpperCase()}]\n${s.content ?? ''}`).join('\n\n')
@@ -752,11 +943,18 @@ function ScriptViewer({ script, onUpdate, onClose }) {
         <div className="flex-1 min-w-0">
           <InlineTitle scriptId={script.id} initialTitle={title} blueprintId={script.blueprintId}
             onRenamed={t => { setTitle(t); onUpdate?.({ ...script, title: t }) }} />
-          <p className="text-[11px] text-white/30 mt-0.5 flex items-center gap-1.5">
+          <p className="text-[11px] text-white/30 mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>{sections.length} seções</span>
             {totalWords > 0 && <><span>·</span><span>{totalWords} palavras</span></>}
             <span>·</span><span>{script.language?.toUpperCase()}</span>
             <span>·</span><span>{timeAgo(script.createdAt)}</span>
+            {script.projectId && (
+              <><span>·</span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(204,255,0,0.10)', color: '#CCFF00', border: '1px solid rgba(204,255,0,0.22)' }}>
+                Projeto criado
+              </span></>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -779,6 +977,55 @@ function ScriptViewer({ script, onUpdate, onClose }) {
           )}
         </div>
       </div>
+
+      {/* Products preview strip — sorted by score, top 5, clickable */}
+      {products.length > 0 && (
+        <div className="px-5 py-3 border-b border-white/[0.04]">
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/20 mb-2">
+            {products.length} produto{products.length !== 1 ? 's' : ''} · clique para ver links
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {[...products]
+              .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+              .slice(0, 5)
+              .map((p, idx) => {
+                const hasML  = !!(p.mlAffiliateLink || p.marketplace === 'mercadolivre')
+                const hasAmz = !!(p.amazonAffiliateLink || p.marketplace === 'amazon')
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setPickedProduct(p)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.97]"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                    title={p.title}
+                  >
+                    {/* Rank badge */}
+                    <span className="text-[9px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: idx === 0 ? '#CCFF00' : 'rgba(255,255,255,0.10)', color: idx === 0 ? '#07070B' : 'rgba(255,255,255,0.40)' }}>
+                      {idx + 1}
+                    </span>
+                    {p.imageUrl && (
+                      <img src={p.imageUrl} alt="" className="w-5 h-5 rounded object-cover shrink-0" />
+                    )}
+                    <span className="text-[10px] text-white/55 truncate max-w-[100px]">{p.title}</span>
+                    {p.price > 0 && (
+                      <span className="text-[10px] font-semibold shrink-0" style={{ color: '#00FFB9' }}>
+                        {fmtPrice(p.price, p.currency, 0)}
+                      </span>
+                    )}
+                    {/* Marketplace dots */}
+                    <span className="flex items-center gap-0.5 shrink-0">
+                      {hasML  && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FFE600' }} title="Mercado Livre" />}
+                      {hasAmz && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FF9900' }} title="Amazon" />}
+                    </span>
+                  </button>
+                )
+              })}
+          </div>
+        </div>
+      )}
+
+      <ProductModal product={pickedProduct} onClose={() => setPickedProduct(null)} />
 
       {/* Content */}
       <div className="p-5 space-y-2.5">
@@ -845,8 +1092,8 @@ function ScriptHistoryCard({ script, isSelected, onSelect, onRenamed, checked, o
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0" onClick={() => onSelect(script)}>
-        <div onClick={e => e.stopPropagation()}>
+      <div className="flex-1 min-w-0 overflow-hidden" onClick={() => onSelect(script)}>
+        <div className="min-w-0 overflow-hidden" onClick={e => e.stopPropagation()}>
           <InlineTitle scriptId={script.id} initialTitle={script.title} blueprintId={script.blueprintId}
             onRenamed={(t) => onRenamed?.(script.id, t)} />
         </div>
@@ -854,11 +1101,11 @@ function ScriptHistoryCard({ script, isSelected, onSelect, onRenamed, checked, o
           {/* Video type badge */}
           {isShort ? (
             <span style={{ fontSize: 9, background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 4, padding: '1px 5px', fontWeight: 600, letterSpacing: '0.03em' }}>
-              ⚡ SHORT
+              SHORT
             </span>
           ) : (
             <span style={{ fontSize: 9, background: 'rgba(139,92,246,0.10)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.20)', borderRadius: 4, padding: '1px 5px', fontWeight: 600, letterSpacing: '0.03em' }}>
-              📹 LONGO
+              LONGO
             </span>
           )}
           <span className="text-[10px] text-white/30">
@@ -909,15 +1156,57 @@ function ScriptHistoryCard({ script, isSelected, onSelect, onRenamed, checked, o
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
+function FormatButton({ t, activeTypeId, activeDbBp, onSelect, isPrac }) {
+  const isActive = activeTypeId === t.id && !activeDbBp
+  const limit    = PRODUCT_LIMITS[t.id]
+  const limitLabel = limit == null ? 'N produtos' : limit === 1 ? '1 produto' : `${limit} produtos`
+  return (
+    <button onClick={() => onSelect(t.id)}
+      className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
+      style={{
+        borderColor: isActive ? (isPrac ? 'rgba(204,255,0,0.80)' : '#CCFF00') : isPrac ? 'rgba(204,255,0,0.12)' : 'rgba(255,255,255,0.06)',
+        background:  isActive ? (isPrac ? 'rgba(204,255,0,0.07)' : 'rgba(204,255,0,0.05)') : isPrac ? 'rgba(204,255,0,0.02)' : 'transparent',
+      }}>
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
+        style={{ background: isActive ? 'rgba(204,255,0,0.12)' : isPrac ? 'rgba(204,255,0,0.05)' : 'rgba(255,255,255,0.04)' }}>
+        {t.icon && <t.icon size={18} style={{ color: isActive ? '#CCFF00' : 'rgba(255,255,255,0.55)' }} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-white/80 truncate">{t.name}</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+            style={{
+              background: isActive ? 'rgba(204,255,0,0.12)' : 'rgba(255,255,255,0.05)',
+              color:      isActive ? '#CCFF00' : 'rgba(255,255,255,0.30)',
+            }}>
+            {limitLabel}
+          </span>
+        </div>
+        <p className="text-[11px] text-white/30 mt-0.5 leading-tight">{t.desc}</p>
+      </div>
+      {isActive && (
+        <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: '#CCFF00' }}>
+          <Check size={9} style={{ color: '#07070B' }} />
+        </div>
+      )}
+    </button>
+  )
+}
+
 const PRODUCT_LIMITS = {
   'top-5-custo-beneficio': 5,
   'comparacao-1x1':        2,
   'review-detalhado':      1,
+  'prac-short-form':       1,
+  'prac-comparison':       2,
+  'prac-single-review':    1,
+  'prac-type-long-form':   5,
 }
 
 const STANDARD_TYPES = [
   {
-    id: 'top-5-custo-beneficio', name: 'Top 5 Custo-Benefício', icon: '🏆',
+    id: 'top-5-custo-beneficio', name: 'Top 5 Custo-Benefício', icon: Trophy,
     desc: '5 produtos ranqueados do pior ao melhor',
     sections: [
       { id: uid(), type: 'intro',   label: 'Abertura',                    duration: 60,  instructions: 'NÃO abra com pergunta. Revele algo surpreendente do produto #1 na primeira frase (preço baixo, volume de avaliações, resultado inesperado) para criar curiosidade imediata. Exemplo de estrutura: "[Fato chocante sobre o #1]. Mas antes de revelar qual é, deixa eu te mostrar os que parecem bons e têm um problema que quase ninguém percebe." Nunca use "Você sabia que…" ou "Você quer…".' },
@@ -931,7 +1220,7 @@ const STANDARD_TYPES = [
     ],
   },
   {
-    id: 'comparacao-1x1', name: 'Comparação 1x1', icon: '⚔️',
+    id: 'comparacao-1x1', name: 'Comparação 1x1', icon: Swords,
     desc: 'Dois produtos frente a frente com veredicto',
     sections: [
       { id: uid(), type: 'intro',      label: 'Abertura',               duration: 60,  instructions: 'Abra revelando a DIFERENÇA DE PREÇO entre os dois produtos para criar tensão imediata. Exemplo: "Um custa R$X, o outro R$Y. Mas qual entrega mais valor? Testei os dois e o resultado vai te surpreender." NÃO faça pergunta genérica tipo "Qual você escolheria?" — salve isso para o CTA.' },
@@ -944,7 +1233,7 @@ const STANDARD_TYPES = [
     ],
   },
   {
-    id: 'review-detalhado', name: 'Review Detalhado', icon: '🔍',
+    id: 'review-detalhado', name: 'Review Detalhado', icon: Search,
     desc: 'Análise aprofundada de um único produto',
     sections: [
       { id: uid(), type: 'intro',     label: 'Abertura',                 duration: 60,  instructions: 'Abra com o fato mais surpreendente do produto — preço vs qualidade inesperada, volume absurdo de avaliações positivas, ou uma dor muito específica que ele resolve. NÃO comece com pergunta. NÃO comece com "Hoje vou falar sobre…". Crie uma razão imediata para continuar assistindo.' },
@@ -957,6 +1246,63 @@ const STANDARD_TYPES = [
     ],
   },
 ]
+
+// ── PRAC blueprints (Me Ajuda Na Escolha formula) ─────────────────────────────
+const PRAC_TYPES = [
+  {
+    id: 'prac-type-long-form', name: 'PRAC · Top 5 Afiliado (Longo)', icon: Medal,
+    desc: '8–12 min · top 5 contagem regressiva · fórmula "Me Ajuda Na Escolha"',
+    group: 'PRAC',
+    sections: [
+      { id: uid(), type: 'intro',   label: 'Título SEO',         duration: 0,   instructions: 'Fórmula: "As/Os 5 Melhores [Produto] de [Ano] ([Gancho de Curiosidade])"' },
+      { id: uid(), type: 'intro',   label: 'Abertura (Hook)',    duration: 45,  instructions: 'Dor do consumidor → autoridade da varredura → loop de retenção → CTA de adicionar ao carrinho → links no comentário fixado.' },
+      { id: uid(), type: 'product', label: '5º ao 3º Lugar',     duration: 600, instructions: 'Mín. 500 palavras: 3 blocos (5º, 4º, 3º). Cada um: perfil do comprador → diferencial → prova técnica → prova social → âncora de preço → CTA por produto → bridge.' },
+      { id: uid(), type: 'product', label: '2º Lugar',           duration: 180, instructions: '180-220 palavras. Diferencial estrutural, durabilidade, prova social + preço, suspense máximo antes da campeã.' },
+      { id: uid(), type: 'product', label: '1º Lugar — Campeã',  duration: 200, instructions: '220-270 palavras. Revelação épica, prova de volume, specs de performance, maior nota da lista, CTA forte com urgência.' },
+      { id: uid(), type: 'cta',     label: 'CTA Final',          duration: 45,  instructions: 'Recapitule a campeã, direcione para links no comentário fixado, pergunta de engajamento, like e inscrição.' },
+    ],
+  },
+  {
+    id: 'prac-short-form', name: 'PRAC · Short-Form (Reels/Shorts)', icon: Zap,
+    desc: '30–60s · TikTok, Reels, Shorts — 75–130 palavras totais',
+    group: 'PRAC',
+    sections: [
+      { id: uid(), type: 'intro',   label: 'Hook 3 Segundos',                duration: 3,  instructions: '1 frase que para o scroll: dor direta, âncora de preço chocante ou afirmação ousada.' },
+      { id: uid(), type: 'product', label: 'Produto + Diferencial',          duration: 20, instructions: '2-3 frases: nome do produto, diferencial principal visual, spec surpresa.' },
+      { id: uid(), type: 'verdict', label: 'Prova Social + Âncora de Preço',  duration: 12, instructions: '1-2 frases integrando avaliação e investimento naturalmente.' },
+      { id: uid(), type: 'cta',     label: 'CTA Impulsivo',                  duration: 5,  instructions: 'Add-to-cart + urgência numa frase. Roteiro TOTAL: 75-130 palavras.' },
+    ],
+  },
+  {
+    id: 'prac-comparison', name: 'PRAC · Comparação 1x1', icon: Swords,
+    desc: '5–8 min · dois produtos com veredicto PRAC e frase obrigatória',
+    group: 'PRAC',
+    sections: [
+      { id: uid(), type: 'intro',   label: 'Título SEO',                duration: 0,   instructions: '"[A] vs [B]: Qual Vale Mais a Pena em [Ano]? (Análise Honesta)"' },
+      { id: uid(), type: 'intro',   label: 'Abertura — O Dilema',       duration: 60,  instructions: 'Dor do dilema → autoridade → promessa de resolução → CTA add-to-cart → links no comentário fixado.' },
+      { id: uid(), type: 'product', label: 'Produto A — Análise Completa', duration: 150, instructions: '~160 palavras: perfil → diferencial → prova técnica → contra honesto → prova social + preço → enquadramento → bridge.' },
+      { id: uid(), type: 'product', label: 'Produto B — Análise Completa', duration: 150, instructions: '~160 palavras com contraste explícito ao Produto A. Mesma estrutura.' },
+      { id: uid(), type: 'verdict', label: 'Veredicto PRAC',            duration: 90,  instructions: 'Frase obrigatória: "Se você busca [A], vá de [Produto A]. Se precisa de [B], vá de [Produto B]." Vencedor absoluto.' },
+      { id: uid(), type: 'cta',     label: 'CTA Final',                 duration: 45,  instructions: 'Links de ambos no comentário fixado, pergunta "Team A ou Team B?", like e inscrição.' },
+    ],
+  },
+  {
+    id: 'prac-single-review', name: 'PRAC · Review Completo (Único)', icon: Microscope,
+    desc: '4–6 min · análise técnica profunda com 250+ palavras de review',
+    group: 'PRAC',
+    sections: [
+      { id: uid(), type: 'intro',     label: 'Título SEO',                          duration: 0,   instructions: '"[Produto]: Vale a Pena Comprar em [Ano]? (Análise Completa e Honesta)"' },
+      { id: uid(), type: 'intro',     label: 'Abertura — Validação da Dor',         duration: 60,  instructions: 'Dor específica → autoridade da análise → loop de retenção → CTA add-to-cart antecipado.' },
+      { id: uid(), type: 'product',   label: 'Review Técnico Aprofundado',          duration: 240, instructions: 'MÍN. 260 palavras: diferencial central → specs com "por que importa" → uso real → design → contexto de mercado.' },
+      { id: uid(), type: 'pros_cons', label: 'O Que Amamos e O Que Poderia Melhorar', duration: 90,  instructions: '"O que amamos" (3-4 pontos reais) vs "O que poderia ser melhor" (1-2 contras contextualizados).' },
+      { id: uid(), type: 'verdict',   label: 'Prova Social + Âncora de Preço',       duration: 60,  instructions: 'Avaliação exata e preço integrados naturalmente à narrativa.' },
+      { id: uid(), type: 'verdict',   label: 'Veredicto Final — Para Quem Vale?',    duration: 60,  instructions: 'Vale a pena? Perfil ideal vs quem deve evitar. CTA de conversão.' },
+      { id: uid(), type: 'cta',       label: 'CTA Final',                           duration: 45,  instructions: 'Reforce veredicto, link no comentário fixado, pergunta de engajamento, like e inscrição.' },
+    ],
+  },
+]
+
+// Script language options live in lib/languages.js (LANGUAGES) — single source of truth.
 
 const DEFAULT_BLUEPRINT = { id: null, ...STANDARD_TYPES[0] }
 
@@ -972,6 +1318,7 @@ export default function Scripts() {
   const [blueprint,        setBlueprint]      = useState(DEFAULT_BLUEPRINT)
   const [selectedProducts, setSelectedProducts] = useState([])
   const [language,         setLanguage]       = useState('pt')
+  const [languageTouched,  setLanguageTouched] = useState(false)  // user picked a language explicitly
   const [generating,       setGenerating]     = useState(false)
   const [savingBp,         setSavingBp]       = useState(false)
   const [error,            setError]          = useState(null)
@@ -985,50 +1332,89 @@ export default function Scripts() {
   const [wizardProjectId,  setWizardProjectId] = useState('')       // project assignment in wizard
   const [videoType,        setVideoType]      = useState('longform') // 'longform' | 'short'
   const [generatingShorts, setGeneratingShorts] = useState(null)    // scriptId being processed
+  const [genDone,          setGenDone]        = useState(false)     // success → animated green check
+  const [lastGen,          setLastGen]        = useState(null)      // params of the last generation, reused for language variants
+  const [langDone,         setLangDone]       = useState([])        // language codes already generated from lastGen
+  const [langBusy,         setLangBusy]       = useState(null)      // language code currently generating
 
   // Projects list for wizard assignment
   const { data: projectsData } = useApi('/projects')
   const projectsList = projectsData?.projects ?? []
 
+  const ALL_TYPES     = [...STANDARD_TYPES, ...PRAC_TYPES]
   const productLimit = activeTypeId ? (PRODUCT_LIMITS[activeTypeId] ?? null) : null
-  const canGenerate  = productLimit == null ? true : selectedProducts.length === productLimit
+  const canGenerate  = productLimit == null ? selectedProducts.length > 0 : selectedProducts.length === productLimit
 
   function selectType(typeId) {
-    const t = STANDARD_TYPES.find(t => t.id === typeId)
+    const t = ALL_TYPES.find(t => t.id === typeId)
     if (!t) return
     setActiveTypeId(typeId); setActiveDbBp(null); setSelectedProducts([])
-    setBlueprint({ id: null, name: t.name, desc: t.desc, sections: t.sections.map(s => ({ ...s, id: uid() })) })
+    // templateId carries the canonical blueprint id so the backend can align the
+    // generated script to the standard blueprint (correct section names + rich prompts).
+    setBlueprint({ id: null, templateId: t.id, name: t.name, desc: t.desc, sections: t.sections.map(s => ({ ...s, id: uid() })) })
     setWizardStep('format')
   }
 
-  function toggleProduct(id) {
+  // Map a product's mining region → script language
+  const REGION_LANG = { br: 'pt', mx: 'es-mx', es: 'es-es', us: 'en', ca: 'en' }
+
+  function toggleProduct(id, product) {
     setSelectedProducts(prev => {
       if (prev.includes(id)) return prev.filter(p => p !== id)
       if (productLimit != null && prev.length >= productLimit) return prev
+      // Auto-adapt the script language to the region the product was mined from,
+      // but only if the user hasn't explicitly chosen a language yet.
+      const regionLang = product?.region ? REGION_LANG[product.region] : null
+      if (regionLang && prev.length === 0 && !languageTouched) setLanguage(regionLang)
       return [...prev, id]
     })
   }
 
+  // Shared by the main generate button and the "another language" follow-up.
+  // Returns the created script (or throws). Does NOT manage the overlay/error UI.
+  async function generateScript(lang) {
+    const body = {
+      blueprintData: blueprint,
+      productIds: selectedProducts,
+      language: lang,
+      videoType: videoType ?? 'longform',
+      ...(wizardProjectId ? { projectId: wizardProjectId } : {}),
+    }
+    const res  = await fetch('/api/scripts/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error ?? res.statusText)
+    return data
+  }
+
   async function handleGenerate() {
-    setGenerating(true); setError(null)
+    setGenerating(true); setGenDone(false); setError(null)
     try {
-      const body = {
-        blueprintData: blueprint,
-        productIds: selectedProducts,
-        language,
-        videoType: videoType ?? 'longform',
-        ...(wizardProjectId ? { projectId: wizardProjectId } : {}),
-      }
-      const res  = await fetch('/api/scripts/generate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? res.statusText)
+      const data = await generateScript(language)
       await refetch(); setSelected(data); setActiveTab('scripts')
+      // Remember what we just built so the follow-up can offer the other languages.
+      setLastGen({ blueprint, productIds: selectedProducts, videoType, projectId: wizardProjectId, sourceCode: normalizeLang(language) })
+      setLangDone([normalizeLang(language)])
+      setGenDone(true)
+      await sleep(1100) // let the green check land before hiding the overlay
     } catch (e) {
       console.error('[scripts]', e.message); setError(friendlyError(e.message))
-    } finally { setGenerating(false) }
+    } finally { setGenerating(false); setGenDone(false) }
+  }
+
+  // Follow-up: regenerate the SAME blueprint + products in another language.
+  async function handleGenerateLanguage(code) {
+    const lang = normalizeLang(code)
+    setLangBusy(lang); setError(null)
+    try {
+      const data = await generateScript(lang)
+      await refetch(); setSelected(data); setActiveTab('scripts')
+      setLangDone((prev) => (prev.includes(lang) ? prev : [...prev, lang]))
+    } catch (e) {
+      console.error('[scripts] language variant', e.message); setError(friendlyError(e.message))
+    } finally { setLangBusy(null) }
   }
 
   async function handleGenerateShorts(scriptId) {
@@ -1050,7 +1436,10 @@ export default function Scripts() {
     try {
       const method = blueprint.id ? 'PUT' : 'POST'
       const url    = blueprint.id ? `/api/blueprints/${blueprint.id}` : '/api/blueprints'
-      const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(blueprint) })
+      // Strip templateId — a saved custom blueprint is its own source of truth and
+      // must NOT be re-aligned to a canonical PRAC template on generation.
+      const { templateId: _t, ...payload } = blueprint
+      const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data   = await res.json()
       if (!res.ok) throw new Error(data.error ?? res.statusText)
       setBlueprint(data); setActiveDbBp(data.id); await refetchBp()
@@ -1117,7 +1506,7 @@ export default function Scripts() {
 
   return (
     <div className="animate-fade-up">
-      <AILoadingOverlay show={generating} title="Gerando Roteiro" />
+      <AILoadingOverlay show={generating} done={genDone} title="Gerando Roteiro" />
 
       <PageHeader
         overline="Pipeline"
@@ -1158,7 +1547,7 @@ export default function Scripts() {
       {error && (
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-5 text-sm"
           style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.20)', color: '#FF3366' }}>
-          <span className="text-base">⚠️</span>
+          <AlertTriangle size={15} className="shrink-0" />
           {error}
           <button onClick={() => setError(null)} className="ml-auto opacity-60 hover:opacity-100">
             <X size={13} />
@@ -1296,7 +1685,7 @@ export default function Scripts() {
                     done:   wizardStep !== 'format',
                     active: wizardStep === 'format',
                     sublabel: wizardStep !== 'format' && activeTypeId
-                      ? `${STANDARD_TYPES.find(t => t.id === activeTypeId)?.icon} ${STANDARD_TYPES.find(t => t.id === activeTypeId)?.name}`
+                      ? `${ALL_TYPES.find(t => t.id === activeTypeId)?.name}`
                       : null,
                   },
                   {
@@ -1395,7 +1784,7 @@ export default function Scripts() {
                 <div className="mt-2 rounded-2xl p-4"
                   style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <p className="text-[11px] text-white/35 leading-relaxed">
-                    {wizardStep === 'format' && 'Selecione o formato que define quantos produtos e a estrutura narrativa do vídeo.'}
+                    {wizardStep === 'format' && 'Selecione o formato padrão ou um blueprint PRAC (fórmula "Me Ajuda Na Escolha") que define a estrutura e duração do vídeo.'}
                     {wizardStep === 'review' && 'O blueprint controla os prompts de cada seção. Personalize ou use o padrão do formato.'}
                     {wizardStep === 'products' && 'Pesquise e selecione os produtos que aparecerão no vídeo. A IA irá gerar o roteiro completo.'}
                   </p>
@@ -1413,45 +1802,63 @@ export default function Scripts() {
                       <div className="px-4 py-3 border-b border-white/[0.05]">
                         <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Selecione o Formato</span>
                       </div>
-                      <div className="p-3 space-y-1.5">
-                        {STANDARD_TYPES.map(t => {
-                          const isActive = activeTypeId === t.id && !activeDbBp
-                          const limit    = PRODUCT_LIMITS[t.id]
-                          return (
-                            <button key={t.id} onClick={() => selectType(t.id)}
-                              className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all"
-                              style={{
-                                borderColor: isActive ? '#CCFF00' : 'rgba(255,255,255,0.06)',
-                                background:  isActive ? 'rgba(204,255,0,0.05)' : 'transparent',
-                              }}>
-                              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
-                                style={{ background: isActive ? 'rgba(204,255,0,0.12)' : 'rgba(255,255,255,0.04)' }}>
-                                {t.icon}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-semibold text-white/80 truncate">{t.name}</span>
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-                                    style={{
-                                      background: isActive ? 'rgba(204,255,0,0.12)' : 'rgba(255,255,255,0.05)',
-                                      color:      isActive ? '#CCFF00' : 'rgba(255,255,255,0.30)',
-                                    }}>
-                                    {limit} {limit === 1 ? 'produto' : 'produtos'}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-white/30 mt-0.5 leading-tight">{t.desc}</p>
-                              </div>
-                              {isActive && (
-                                <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                                  style={{ background: '#CCFF00' }}>
-                                  <Check size={9} style={{ color: '#07070B' }} />
-                                </div>
-                              )}
-                            </button>
-                          )
-                        })}
+                      <div className="p-3 space-y-3">
+                        {/* Standard formats */}
+                        <div className="space-y-1.5">
+                          {STANDARD_TYPES.map(t => <FormatButton key={t.id} t={t} activeTypeId={activeTypeId} activeDbBp={activeDbBp} onSelect={selectType} />)}
+                        </div>
+
+                        {/* PRAC formats */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 px-1 pt-1">
+                            <span className="text-[9px] font-black uppercase tracking-[0.18em]"
+                              style={{ color: 'rgba(204,255,0,0.50)' }}>PRAC · Me Ajuda Na Escolha</span>
+                            <div className="flex-1 h-px" style={{ background: 'rgba(204,255,0,0.10)' }} />
+                          </div>
+                          {PRAC_TYPES.map(t => <FormatButton key={t.id} t={t} activeTypeId={activeTypeId} activeDbBp={activeDbBp} onSelect={selectType} isPrac />)}
+                        </div>
                       </div>
                     </div>
+
+                    {/* Language selector — shown after a format is selected */}
+                    {activeTypeId && (
+                      <div className="rounded-2xl p-4"
+                        style={{ border: '1px solid rgba(204,255,0,0.18)', background: 'rgba(204,255,0,0.03)' }}>
+                        <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: 'rgba(204,255,0,0.70)' }}>
+                          Em qual idioma será o roteiro?
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {LANGUAGES.map(l => {
+                            const active = language === l.code
+                            return (
+                              <button key={l.code} onClick={() => { setLanguage(l.code); setLanguageTouched(true) }}
+                                className="flex items-center gap-2.5 p-3 rounded-xl border-2 text-left transition-all"
+                                style={{
+                                  borderColor: active ? '#CCFF00' : 'rgba(255,255,255,0.07)',
+                                  background:  active ? 'rgba(204,255,0,0.06)' : 'transparent',
+                                }}>
+                                <span className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                                  style={{ background: active ? 'rgba(204,255,0,0.15)' : 'rgba(255,255,255,0.05)', color: active ? '#CCFF00' : 'rgba(255,255,255,0.55)' }}>
+                                  {l.chip}</span>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-white/85 leading-tight">{l.label}</p>
+                                  <p className="text-[10px] text-white/35 truncate">{l.sub}</p>
+                                </div>
+                                {active && (
+                                  <div className="ml-auto w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                                    style={{ background: '#CCFF00' }}>
+                                    <Check size={9} style={{ color: '#07070B' }} />
+                                  </div>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <p className="text-[10px] text-white/30 mt-2.5 leading-snug">
+                          Ajustado automaticamente ao selecionar produtos. Os produtos mudam conforme o idioma/região.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Blueprint review prompt — shown after a format is selected */}
                     {activeTypeId && (
@@ -1600,8 +2007,8 @@ export default function Scripts() {
                         <span className="text-[10px] text-white/35 font-bold uppercase tracking-widest flex-1">Tipo de Vídeo</span>
                         <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {[
-                            { v: 'longform', l: '📹 Longo' },
-                            { v: 'short',    l: '⚡ Short' },
+                            { v: 'longform', l: 'Longo' },
+                            { v: 'short',    l: 'Short' },
                           ].map(vt => (
                             <button key={vt.v} onClick={() => setVideoType(vt.v)}
                               className="px-2.5 py-1 rounded-md text-xs font-bold transition-all"
@@ -1620,7 +2027,7 @@ export default function Scripts() {
                         <span className="text-[10px] text-white/35 font-bold uppercase tracking-widest flex-1">Idioma do Roteiro</span>
                         <div className="flex gap-1.5">
                           {[{ v: 'pt', l: 'PT' }, { v: 'en', l: 'EN' }, { v: 'es', l: 'ES' }].map(lang => (
-                            <button key={lang.v} onClick={() => setLanguage(lang.v)}
+                            <button key={lang.v} onClick={() => { setLanguage(lang.v); setLanguageTouched(true) }}
                               className="px-2.5 py-1 rounded-lg text-xs font-bold border transition-all"
                               style={{
                                 background:  language === lang.v ? '#8B5CF6' : 'transparent',
@@ -1762,11 +2169,25 @@ export default function Scripts() {
           {/* Right: viewer */}
           <div className="col-span-3">
             {selectedScript ? (
-              <ScriptViewer
-                script={selectedScript}
-                onUpdate={handleScriptUpdate}
-                onClose={() => setSelected(null)}
-              />
+              <>
+                <ScriptViewer
+                  script={selectedScript}
+                  onUpdate={handleScriptUpdate}
+                  onClose={() => setSelected(null)}
+                />
+                {/* Opt-in: offer the other two languages for what we just generated */}
+                {lastGen && langDone.includes(normalizeLang(selectedScript.language)) && (
+                  <LanguageFollowUp
+                    title="Gerar este roteiro em outro idioma?"
+                    subtitle="Cria uma nova versão do mesmo roteiro — mesmos produtos e estrutura — adaptada ao idioma escolhido. Cada idioma é uma geração separada."
+                    currentCode={lastGen.sourceCode}
+                    options={otherLanguages(lastGen.sourceCode).map((l) => l.code)}
+                    doneCodes={langDone}
+                    busyCode={langBusy}
+                    onPick={handleGenerateLanguage}
+                  />
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full min-h-64 gap-4 rounded-2xl"
                 style={{ border: '1px dashed rgba(255,255,255,0.07)' }}>

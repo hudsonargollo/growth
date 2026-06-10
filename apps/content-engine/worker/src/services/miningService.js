@@ -1,5 +1,36 @@
 import { getDb } from '../lib/db.js'
 import { uid } from '../lib/uid.js'
+import { searchAmazonCreators } from './amazonCreatorsService.js'
+
+// ── Markets ───────────────────────────────────────────────────────────────────
+// Per-country SerpAPI locale params, Amazon storefront domain, and currency.
+const MARKETS = {
+  br: { code: 'br', label: 'Brasil',         gl: 'br', hl: 'pt', amazonDomain: 'amazon.com.br', currency: 'BRL', mlSite: 'MLB' },
+  mx: { code: 'mx', label: 'México',         gl: 'mx', hl: 'es', amazonDomain: 'amazon.com.mx', currency: 'MXN', mlSite: 'MLM' },
+  es: { code: 'es', label: 'Espanha',        gl: 'es', hl: 'es', amazonDomain: 'amazon.es',     currency: 'EUR' },
+  us: { code: 'us', label: 'Estados Unidos', gl: 'us', hl: 'en', amazonDomain: 'amazon.com',    currency: 'USD' },
+  ca: { code: 'ca', label: 'Canadá',         gl: 'ca', hl: 'en', amazonDomain: 'amazon.ca',     currency: 'CAD' },
+}
+
+// ── Region groups (by language) ───────────────────────────────────────────────
+// The mining UI offers one option PER LANGUAGE. Each group mines every one of its
+// countries' Amazon stores and combines the results (each product keeps its own
+// currency). Brasil uses Mercado Livre MLB; México uses Mercado Livre MLM.
+//   - Português (pt): Brasil — Mercado Livre MLB + Amazon BR
+//   - Español (es):   México + Espanha — Mercado Livre MLM + Amazon MX/ES
+//   - English (en):   EUA + Canadá — Amazon only
+export const REGIONS = {
+  pt: { code: 'pt', label: 'Português', flag: '🇧🇷', sublabel: 'Brasil',          lang: 'pt', hasML: true, markets: ['br'] },
+  es: { code: 'es', label: 'Español',   flag: '🌎', sublabel: 'España & México', lang: 'es', hasML: true, markets: ['mx', 'es'] },
+  en: { code: 'en', label: 'English',   flag: '🌎', sublabel: 'US & Canada',     lang: 'en', hasML: false, markets: ['us', 'ca'] },
+}
+
+// Resolve a group from a group code (pt/es/en) OR a legacy country code (br/mx/…).
+export function getRegion(code) {
+  if (REGIONS[code]) return REGIONS[code]
+  for (const g of Object.values(REGIONS)) if (g.markets.includes(code)) return g
+  return REGIONS.pt
+}
 
 // ── Price parser — handles Brazilian (1.234,56) and US (1,234.56) formats ─────
 function parsePrice(raw) {
@@ -27,8 +58,8 @@ function scoreProduct(p) {
 
 // Enhanced scorer for direct MercadoLivre API (has sold_quantity, listing_type, seller_reputation)
 function scoreMLProduct(p) {
-  // sold_quantity: up to 45 pts (1000 sold = max)
-  const soldScore = Math.min((p.soldQuantity ?? 0) / 1000, 1) * 45
+  // sold_quantity: up to 40 pts (1000 sold = max)
+  const soldScore = Math.min((p.soldQuantity ?? 0) / 1000, 1) * 40
 
   // listing quality: up to 20 pts
   const listingScores = { gold_pro: 20, gold_special: 16, gold: 12, silver: 6, bronze: 3, free: 1 }
@@ -49,7 +80,12 @@ function scoreMLProduct(p) {
   // official store / catalog: bonus 5 pts
   const officialScore = (p.officialStore || p.catalogListing) ? 5 : 0
 
-  return Math.round(soldScore + listingScore + sellerScore + shippingScore + discountScore + officialScore)
+  // real product reviews: up to 12 pts — a high buyer rating backed by review volume
+  const reviewScore = (p.reviewCount ?? 0) > 0
+    ? Math.min((p.rating ?? 0) / 5, 1) * 8 + Math.min((p.reviewCount ?? 0) / 500, 1) * 4
+    : 0
+
+  return Math.round(soldScore + listingScore + sellerScore + shippingScore + discountScore + officialScore + reviewScore)
 }
 
 // Blog review quality scorer (0–15 pts added on top of base score)
@@ -114,6 +150,43 @@ async function fetchBlogReviews(env, productTitle, serpKey) {
   } catch { return [] }
 }
 
+// ── Google review-image fetcher ───────────────────────────────────────────────
+// Pulls product-evaluation images/graphics (review photos, rating graphics) from
+// Google Images so the video generator can use them as reference / B-roll assets.
+// Returns up to 6 image objects: { url, thumb, title, source, width, height }.
+async function fetchReviewImages(env, productTitle, serpKey) {
+  try {
+    if (!serpKey) return []
+    const cleanTitle = productTitle.slice(0, 60).replace(/[()[\]]/g, '').trim()
+    const params = new URLSearchParams({
+      engine: 'google_images', api_key: serpKey,
+      // Market-neutral query — visuals are language-agnostic; "review" surfaces
+      // evaluation shots and rating graphics over plain catalog renders.
+      q: `${cleanTitle} review`,
+      num: '10',
+    })
+    const res = await fetch(`https://serpapi.com/search?${params}`)
+    if (!res.ok) return []
+    const json    = await res.json()
+    const results = json.images_results ?? []
+    return results
+      .filter(r => r.original && /^https?:\/\//.test(r.original))
+      .slice(0, 6)
+      .map(r => {
+        let source = r.source ?? ''
+        try { if (r.link) source = new URL(r.link).hostname.replace('www.', '') } catch {}
+        return {
+          url:    r.original,
+          thumb:  r.thumbnail ?? r.original,
+          title:  r.title ?? '',
+          source,
+          width:  r.original_width  ?? null,
+          height: r.original_height ?? null,
+        }
+      })
+  } catch { return [] }
+}
+
 // ── ML fetch helper — routes through proxy when ML_PROXY_URL is set ───────────
 // Cloudflare Workers' egress IPs are blocked by MercadoLibre. When ML_PROXY_URL
 // points to a Deno Deploy proxy, all ML API calls go through it instead.
@@ -151,10 +224,53 @@ async function getMLToken(env) {
   return { token: json.access_token ?? null, error: null }
 }
 
+// ── ML product reviews — real buyer rating + review count ─────────────────────
+// GET /reviews/item/{itemId} → { rating_average, paging.total, ... }. Replaces the
+// seller-reputation proxy with the product's actual buyer rating. Tolerant by
+// design: any non-OK / empty / error response returns null so callers fall back.
+async function fetchMLReviews(env, itemId, catalogProductId = '', token = null) {
+  if (!itemId) return null
+  try {
+    const qs = new URLSearchParams({ limit: '1' })
+    if (catalogProductId) qs.set('catalog_product_id', catalogProductId)
+    const headers = { 'User-Agent': 'FabricaDeConteudo/1.0', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    const res = await mlFetch(env, `/reviews/item/${encodeURIComponent(itemId)}?${qs}`, { headers })
+    if (!res.ok) return null
+    const json  = await res.json()
+    const avg   = Number(json.rating_average ?? 0)
+    const count = Number(json.paging?.total ?? json.reviews?.length ?? 0)
+    if (!avg && !count) return null
+    return { ratingAverage: Math.round(avg * 10) / 10, reviewCount: count }
+  } catch {
+    return null
+  }
+}
+
+// Decrypt the connected ML user OAuth access token from KV (null if not connected).
+// /reviews/item generally needs a user-level token, not the app client_credentials one.
+async function getMLUserToken(env) {
+  if (!env.KV1 || !env.CREDENTIALS_SECRET) return null
+  try {
+    const { decrypt } = await import('../lib/crypto.js')
+    const stored = await env.KV1.get('apikey:ML_USER_ACCESS_TOKEN', { type: 'json' }).catch(() => null)
+    if (!stored?.ciphertext) return null
+    return await decrypt(stored.ciphertext, stored.iv, env.CREDENTIALS_SECRET).catch(() => null)
+  } catch {
+    return null
+  }
+}
+
 // ── MercadoLivre Direct API ───────────────────────────────────────────────────
-async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_desc', limit = 20, mlAffiliateId = '' }) {
+// `site` is the ML site code: 'MLB' = Brasil, 'MLM' = México. Defaults to 'MLB'.
+async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_desc', limit = 20, mlAffiliateId = '', site = 'MLB' }) {
   const { token, error: tokenError } = await getMLToken(env)
   console.log(`[ML] token=${token ? 'ok' : 'null'} tokenError=${tokenError ?? 'none'}`)
+
+  // Reviews generally require a user-level OAuth token — prefer the connected one,
+  // fall back to the app token (which usually 403s for /reviews → graceful null).
+  const userToken   = await getMLUserToken(env)
+  const reviewToken = userToken ?? token
+  console.log(`[ML] reviewToken=${userToken ? 'user' : (token ? 'app' : 'none')}`)
 
   const makeParams = (sort) => new URLSearchParams({ q: query, sort, limit: String(limit) })
 
@@ -166,20 +282,20 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
 
   // 1. Preferred sort with token
   let params = makeParams(sortBy)
-  let res    = await mlFetch(env, `/sites/MLB/search?${params}`, { headers })
+  let res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers })
   console.log(`[ML] attempt1 sort=${sortBy} status=${res.status}`)
 
   // 2. sold_quantity_desc needs higher scope → fall back to relevance, keep token
   if (res.status === 403 && sortBy !== 'relevance') {
     params = makeParams('relevance')
-    res    = await mlFetch(env, `/sites/MLB/search?${params}`, { headers })
+    res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers })
     console.log(`[ML] attempt2 sort=relevance status=${res.status}`)
   }
 
   // 3. Token itself rejected → try relevance without auth (public endpoint)
   if (res.status === 403 || res.status === 401) {
     params = makeParams('relevance')
-    res    = await mlFetch(env, `/sites/MLB/search?${params}`, { headers: baseHeaders })
+    res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers: baseHeaders })
     console.log(`[ML] attempt3 sort=relevance noauth status=${res.status}`)
   }
 
@@ -200,12 +316,20 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
   const listingTotal = json.paging?.total ?? 0
   console.log(`[ML] query="${query}" results=${results.length} listingTotal=${listingTotal}`)
 
-  const products = results.map((item) => {
+  const products = await Promise.all(results.map(async (item, idx) => {
     const permalink    = item.permalink ?? ''
     const affiliateLink = buildMercadoLibreAffiliateLink(permalink, mlAffiliateId)
     const soldQty      = item.sold_quantity ?? 0
     const discount     = (item.original_price && item.original_price > item.price)
       ? Math.round((1 - item.price / item.original_price) * 100) : 0
+
+    // Seller-reputation positive % → 0–5 proxy, used only when a product has no real reviews.
+    const sellerRepRating = item.seller?.seller_reputation?.transactions?.ratings?.positive
+      ? Math.round(item.seller.seller_reputation.transactions.ratings.positive * 5 * 10) / 10
+      : 0
+    // Real buyer rating + review count. Capped to the first 20 items to respect
+    // Cloudflare's per-request subrequest budget; null on 403/empty/error → fall back.
+    const rev = idx < 20 ? await fetchMLReviews(env, item.id, item.catalog_product_id ?? '', reviewToken) : null
 
     return {
       id:              uid(),
@@ -214,10 +338,9 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
       price:           item.price ?? 0,
       originalPrice:   item.original_price ?? null,
       discountPct:     discount,
-      rating:          item.seller?.seller_reputation?.transactions?.ratings?.positive
-                         ? Math.round(item.seller.seller_reputation.transactions.ratings.positive * 5 * 10) / 10
-                         : 0,
-      reviews:         soldQty,           // sold_quantity stored as reviews for sorting
+      rating:          rev?.ratingAverage || sellerRepRating,   // prefer the real buyer rating
+      reviewCount:     rev?.reviewCount ?? 0,                   // real number of product reviews
+      reviews:         soldQty,           // sold_quantity stored as reviews for sorting (legacy)
       soldQuantity:    soldQty,
       listingType:     item.listing_type_id ?? '',
       sellerLevel:     item.seller?.seller_reputation?.level_id ?? '',
@@ -231,12 +354,12 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
       amazonAffiliateLink: null,
       productUrl:      permalink,
       imageUrl:        item.thumbnail ?? '',
-      currency:        'BRL',
+      currency:        site === 'MLM' ? 'MXN' : 'BRL',
       sourceApi:       'ml_direct',
       lastSeen:        new Date().toISOString(),
       score:           0, // will be computed after
     }
-  })
+  }))
   return { products, listingTotal }
 }
 
@@ -337,7 +460,7 @@ export async function fetchMLTrends(env) {
 
 // ── SerpAPI — Google Shopping ─────────────────────────────────────────────────
 // serpKey can be pre-resolved by the caller to avoid redundant Supabase fetches.
-async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all', siteRestrict = '', serpKey: preResolvedKey } = {}) {
+async function fetchSerpApi(env, { category, engine = 'google_shopping', limit = 20, amazonTag = '', mlAffiliateId = '', siteFilter = 'all', siteRestrict = '', serpKey: preResolvedKey, region = MARKETS.br } = {}) {
   let serpKey = preResolvedKey
   if (!serpKey) {
     const { resolveKey } = await import('../lib/resolveKey.js')
@@ -349,11 +472,11 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
   // has enough raw results. SerpAPI paginates at 100 max; for direct site-restricted
   // queries the results are already scoped, so we cap at limit there.
   const fetchLimit = siteRestrict ? limit : 100
-  const params = new URLSearchParams({ engine, api_key: serpKey, hl: 'pt', gl: 'br', num: String(fetchLimit) })
+  const params = new URLSearchParams({ engine, api_key: serpKey, hl: region.hl, gl: region.gl, num: String(fetchLimit) })
 
   if (engine === 'amazon') {
     params.set('k', category)
-    params.set('amazon_domain', 'amazon.com.br')
+    params.set('amazon_domain', region.amazonDomain)
     params.delete('gl'); params.delete('hl'); params.delete('num')
   } else {
     // Append site: operator when restricted to a specific domain
@@ -396,15 +519,25 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
     })
     console.log(`[serp] after filter: ${filtered.length} items`)
     return filtered.slice(0, limit).map((item) => {
-      const rawLink = item.link ?? item.product_link ?? ''
+      // product_link is the actual merchant URL; link is typically a Google Shopping redirect
+      const productLink = item.product_link ?? ''
+      const googleLink  = item.link ?? ''
+      // Use the actual merchant URL when available; fall back to Google Shopping redirect
+      const rawLink = productLink || googleLink
+
       const mlItem  = isML(item)
       const amzItem = isAmazon(item)
       const mp      = mlItem ? 'mercadolivre' : amzItem ? 'amazon' : (item.source ?? 'other').toLowerCase().replace(/\s+/g, '_').slice(0, 40)
-      const affiliateLink = mlItem
-        ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)
-        : amzItem
-          ? buildAmazonAffiliateLink(rawLink, '', amazonTag)
-          : rawLink  // non-affiliate store: just use the direct product URL
+
+      // Only set affiliate links when we have a REAL ML/Amazon URL (not a Google Shopping redirect)
+      const isRealMLUrl  = rawLink.includes('mercadolivre') || rawLink.includes('mercadolibre')
+      const isRealAmzUrl = rawLink.includes('amazon.com')
+
+      const mlAffiliateLink     = (mlItem  && isRealMLUrl)  ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId)            : null
+      const amazonAffiliateLink = (amzItem && isRealAmzUrl) ? buildAmazonAffiliateLink(rawLink, '', amazonTag, region.amazonDomain) : null
+      // Best available link: proper affiliate link → raw merchant URL → Google Shopping fallback
+      const affiliateLink = mlAffiliateLink ?? amazonAffiliateLink ?? rawLink
+
       return {
         id: uid(), marketplace: mp,
         title:      item.title ?? '',
@@ -413,11 +546,11 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
         rating:     item.rating ?? 0,
         reviews:    item.reviews ?? 0,
         affiliateLink,
-        mlAffiliateLink:      mlItem  ? buildMercadoLibreAffiliateLink(rawLink, mlAffiliateId) : null,
-        amazonAffiliateLink:  amzItem ? buildAmazonAffiliateLink(rawLink, '', amazonTag)        : null,
-        productUrl: rawLink,
+        mlAffiliateLink,
+        amazonAffiliateLink,
+        productUrl: isRealMLUrl || isRealAmzUrl ? rawLink : googleLink || rawLink,
         imageUrl:   item.thumbnail ?? '',
-        currency: 'BRL', sourceApi: 'serpapi_google', lastSeen: new Date().toISOString(),
+        currency: region.currency, region: region.code, sourceApi: 'serpapi_google', lastSeen: new Date().toISOString(),
         freeShipping: false, condition: 'new',
       }
     })
@@ -431,12 +564,12 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
       price:      parsePrice(item.price?.value ?? item.price),
       rating:     item.rating ?? 0,
       reviews:    item.reviews ?? 0,
-      affiliateLink:       buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag),
-      amazonAffiliateLink: buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag),
+      affiliateLink:       buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag, region.amazonDomain),
+      amazonAffiliateLink: buildAmazonAffiliateLink(item.link ?? '', item.asin ?? '', amazonTag, region.amazonDomain),
       mlAffiliateLink:     null,
-      productUrl: item.link ?? (item.asin ? `https://www.amazon.com.br/dp/${item.asin}` : ''),
+      productUrl: item.link ?? (item.asin ? `https://www.${region.amazonDomain}/dp/${item.asin}` : ''),
       imageUrl:   item.thumbnail ?? '',
-      currency: 'BRL', sourceApi: 'serpapi_amazon', lastSeen: new Date().toISOString(),
+      currency: region.currency, region: region.code, sourceApi: 'serpapi_amazon', lastSeen: new Date().toISOString(),
       freeShipping: false, condition: 'new',
     }))
   }
@@ -444,9 +577,9 @@ async function fetchSerpApi(env, { category, engine = 'google_shopping', limit =
 }
 
 // ── Affiliate link builders ───────────────────────────────────────────────────
-function buildAmazonAffiliateLink(url, asin, tag) {
-  if (!tag) return url || (asin ? `https://www.amazon.com.br/dp/${asin}` : '')
-  if (asin) return `https://www.amazon.com.br/dp/${asin}?tag=${tag}`
+function buildAmazonAffiliateLink(url, asin, tag, domain = 'amazon.com.br') {
+  if (!tag) return url || (asin ? `https://www.${domain}/dp/${asin}` : '')
+  if (asin) return `https://www.${domain}/dp/${asin}?tag=${tag}`
   try { const u = new URL(url); u.searchParams.set('tag', tag); return u.toString() } catch { return url }
 }
 
@@ -464,6 +597,78 @@ function buildMercadoLibreAffiliateLink(permalink, affiliateTag) {
   } catch { return permalink }
 }
 
+// ── Cross-platform title matching ─────────────────────────────────────────────
+// Returns a [0, 1] word-overlap score between two product titles (language-aware).
+function titleWordOverlap(a, b) {
+  const tokenize = s => (s ?? '').toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+  const ta = new Set(tokenize(a))
+  const tb = new Set(tokenize(b))
+  if (!ta.size || !tb.size) return 0
+  const common = [...ta].filter(w => tb.has(w)).length
+  return common / Math.max(ta.size, tb.size)
+}
+
+// Enrich `primary` products in-place with the affiliate link of the best-matching
+// `secondary` product (min 25% word overlap). ML products get Amazon links,
+// Amazon products get ML links.
+function crossMatchLinks(primary, secondary) {
+  for (const p of primary) {
+    let bestScore = 0.25
+    let best = null
+    for (const s of secondary) {
+      const score = titleWordOverlap(p.title, s.title)
+      if (score > bestScore) { bestScore = score; best = s }
+    }
+    if (!best) continue
+    if (p.marketplace === 'mercadolivre') {
+      if (!p.amazonAffiliateLink)
+        p.amazonAffiliateLink = best.amazonAffiliateLink || best.affiliateLink || null
+    } else if (p.marketplace === 'amazon') {
+      if (!p.mlAffiliateLink)
+        p.mlAffiliateLink = best.mlAffiliateLink || best.affiliateLink || null
+    }
+  }
+}
+
+// Normalize an Amazon Creators API product into the standard mining product shape.
+// Creators API returns real ASIN, price, image, and (when account-eligible) ratings.
+function normalizeAmazonCreatorsProduct(p, { market, amazonTag }) {
+  const affiliateLink = buildAmazonAffiliateLink(p.productUrl, p.asin, amazonTag, market.amazonDomain)
+  return {
+    id:                  uid(),
+    marketplace:         'amazon',
+    asin:                p.asin,
+    title:               p.title,
+    price:               p.price,
+    originalPrice:       null,
+    discountPct:         0,
+    rating:              p.rating,
+    reviews:             p.reviewCount,  // mirrors legacy field for sorting compat
+    reviewCount:         p.reviewCount,
+    soldQuantity:        0,
+    listingType:         '',
+    sellerLevel:         '',
+    condition:           'new',
+    freeShipping:        false,
+    fulfillment:         false,
+    officialStore:       false,
+    catalogListing:      false,
+    affiliateLink,
+    mlAffiliateLink:     null,
+    amazonAffiliateLink: affiliateLink,
+    productUrl:          p.productUrl,
+    imageUrl:            p.imageUrl,
+    currency:            market.currency,
+    region:              market.code,
+    sourceApi:           'amazon_creators',
+    lastSeen:            new Date().toISOString(),
+    score:               0,
+  }
+}
+
 async function loadAffiliateIds(env) {
   const { resolveKey } = await import('../lib/resolveKey.js')
   const [amazonTag, mlAffiliateTag] = await Promise.all([
@@ -473,13 +678,64 @@ async function loadAffiliateIds(env) {
   return { amazonTag: amazonTag ?? '', mlAffiliateId: mlAffiliateTag ?? '' }
 }
 
+// ── Per-country query localization ────────────────────────────────────────────
+// Each Amazon storefront must be queried in ITS OWN language, otherwise a PT
+// keyword (e.g. "cadeira gamer") returns garbage on amazon.es / amazon.com.
+// We translate the keyword once per (lang, term) and cache it for the isolate.
+const _queryL10nCache = new Map()  // `${lang}:${term}` → translated term
+
+async function localizeQuery(env, term, lang) {
+  const target = (lang || 'pt').slice(0, 2)
+  // pt is the source UI language — no translation needed.
+  if (target === 'pt' || !term || !term.trim()) return term
+  const cacheKey = `${target}:${term.toLowerCase().trim()}`
+  if (_queryL10nCache.has(cacheKey)) return _queryL10nCache.get(cacheKey)
+  try {
+    const { callLLM } = await import('../lib/llm.js')
+    const langName = target === 'es' ? 'Spanish' : target === 'en' ? 'English' : target
+    const out = await callLLM(env, {
+      system: `You translate e-commerce product search keywords. Reply with ONLY the translated search term in ${langName} — no quotes, no explanation, just the concise product noun phrase a shopper would type into Amazon.`,
+      prompt: term,
+      maxTokens: 30,
+    })
+    const cleaned = (out || '').trim().split('\n')[0].replace(/^["']|["']$/g, '').slice(0, 80) || term
+    _queryL10nCache.set(cacheKey, cleaned)
+    return cleaned
+  } catch {
+    return term  // never break mining on a translation hiccup
+  }
+}
+
+// ── High-hype quality gate ────────────────────────────────────────────────────
+// Keep products with real traction (review volume or a strong rating) so the
+// catalog focuses on popular items. Guarded so it never starves a market: if too
+// few products clear the bar, return the original set unchanged.
+function filterHighHype(products, { minReviews = 50, minRating = 4.3 } = {}) {
+  if (!Array.isArray(products) || products.length <= 3) return products || []
+  const strong = products.filter(
+    p => (p.reviews ?? p.reviewCount ?? 0) >= minReviews || (p.rating ?? 0) >= minRating
+  )
+  return strong.length >= 3 ? strong : products
+}
+
 // Root tenant UUID — pinned in migration 002
 const ROOT_TENANT_ID = '00000000-0000-0000-0000-000000000001'
 
 // ── Main session runner ───────────────────────────────────────────────────────
-export async function runMiningSession(env, { marketplace, category, siteFilter = 'all', sortBy = 'relevance' }) {
+export async function runMiningSession(env, { marketplace, category, siteFilter = 'all', sortBy = 'relevance', region = 'pt' }) {
   const db        = getDb(env)
   const sessionId = uid()
+  const group     = getRegion(region)                 // language group (pt/es/en)
+  const reg       = MARKETS[group.markets[0]]          // primary market (metadata)
+
+  // ── Region gating ───────────────────────────────────────────────────────────
+  // Groups without Mercado Livre (Español, English) are Amazon-only.
+  // Force any ML/Google/both selection down to the Amazon engine so we get clean
+  // ASIN-based affiliate links for the correct storefront(s).
+  if (!group.hasML) {
+    marketplace = 'amazon'
+    siteFilter  = 'amazon'
+  }
 
   // ── Resolve all keys upfront so every branch can reuse them ─────────────────
   const { resolveKey } = await import('../lib/resolveKey.js')
@@ -517,10 +773,41 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     )
   }
 
-  await db.from('mining_sessions').insert({
-    id: sessionId, marketplace, category, status: 'in_progress',
-    tenant_id: ROOT_TENANT_ID,
-  })
+  // Auto-name: "Keyword · DD/MM/YYYY" — user can rename later
+  const now        = new Date()
+  const dateLabel  = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const capCategory = category.charAt(0).toUpperCase() + category.slice(1)
+  const autoName    = `${capCategory} · ${dateLabel}`
+
+  // Insert session — try with all new columns first, fallback for older schemas
+  const sessionRow = { id: sessionId, marketplace, category, name: autoName, keyword: category, status: 'in_progress', tenant_id: ROOT_TENANT_ID, createdAt: now.toISOString(), region: group.code, language: group.lang, currency: reg.currency }
+  let { error: sErr } = await db.from('mining_sessions').insert(sessionRow)
+  if (sErr) {
+    // Strip columns that may not exist yet
+    const { tenant_id: _t, name: _n, keyword: _k, createdAt: _c, region: _r, language: _l, currency: _cur, ...coreSession } = sessionRow
+    ;({ error: sErr } = await db.from('mining_sessions').insert(coreSession))
+  }
+  if (sErr) throw new Error(`Erro ao criar sessão: ${sErr.message}`)
+
+  // ── Cross-platform enrichment (ML ↔ Amazon dual-link) ───────────────────────
+  // Pre-start the cross-marketplace search concurrently with the main fetch below.
+  // Awaited after rawProducts is collected, then used to stamp each product with a
+  // link to the same product on the OTHER marketplace.
+  // Only fires when mining a single marketplace in a region that has both ML + Amazon.
+  //
+  // Determine which market in this region has an ML site (br→MLB, mx→MLM).
+  const mlMarket          = group.markets.find(m => MARKETS[m]?.mlSite)  // 'br' or 'mx'
+  const mlSiteForCross    = mlMarket ? MARKETS[mlMarket].mlSite : 'MLB'   // 'MLB' or 'MLM'
+  const amazonRegionForCross = mlMarket ?? group.markets[0]               // 'br' or 'mx'
+
+  const brCrossP =
+    group.hasML && marketplace === 'mercadolivre_direct'
+      ? searchAmazonCreators(env, { query: category, region: amazonRegionForCross, limit: 10 })
+          .catch(() => ({ products: [], error: 'cross_failed' }))
+      : group.hasML && marketplace === 'amazon'
+        ? fetchMercadoLivreDirectAPI(env, { query: category, site: mlSiteForCross, sortBy: 'relevance', limit: 8, mlAffiliateId })
+            .then(r => ({ products: r.products })).catch(() => ({ products: [] }))
+        : null
 
   const rawProducts  = []
   const errors       = []
@@ -534,7 +821,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
                    : sortBy === 'price_asc'    ? 'price_asc'
                    : sortBy === 'price_desc'   ? 'price_desc'
                    : 'relevance'  // default: relevance surfaces consumer products; sold_quantity pulls commercial
-      const { products, listingTotal: total } = await fetchMercadoLivreDirectAPI(env, { query: category, sortBy: mlSort, limit: 20, mlAffiliateId })
+      const { products, listingTotal: total } = await fetchMercadoLivreDirectAPI(env, { query: category, sortBy: mlSort, limit: 20, mlAffiliateId, site: mlSiteForCross })
       rawProducts.push(...products)
       listingTotal = total
       // Only mark as ok when we actually got products — a 200 with 0 results
@@ -558,7 +845,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
           category, engine: 'google_shopping',
           mlAffiliateId, amazonTag,
           siteRestrict: '', siteFilter: 'mercadolivre', limit: 20,
-          serpKey: fallbackSerpKey,
+          serpKey: fallbackSerpKey, region: reg,
         })
         console.log(`[ML-serp] SerpAPI ML-only returned ${items.length} items`)
 
@@ -567,7 +854,7 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
             category, engine: 'google_shopping',
             mlAffiliateId, amazonTag,
             siteRestrict: '', siteFilter: 'all', limit: 20,
-            serpKey: fallbackSerpKey,
+            serpKey: fallbackSerpKey, region: reg,
           })
           console.log(`[ML-serp] SerpAPI all-stores fallback returned ${items.length} items`)
         }
@@ -581,16 +868,86 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
 
   if (marketplace === 'google_shopping' || marketplace === 'both') {
     try {
-      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter, serpKey: serpApiKey })
+      const items = await fetchSerpApi(env, { category, engine: 'google_shopping', mlAffiliateId, amazonTag, siteFilter, serpKey: serpApiKey, region: reg })
       rawProducts.push(...items)
     } catch (e) { errors.push(`Google Shopping: ${e.message || e.toString()}`) }
   }
 
   if (marketplace === 'amazon' || marketplace === 'both') {
+    // Mine every country in the language group (e.g. México + Espanha) and combine.
+    // Each product keeps its own currency. Split the limit across markets.
+    // Primary: Amazon Creators API (real ASINs, prices, images, no SerpAPI quota used).
+    // Fallback: SerpAPI Amazon engine (when Creators API not configured or returns nothing).
+    const markets   = group.markets.map(m => MARKETS[m])
+    const perMarket = 10
+
+    // Query each storefront in its own language (e.g. "cadeira gamer" → "silla gamer"
+    // for amazon.es/.com.mx, "gaming chair" for amazon.com/.ca).
+    const amazonQuery = await localizeQuery(env, category, group.lang)
+    if (amazonQuery !== category) {
+      console.log(`[amazon] localized query "${category}" → "${amazonQuery}" (${group.lang})`)
+    }
+
+    for (const mkt of markets) {
+      try {
+        // Pull up to 2 pages per market for a deeper candidate pool, deduped by ASIN.
+        const seenAsins = new Set()
+        let creatorItems = []
+        let creatorsErr  = null
+        for (let page = 1; page <= 2; page++) {
+          const { products, error } = await searchAmazonCreators(env, {
+            query: amazonQuery, region: mkt.code, limit: perMarket, itemPage: page,
+          })
+          if (error) { if (page === 1) creatorsErr = error; break }
+          const fresh = products.filter(p => p.asin && !seenAsins.has(p.asin))
+          fresh.forEach(p => seenAsins.add(p.asin))
+          creatorItems.push(...fresh)
+          if (products.length < perMarket) break  // last page reached
+        }
+
+        if (!creatorsErr && creatorItems.length > 0) {
+          const normalized = creatorItems.map(p => normalizeAmazonCreatorsProduct(p, { market: mkt, amazonTag }))
+          const highHype   = filterHighHype(normalized)
+          rawProducts.push(...highHype)
+          console.log(`[amazon-creators] ${mkt.code}: ${normalized.length} fetched → ${highHype.length} high-hype`)
+        } else {
+          // Creators API unavailable or returned nothing → fall back to SerpAPI
+          console.log(`[amazon-creators] ${mkt.code}: ${creatorsErr || 'no results'} — falling back to SerpAPI`)
+          const items     = await fetchSerpApi(env, { category: amazonQuery, engine: 'amazon', amazonTag, mlAffiliateId, serpKey: serpApiKey, region: mkt, limit: perMarket })
+          rawProducts.push(...filterHighHype(items))
+        }
+      } catch (e) { errors.push(`Amazon ${mkt.label}: ${e.message}`) }
+    }
+  }
+
+  // ── Apply cross-platform link enrichment ─────────────────────────────────────
+  if (brCrossP) {
     try {
-      const items = await fetchSerpApi(env, { category, engine: 'amazon', amazonTag, mlAffiliateId, serpKey: serpApiKey })
-      rawProducts.push(...items)
-    } catch (e) { errors.push(`Amazon: ${e.message}`) }
+      const { products: crossProds } = await brCrossP
+      if (crossProds?.length > 0) {
+        if (marketplace === 'mercadolivre_direct') {
+          const crossMarket = MARKETS[amazonRegionForCross] ?? MARKETS.br
+          const norm = crossProds.map(p =>
+            p.sourceApi === 'amazon_creators'
+              ? normalizeAmazonCreatorsProduct(p, { market: crossMarket, amazonTag })
+              : p
+          )
+          crossMatchLinks(rawProducts.filter(p => p.marketplace === 'mercadolivre'), norm)
+          console.log(`[cross-match] ML→Amazon (${crossMarket.code}): ${rawProducts.filter(p => p.amazonAffiliateLink).length} enriched`)
+        } else if (marketplace === 'amazon') {
+          crossMatchLinks(rawProducts.filter(p => p.marketplace === 'amazon'), crossProds)
+          console.log(`[cross-match] Amazon→ML: ${rawProducts.filter(p => p.mlAffiliateLink).length} enriched`)
+        }
+      }
+    } catch { /* non-critical — products still saved without cross-links */ }
+  } else if (group.hasML && marketplace === 'both') {
+    // Both already in rawProducts — just cross-match what we have
+    const mlItems  = rawProducts.filter(p => p.marketplace === 'mercadolivre')
+    const amzItems = rawProducts.filter(p => p.marketplace === 'amazon')
+    if (mlItems.length > 0 && amzItems.length > 0) {
+      crossMatchLinks(mlItems, amzItems)
+      crossMatchLinks(amzItems, mlItems)
+    }
   }
 
   if (rawProducts.length === 0) {
@@ -612,19 +969,26 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   // Cap at 5 products to stay well under the 50 subrequest-per-invocation limit.
 
   const top5 = [...phase1].sort((a, b) => b.score - a.score).slice(0, 5)
-  const blogById = {}
+  const blogById  = {}
+  const imagesById = {}
 
   await Promise.allSettled(top5.map(async (p) => {
-    const reviews = await fetchBlogReviews(env, p.title, serpApiKey)
-    blogById[p.id] = reviews
+    // Blog review snippets + Google review images, fetched in parallel per product.
+    const [reviews, images] = await Promise.all([
+      fetchBlogReviews(env, p.title, serpApiKey),
+      fetchReviewImages(env, p.title, serpApiKey),
+    ])
+    blogById[p.id]   = reviews
+    imagesById[p.id] = images
   }))
 
   // ── Phase 3: rescore with blog bonus + assemble final products ───────────────
   const finalScored = phase1.map(p => {
     const blogReviews    = blogById[p.id] ?? []
+    const reviewImages   = imagesById[p.id] ?? []
     const baseScore      = p.score
     const blogReviewScore = scoreBlogReviews(blogReviews)
-    return { ...p, blogReviews, blogReviewScore, score: baseScore + blogReviewScore }
+    return { ...p, blogReviews, reviewImages, blogReviewScore, score: baseScore + blogReviewScore }
   })
 
   // Use raw affiliate links directly — shortening each link costs one Supabase write
@@ -634,19 +998,21 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   // Strip fields that may not be in the DB schema yet ─────────────────────────
   // Tier 1: remove blog-only computed fields (blogReviews + blogReviewScore).
   // Keep everything else — those columns should exist after migration 005.
-  const forDbT1 = withShortLinks.map(({ blogReviews: _br, blogReviewScore: _brs, ...rest }) => rest)
+  const forDbT1 = withShortLinks.map(({ blogReviews: _br, blogReviewScore: _brs, reviewImages: _ri, ...rest }) => rest)
 
   // Tier 2: nuclear fallback — strip ALL columns added after the initial schema
   // (migration 005 and newer). Used only when the DB hasn't been migrated yet.
   const forDbT2 = withShortLinks.map((p) => {
     const {
       blogReviews: _br, blogReviewScore: _brs,
+      reviewImages: _ri,            // added in migration 009
       productUrl: _pu, soldQuantity: _sq,
       listingType: _lt, sellerLevel: _sl,
       fulfillment: _f, officialStore: _os,
       catalogListing: _cl, discountPct: _dp,
       originalPrice: _op,
       condition: _cond,             // added in migration 005
+      reviewCount: _rc,             // real ML review count — strip if column absent
       freeShipping: _fs,            // added in migration 006
       mlAffiliateLink: _mlAff,      // added in migration 005
       amazonAffiliateLink: _amzAff, // added in migration 005
@@ -664,21 +1030,28 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
       e.message.includes('does not exist')
     )
 
-  // Inject tenant_id into every product row (required NOT NULL after migration 002)
-  const addTenant = (rows) => rows.map(r => ({ ...r, tenant_id: ROOT_TENANT_ID }))
+  // Try to inject tenant_id only if the products table supports it
+  // (some deployments have it, others don't — detect and strip on error)
+  const addTenant    = (rows) => rows.map(r => ({ ...r, tenant_id: ROOT_TENANT_ID }))
+  const stripTenant  = (rows) => rows.map(({ tenant_id: _t, ...r }) => r)
 
-  // Attempt 1: full insert with all fields
+  // Attempt 1: full insert with all fields + tenant_id
   let saved, pErr
   ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(withShortLinks)).select())
 
-  // Attempt 2: strip blog fields
+  // Attempt 2: strip blog fields (keep tenant_id)
   if (isSchemaErr(pErr)) {
     ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT1)).select())
   }
 
-  // Attempt 3: strip all potentially new columns
+  // Attempt 3: strip all new columns including tenant_id
   if (isSchemaErr(pErr)) {
-    ;({ data: saved, error: pErr } = await db.from('products').insert(addTenant(forDbT2)).select())
+    ;({ data: saved, error: pErr } = await db.from('products').insert(stripTenant(forDbT2)).select())
+  }
+
+  // Attempt 4: absolute minimal — only core fields, no tenant_id
+  if (isSchemaErr(pErr)) {
+    ;({ data: saved, error: pErr } = await db.from('products').insert(stripTenant(withShortLinks).map(({ blogReviews: _br, reviewImages: _ri, freeShipping: _fs, mlAffiliateLink: _ml, amazonAffiliateLink: _amz, ...r }) => r)).select())
   }
 
   // Re-attach any stripped fields from memory so the session response stays complete
@@ -697,7 +1070,12 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     freshnessScore: 1.0, provenance: `session-${sessionId}`,
     tenant_id: ROOT_TENANT_ID,
   }))
-  const { error: eErr } = await db.from('catalog_entries').insert(entries)
+  let { error: eErr } = await db.from('catalog_entries').insert(entries)
+  // If tenant_id doesn't exist on catalog_entries, retry without it
+  if (eErr && isSchemaErr(eErr)) {
+    const entriesNoTenant = entries.map(({ tenant_id: _t, ...e }) => e)
+    ;({ error: eErr } = await db.from('catalog_entries').insert(entriesNoTenant))
+  }
   if (eErr) throw new Error(eErr.message)
 
   // Compute competition level label for the session
@@ -714,21 +1092,45 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   return {
     status: 'completed', sessionId, count: saved.length,
     listingTotal, competitionLevel,
+    region: group.code, language: group.lang, currency: reg.currency,
     warnings: errors.length > 0 ? errors : undefined,
   }
 }
 
 export async function getCatalog(env, { sessionId } = {}) {
   const db = getDb(env)
+
   if (sessionId) {
     const { data: entries } = await db.from('catalog_entries').select('productId').eq('provenance', `session-${sessionId}`)
     const ids = (entries ?? []).map(e => e.productId)
     if (ids.length === 0) return []
     const { data } = await db.from('products').select('*').in('id', ids).order('score', { ascending: false })
-    return data ?? []
+    return (data ?? []).map(p => ({ ...p, sessionId }))
   }
-  const { data } = await db.from('products').select('*').order('score', { ascending: false }).limit(200)
-  return data ?? []
+
+  // Full catalog — enrich each product with its sessionId via catalog_entries.provenance
+  const { data: products } = await db.from('products').select('*').order('score', { ascending: false }).limit(200)
+  if (!products?.length) return []
+
+  // Fetch catalog_entries to map productId → sessionId
+  const productIds = products.map(p => p.id)
+  const { data: entries } = await db
+    .from('catalog_entries')
+    .select('productId, provenance')
+    .in('productId', productIds)
+
+  // provenance format: "session-{sessionId}"
+  const productToSession = {}
+  for (const e of entries ?? []) {
+    if (e.provenance?.startsWith('session-')) {
+      productToSession[e.productId] = e.provenance.replace('session-', '')
+    }
+  }
+
+  return products.map(p => ({
+    ...p,
+    sessionId: productToSession[p.id] ?? null,
+  }))
 }
 
 export async function getCatalogStats(env) {

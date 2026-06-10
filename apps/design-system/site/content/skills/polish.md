@@ -1,27 +1,27 @@
 ---
-tagline: "The meticulous final pass between good and great."
+tagline: "O passo final meticuloso entre o bom e o excelente."
 ---
 
-## When to use it
+## Quando usar
 
-`/tektone polish` is the last thing you run before shipping. It hunts down the small details that separate a shipped feature from a polished one: half-pixel misalignments, inconsistent spacing, forgotten focus states, loading transitions that flash, copy that drifts in tone. It also aligns the feature with your design system, replacing hard-coded values with tokens, swapping custom components for shared ones, and fixing any drift from established patterns.
+`/tektone polish` é a última coisa que você roda antes do deploy. Ele caça os pequenos detalhes que separam uma feature entregue de uma feature polida: desalinhamentos de meio pixel, espaçamento inconsistente, estados de foco esquecidos, transições de carregamento que piscam, copy que sai do tom. Ele também alinha a feature ao seu design system, substituindo valores hard-coded por tokens, trocando componentes customizados pelos compartilhados e corrigindo qualquer desvio dos padrões estabelecidos.
 
-Reach for it when the feature is functionally complete, nothing is broken, and something still feels off. Also reach for it when a feature has drifted from the design system and needs to be pulled back in line.
+Recorra a ele quando a feature está funcionalmente completa, nada está quebrado, e algo ainda parece fora do lugar. Recorra a ele também quando uma feature se afastou do design system e precisa ser trazida de volta à linha.
 
-## How it works
+## Como funciona
 
-Polish starts by discovering the design system (tokens, spacing scale, shared components), then works methodically across six dimensions:
+O polish começa descobrindo o design system (tokens, escala de espaçamento, componentes compartilhados), e então trabalha metodicamente em seis dimensões:
 
-1. **Visual alignment and spacing**: pixel-perfect grid adherence, consistent spacing scale, optical alignment on icons.
-2. **Typography**: hierarchy consistency, line length, widows and orphans, kerning on headlines.
-3. **Color and contrast**: token usage, theme parity, WCAG ratios, focus indicators.
-4. **Interaction states**: hover, focus, active, disabled, loading, error, success. Every state accounted for.
-5. **Transitions and motion**: smooth easing, no layout jank, respect for `prefers-reduced-motion`.
-6. **Copy**: consistent voice, correct tense, no placeholder strings, no stray TODOs.
+1. **Alinhamento e espaçamento visual**: aderência pixel-perfect à grade, escala de espaçamento consistente, alinhamento óptico em ícones.
+2. **Tipografia**: consistência da hierarquia, comprimento de linha, viúvas e órfãs, kerning nos títulos.
+3. **Cor e contraste**: uso de tokens, paridade entre temas, proporções WCAG, indicadores de foco.
+4. **Estados de interação**: hover, foco, ativo, desabilitado, carregando, erro, sucesso. Cada estado considerado.
+5. **Transições e movimento**: easing suave, sem jank de layout, respeito a `prefers-reduced-motion`.
+6. **Copy**: voz consistente, tempo verbal correto, sem strings de placeholder, sem TODOs perdidos.
 
-The skill is explicit about one thing: polish is the last step, not the first. If the feature is not functionally complete, polishing it is wasted work.
+A skill é explícita sobre uma coisa: o polish é o último passo, não o primeiro. Se a feature não está funcionalmente completa, poli-la é trabalho desperdiçado.
 
-## Try it
+## Experimente
 
 ```
 /tektone polish the pricing page

@@ -1,20 +1,20 @@
 ---
-tagline: "Push an interface past conventional limits. Shaders, physics, 60fps, cinematic transitions."
+tagline: "Leve uma interface além dos limites convencionais. Shaders, física, 60fps, transições cinematográficas."
 ---
 
-## When to use it
+## Quando usar
 
-`/tektone overdrive` is for the moments where you want to impress. A hero that uses WebGL. A table that handles a million rows. A dialog that morphs out of its trigger element. A form that validates in real-time with streaming feedback. A page transition that feels cinematic. Use it when the project budget allows for technical ambition and the outcome needs to feel extraordinary.
+`/tektone overdrive` é para os momentos em que você quer impressionar. Um hero que usa WebGL. Uma tabela que lida com um milhão de linhas. Um dialog que se transforma a partir do elemento que o aciona. Um formulário que valida em tempo real com feedback em streaming. Uma transição de página que parece cinematográfica. Use quando o orçamento do projeto permite ambição técnica e o resultado precisa parecer extraordinário.
 
-Do not use it on operator tools, dashboards, or anything where reliability beats spectacle. Overdrive burns complexity for effect, and that trade-off is only worth it on moments that matter.
+Não use em ferramentas operacionais, dashboards ou qualquer coisa em que confiabilidade vale mais que espetáculo. O overdrive queima complexidade em troca de efeito, e essa troca só vale a pena em momentos que importam.
 
-## How it works
+## Como funciona
 
-The skill picks one moment to make extraordinary and commits to it, rather than spreading effort across the whole interface. It then reaches for techniques most AI-generated UIs never touch: WebGL shaders, spring physics, Scroll Timeline, View Transitions, canvas animation, GPU-accelerated filters. Everything is budgeted, profiled, and tested at 60fps, with reduced-motion fallbacks baked in.
+A skill escolhe um único momento para tornar extraordinário e se compromete com ele, em vez de espalhar o esforço pela interface inteira. Em seguida, ela recorre a técnicas que a maioria das UIs geradas por IA nunca toca: shaders WebGL, física de molas (spring physics), Scroll Timeline, View Transitions, animação em canvas, filtros acelerados por GPU. Tudo é orçado, perfilado e testado a 60fps, com fallbacks de reduced-motion já incorporados.
 
-Overdrive output is announced with `──── ⚡ OVERDRIVE ────` so you know you are entering a more ambitious mode. Expect larger diffs, new dependencies, and implementation depth beyond what other skills produce.
+A saída do overdrive é anunciada com `──── ⚡ OVERDRIVE ────`, então você sabe que está entrando em um modo mais ambicioso. Espere diffs maiores, novas dependências e profundidade de implementação além do que as outras skills produzem.
 
-## Try it
+## Experimente
 
 ```
 /tektone overdrive the landing hero

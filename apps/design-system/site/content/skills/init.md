@@ -1,45 +1,45 @@
 ---
-tagline: "Set up a project for Tektone, once. Context, live mode, and where to start."
+tagline: "Configure um projeto para o Tektone, uma vez. Contexto, modo live e por onde começar."
 ---
 
 <div class="docs-viz-hero">
   <div class="docs-viz-file">
     <div class="docs-viz-file-header">
       <span class="docs-viz-file-name">PRODUCT.md</span>
-      <span class="docs-viz-file-status">Loaded on every command</span>
+      <span class="docs-viz-file-status">Carregado em todo comando</span>
     </div>
     <div class="docs-viz-file-body">
       <div class="docs-viz-file-row">
-        <span class="docs-viz-file-k">Register</span>
-        <span class="docs-viz-file-v">Product. Design serves the task.</span>
+        <span class="docs-viz-file-k">Registro</span>
+        <span class="docs-viz-file-v">Produto. O design serve à tarefa.</span>
       </div>
       <div class="docs-viz-file-row">
-        <span class="docs-viz-file-k">Users</span>
-        <span class="docs-viz-file-v">SREs on call, reading fast, often in the dark.</span>
+        <span class="docs-viz-file-k">Usuários</span>
+        <span class="docs-viz-file-v">SREs de plantão, lendo rápido, muitas vezes no escuro.</span>
       </div>
       <div class="docs-viz-file-row">
-        <span class="docs-viz-file-k">Brand voice</span>
-        <span class="docs-viz-file-v">Calm, clinical, no hype.</span>
+        <span class="docs-viz-file-k">Voz da marca</span>
+        <span class="docs-viz-file-v">Calma, clínica, sem hype.</span>
       </div>
       <div class="docs-viz-file-row">
-        <span class="docs-viz-file-k">Anti-references</span>
-        <span class="docs-viz-file-v">Purple gradients. Glassmorphism. "Boost your productivity."</span>
+        <span class="docs-viz-file-k">Antirreferências</span>
+        <span class="docs-viz-file-v">Gradientes roxos. Glassmorphism. "Turbine sua produtividade."</span>
       </div>
     </div>
-    <div class="docs-viz-file-footer">Every command reads this before writing a line of code.</div>
+    <div class="docs-viz-file-footer">Todo comando lê isto antes de escrever uma linha de código.</div>
   </div>
-  <p class="docs-viz-caption">A finished PRODUCT.md. Strategy only: who, what, why. No colors, no fonts, no pixel values, those live in DESIGN.md.</p>
+  <p class="docs-viz-caption">Um PRODUCT.md finalizado. Só estratégia: quem, o quê, por quê. Sem cores, sem fontes, sem valores em pixel, esses moram no DESIGN.md.</p>
 </div>
 
-## When to use it
+## Quando usar
 
-Run `/tektone init` once at the start of a project. Without it, every other command has to guess: generic SaaS voice, safe-default fonts, the AI color palette. With it, every command reads your answers before it generates.
+Rode `/tektone init` uma vez no início de um projeto. Sem ele, todo outro comando precisa adivinhar: voz genérica de SaaS, fontes seguras por padrão, a paleta de cores da IA. Com ele, todo comando lê suas respostas antes de gerar.
 
-Reach for it when:
+Recorra a ele quando:
 
-- **You just installed Tektone in a new project.** First thing to run. Other commands will nudge you toward it if you skip.
-- **The project's brand direction has shifted.** New positioning, new audience, new voice. Re-run `init` and the updated context flows through every command.
-- **Another command said "no design context found"** and stopped. That is the signal: run init, then resume.
+- **Você acabou de instalar o Tektone em um projeto novo.** A primeira coisa a rodar. Outros comandos vão te empurrar nessa direção se você pular.
+- **A direção de marca do projeto mudou.** Novo posicionamento, novo público, nova voz. Rode `init` de novo e o contexto atualizado flui por todos os comandos.
+- **Outro comando disse "no design context found"** e parou. Esse é o sinal: rode o init e depois retome.
 
 ## How it works
 

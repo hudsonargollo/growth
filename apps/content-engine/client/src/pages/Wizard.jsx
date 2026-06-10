@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom'
 import {
   Wand2, Play, Pause, ChevronRight, RotateCcw, Check,
   Mic, FileText, ShoppingBag, Volume2, Sparkles, Zap,
-  ChevronDown, ChevronUp, Loader2, Radio,
+  ChevronDown, ChevronUp, Loader2, Radio, Languages, AlertTriangle,
 } from 'lucide-react'
 import { useApi, apiPost } from '../hooks/useApi.js'
+import LanguageFollowUp from '../components/LanguageFollowUp.jsx'
+import { LANGUAGES, otherLanguages, normalizeLang } from '../lib/languages.js'
 
 // ── Predefined blueprints (mirrors worker fallbacks) ──────────────────────────
 
@@ -236,7 +238,7 @@ function Bubble({ role, text, choices, allowCustom, onPick, picked }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(139,92,246,0.20)', border: '1px solid rgba(139,92,246,0.35)',
             fontSize: 14, marginBottom: 2,
-          }}>🤖</div>
+          }}><Wand2 size={15} style={{ color: '#a78bfa' }} /></div>
         )}
         <div style={{
           padding: '10px 14px', borderRadius: isAI ? '4px 16px 16px 16px' : '16px 4px 16px 16px',
@@ -468,6 +470,10 @@ export default function Wizard() {
   // ── config state ──
   const [blueprint, setBlueprint] = useState(null)
   const [voice,     setVoice]     = useState(OPENAI_VOICES[0])
+  const [language,  setLanguage]  = useState('pt')                     // script/voiceover language
+  const [genCtx,    setGenCtx]    = useState({ catalogIds: [] })       // reused by the language follow-up
+  const [wizLangDone, setWizLangDone] = useState([])                   // language codes already produced
+  const [wizLangBusy, setWizLangBusy] = useState(null)                 // language code currently producing
 
   // ── exec state ──
   const [execStatus, setExecStatus] = useState({
@@ -487,8 +493,8 @@ export default function Wizard() {
     const apiChoices  = trends.map(t => ({ label: t.keyword ?? t, value: t.keyword ?? t }))
     const allChoices  = apiChoices.length > 0 ? apiChoices.slice(0, 8) : FALLBACK_TRENDS.map(t => ({ label: t, value: t }))
     const text = apiChoices.length > 0
-      ? 'Olá! 👋 Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um desses tópicos em alta no Mercado Livre:'
-      : 'Olá! 👋 Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um nicho popular ou digite o seu próprio tema:'
+      ? 'Olá! Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um desses tópicos em alta no Mercado Livre:'
+      : 'Olá! Vou te guiar na criação de um conteúdo completo — do produto ao áudio.\n\nEscolha um nicho popular ou digite o seu próprio tema:'
     setMessages([{ role: 'ai', text, choices: allChoices, allowCustom: true }])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trends])
@@ -512,8 +518,8 @@ export default function Wizard() {
           role: 'ai',
           text: `Ótima escolha! **${choice.label}** tem alto potencial de comissão e conversão.\n\nQual formato de conteúdo prefere criar?`,
           choices: [
-            { label: '📹 Vídeo Longo', value: 'longform', sub: '8–15 min YouTube' },
-            { label: '📱 Short / Reels', value: 'shortform', sub: '45–90s' },
+            { label: 'Vídeo Longo', value: 'longform', sub: '8–15 min YouTube' },
+            { label: 'Short / Reels', value: 'shortform', sub: '45–90s' },
           ],
         },
       ])
@@ -526,7 +532,7 @@ export default function Wizard() {
         { role: 'user', text: choice.label },
         {
           role: 'ai',
-          text: `Perfeito! Vou criar um ${fmt === 'longform' ? 'roteiro longo' : 'short'} sobre **${picks.topic}**.\n\nAgora escolha o blueprint e a voz para a narração — depois é só apertar e eu cuido do resto. 🚀`,
+          text: `Perfeito! Vou criar um ${fmt === 'longform' ? 'roteiro longo' : 'short'} sobre **${picks.topic}**.\n\nAgora escolha o blueprint e a voz para a narração — depois é só apertar e eu cuido do resto.`,
           choices: null,
         },
       ])
@@ -537,6 +543,19 @@ export default function Wizard() {
   }
 
   // ── Exec pipeline ──
+  // Build the /scripts/generate payload for a given language + product set.
+  // Shared by the pipeline and the "another language" follow-up.
+  function buildScriptPayload(lang, catalogIds = []) {
+    const bpIsBuiltIn = LONGFORM_BLUEPRINTS.concat(SHORTFORM_BLUEPRINTS).find(b => b.id === blueprint?.id)
+    return {
+      language: lang,
+      ...(catalogIds.length > 0 ? { catalogIds } : {}),
+      ...(bpIsBuiltIn || !blueprint?.id
+        ? { blueprintData: blueprint ?? buildAutoBlueprint(picks.topic, picks.format) }
+        : { blueprintId: blueprint.id }),
+    }
+  }
+
   async function runPipeline() {
     setPhase('exec')
     setExecError(null)
@@ -577,16 +596,9 @@ export default function Wizard() {
       setExecStatus(s => ({ ...s, script: 'running' }))
       setExecDetail(d => ({ ...d, script: 'Estruturando roteiro com IA…' }))
 
-      const bpIsBuiltIn = LONGFORM_BLUEPRINTS.concat(SHORTFORM_BLUEPRINTS).find(b => b.id === blueprint?.id)
-      const payload = {
-        language: 'pt',
-        ...(catalogIds.length > 0 ? { catalogIds } : {}),
-        ...(bpIsBuiltIn || !blueprint?.id
-          ? { blueprintData: blueprint ?? buildAutoBlueprint(picks.topic, picks.format) }
-          : { blueprintId: blueprint.id }),
-      }
-
-      script = await apiPost('/scripts/generate', payload)
+      setGenCtx({ catalogIds })
+      script = await apiPost('/scripts/generate', buildScriptPayload(language, catalogIds))
+      setWizLangDone([normalizeLang(language)])
       setExecStatus(s => ({ ...s, script: 'done' }))
       setExecDetail(d => ({ ...d, script: `"${script.title ?? 'Roteiro gerado'}"` }))
     } catch (e) {
@@ -619,6 +631,31 @@ export default function Wizard() {
 
     setResult({ script, voiceover })
     setTimeout(() => setPhase('result'), 600)
+  }
+
+  // Follow-up: recreate the script + narration in another language, reusing the
+  // same products and voice. Opt-in — one click is one extra full generation.
+  async function handleWizardLanguage(code) {
+    const lang = normalizeLang(code)
+    setWizLangBusy(lang); setExecError(null)
+    try {
+      const script = await apiPost('/scripts/generate', buildScriptPayload(lang, genCtx.catalogIds))
+      let voiceover = null
+      try {
+        voiceover = await apiPost('/voiceover/generate', {
+          scriptId:   script.id,
+          provider:   voice.provider ?? 'openai',
+          voiceId:    voice.id,
+          voiceLabel: voice.label,
+        })
+      } catch { /* keep the script even if narration fails */ }
+      setResult({ script, voiceover })
+      setWizLangDone(prev => (prev.includes(lang) ? prev : [...prev, lang]))
+    } catch (e) {
+      setExecError(`Variação em ${lang.toUpperCase()} falhou: ${e.message}`)
+    } finally {
+      setWizLangBusy(null)
+    }
   }
 
   // ── Auto-blueprint when user picks "on the fly" ──
@@ -655,6 +692,10 @@ export default function Wizard() {
     setExecDetail({ mining: '', script: '', voiceover: '' })
     setExecError(null)
     setResult({ script: null, voiceover: null })
+    setLanguage('pt')
+    setGenCtx({ catalogIds: [] })
+    setWizLangDone([])
+    setWizLangBusy(null)
   }
 
   // ── Blueprint options for config phase ──
@@ -664,7 +705,7 @@ export default function Wizard() {
 
   const autoOption = {
     id: '__auto',
-    name: '✨ Criar na hora (IA)',
+    name: 'Criar na hora (IA)',
     description: `Blueprint gerado automaticamente para "${picks.topic ?? 'o tópico escolhido'}" baseado no formato selecionado`,
     sections: [],
   }
@@ -755,6 +796,38 @@ export default function Wizard() {
             </div>
           </div>
 
+          {/* Language picker */}
+          <div style={{ background: 'rgba(15,15,22,0.72)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: 24, backdropFilter: 'blur(16px)' }}>
+            <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.30)', marginBottom: 14 }}>
+              <Languages size={11} style={{ display: 'inline', marginRight: 6 }} />Idioma
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {LANGUAGES.map(l => {
+                const active = language === l.code
+                return (
+                  <button key={l.code} onClick={() => setLanguage(l.code)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: 12,
+                      border: `1px solid ${active ? 'rgba(204,255,0,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                      background: active ? 'rgba(204,255,0,0.06)' : 'rgba(255,255,255,0.02)',
+                      cursor: 'pointer', textAlign: 'left', transition: 'all 160ms ease',
+                    }}>
+                    <span style={{
+                      width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 800, flexShrink: 0,
+                      background: active ? 'rgba(204,255,0,0.15)' : 'rgba(255,255,255,0.05)',
+                      color: active ? '#CCFF00' : 'rgba(255,255,255,0.55)',
+                    }}>{l.chip}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2 }}>{l.label}</p>
+                      <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.sub}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Generate button */}
           <button
             onClick={runPipeline}
@@ -810,7 +883,7 @@ export default function Wizard() {
           <div style={{ background: 'rgba(15,15,22,0.72)', border: '1px solid rgba(0,255,185,0.18)', borderRadius: 20, padding: 24, backdropFilter: 'blur(16px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 4 }}>Conteúdo Pronto ✅</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 4 }}>Conteúdo Pronto</p>
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.02em' }}>{result.script.title ?? 'Roteiro gerado'}</h2>
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
@@ -836,7 +909,7 @@ export default function Wizard() {
               </div>
             ) : (
               <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,184,0,0.08)', border: '1px solid rgba(255,184,0,0.20)', fontSize: 12, color: '#FFB800' }}>
-                ⚠️ Narração não gerada — verifique as configurações de API Key em Configurações.
+                <AlertTriangle size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: '-2px' }} />Narração não gerada — verifique as configurações de API Key em Configurações.
               </div>
             )}
           </div>
@@ -855,6 +928,17 @@ export default function Wizard() {
               </pre>
             )}
           </div>
+
+          {/* Opt-in: generate this content in another language */}
+          <LanguageFollowUp
+            title="Gerar este conteúdo em outro idioma?"
+            subtitle="Recria o roteiro e a narração para o idioma escolhido, com os mesmos produtos e a mesma voz. Cada idioma é uma geração separada."
+            currentCode={normalizeLang(language)}
+            options={otherLanguages(language).map(l => l.code)}
+            doneCodes={wizLangDone}
+            busyCode={wizLangBusy}
+            onPick={handleWizardLanguage}
+          />
 
           {/* Restart */}
           <button

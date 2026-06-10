@@ -3,10 +3,10 @@ main = "src/index.js"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Custom domain — routes all traffic from this hostname to this Worker
-routes = [
-  { pattern = "fabricadeconteudo.clubemkt.digital", custom_domain = true }
-]
+# Custom domain — requires domain proxied by this CF account
+# routes = [
+#   { pattern = "fabricadeconteudo.clubemkt.digital", custom_domain = true }
+# ]
 
 [assets]
 directory = "../client/dist"
@@ -23,9 +23,10 @@ id = "6904dec6f05f4ad99aff645e8a533e5c"
 # Create with: npx wrangler r2 bucket create growth-video-assets
 # Stores: Higgsfield clips/stills (copied off their CDN so they don't expire),
 # ElevenLabs audio, and the final .mp4 returned by the Cloud Run renderer.
-[[r2_buckets]]
-binding     = "VIDEO_ASSETS"
-bucket_name = "growth-video-assets"
+# [[r2_buckets]]
+# binding     = "VIDEO_ASSETS"
+# bucket_name = "growth-video-assets"
+# Uncomment after enabling R2 in the Cloudflare Dashboard
 
 [vars]
 NODE_ENV           = "production"

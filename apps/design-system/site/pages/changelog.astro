@@ -6,123 +6,123 @@ import '../styles/changelog-faq-kinpaku.css';
 
 <Base
   title="Changelog | Tektone"
-  description="What changed across Tektone releases: skill, CLI, Chrome extension, and detector. Per-version notes plus recent highlights."
+  description="O que mudou nas releases do Tektone: skill, CLI, extensão do Chrome e detector. Notas por versão e destaques recentes."
   activeNav="docs"
   canonicalPath="/changelog"
   bodyClass="sub-page kinpaku-chrome kinpaku-surface"
 >
   <div class="cf-page">
-    <p class="cf-eyebrow">Release notes</p>
+    <p class="cf-eyebrow">Notas de release</p>
     <h1 class="cf-title">Changelog</h1>
-    <p class="cf-lede">What shipped, when, and why. Newest at the top, back through the v3.0 launch.</p>
+    <p class="cf-lede">O que foi lançado, quando e por quê. As novidades no topo, voltando até o lançamento da v3.0.</p>
 
-    <div class="cf-filter" role="group" aria-label="Filter changelog by component">
+    <div class="cf-filter" role="group" aria-label="Filtrar changelog por componente">
       <button type="button" class="cf-filter-btn is-active" data-cf-filter="skill" aria-pressed="true">Skill</button>
       <button type="button" class="cf-filter-btn" data-cf-filter="cli" aria-pressed="false">CLI</button>
-      <button type="button" class="cf-filter-btn" data-cf-filter="ext" aria-pressed="false">Extension</button>
-      <button type="button" class="cf-filter-btn" data-cf-filter="all" aria-pressed="false">All</button>
+      <button type="button" class="cf-filter-btn" data-cf-filter="ext" aria-pressed="false">Extensão</button>
+      <button type="button" class="cf-filter-btn" data-cf-filter="all" aria-pressed="false">Todos</button>
     </div>
 
     <article id="v3.5.0" class="cf-entry cf-entry--current">
-      <header class="cf-entry-head"><span class="cf-version">v3.5.0</span><span class="cf-date">May 28, 2026</span><span class="cf-current-badge">Current</span></header>
-      <p class="cf-entry-lead">The biggest release yet. Per-provider rules that lift GPT-5.5 and Codex most, a skill that adapts to new versus existing projects, and Live Mode in Beta.</p>
+      <header class="cf-entry-head"><span class="cf-version">v3.5.0</span><span class="cf-date">28 de maio de 2026</span><span class="cf-current-badge">Atual</span></header>
+      <p class="cf-entry-lead">A maior release até agora. Regras por provedor que elevam mais o GPT-5.5 e o Codex, uma skill que se adapta a projetos novos ou já existentes, e o Live Mode em Beta.</p>
 
       <figure class="cf-ba">
         <div class="cf-ba-pair">
           <div class="cf-ba-shot">
             <span class="cf-ba-tag cf-ba-tag--before">Before</span>
-            <img src="/assets/changelog/luxury-hotel-gpt55-before.jpg" alt="GPT-5.5 without Tektone: a cream background, an abstract vector hero, and an oversized serif headline overflowing its column." loading="lazy" width="1200" height="900" />
+            <img src="/assets/changelog/luxury-hotel-gpt55-before.jpg" alt="GPT-5.5 sem Tektone: um fundo creme, um hero vetorial abstrato e um título serifado grande demais transbordando da coluna." loading="lazy" width="1200" height="900" />
           </div>
           <div class="cf-ba-shot">
             <span class="cf-ba-tag cf-ba-tag--after">After</span>
-            <img src="/assets/changelog/luxury-hotel-gpt55-after.jpg" alt="GPT-5.5 with Tektone: a full-bleed photograph of a cliffside village, an editorial headline, and warm first-person copy." loading="lazy" width="1200" height="900" />
+            <img src="/assets/changelog/luxury-hotel-gpt55-after.jpg" alt="GPT-5.5 com Tektone: uma fotografia full-bleed de um vilarejo à beira de um penhasco, um título editorial e um texto caloroso em primeira pessoa." loading="lazy" width="1200" height="900" />
           </div>
         </div>
-        <figcaption>GPT-5.5, same luxury-hotel brief. Without Tektone: the cream AI background, an abstract vector hero, and a headline that overflows its column. With Tektone: real photography, an editorial layout, and copy with a human voice.</figcaption>
+        <figcaption>GPT-5.5, o mesmo brief de hotel de luxo. Sem Tektone: o fundo creme de IA, um hero vetorial abstrato e um título que transborda da coluna. Com Tektone: fotografia real, um layout editorial e um texto com voz humana.</figcaption>
       </figure>
 
-      <div class="cf-stats" aria-label="Defect rates on GPT-5.5 before Tektone">
+      <div class="cf-stats" aria-label="Taxas de defeito no GPT-5.5 antes do Tektone">
         <div class="cf-stat">
           <span class="cf-stat-num">74%</span>
-          <span class="cf-stat-label">of GPT-5.5 pages used the cream / beige AI-default background</span>
+          <span class="cf-stat-label">das páginas do GPT-5.5 usaram o fundo padrão de IA em creme / bege</span>
         </div>
         <div class="cf-stat">
           <span class="cf-stat-num">76%</span>
-          <span class="cf-stat-label">reached for extreme negative letter-spacing on tech briefs</span>
+          <span class="cf-stat-label">recorreram a letter-spacing negativo extremo em briefs de tecnologia</span>
         </div>
         <div class="cf-stat">
           <span class="cf-stat-num">90%+</span>
-          <span class="cf-stat-label">shipped body text below the WCAG contrast floor</span>
+          <span class="cf-stat-label">entregaram texto de corpo abaixo do piso de contraste da WCAG</span>
         </div>
-        <p class="cf-stats-note">Measured across ~190 samples, skill off. Each rate traced to a line in the skill, then fixed.</p>
+        <p class="cf-stats-note">Medido em ~190 amostras, com a skill desligada. Cada taxa foi rastreada até uma linha da skill e então corrigida.</p>
       </div>
 
       <ul class="cf-items">
-        <li><strong>Dramatically better in GPT and Codex.</strong> Tektone now compiles harness-specific rules into the skill at build time. Codex and GPT-5.5 get rules written for the exact defects they produce, that no other harness ever sees. No other design skill does this; everyone else ships one generic file to every model.</li>
-        <li><strong>Far less AI-default slop.</strong> Bias mining against ~190 samples found the skill's own lines were causing defects, and cut them. The cream / beige background tell (74% on GPT) is banned across the warm-neutral band. Category-to-aesthetic recipes that drove extreme letter-spacing and italic-serif heroes are gone: the shape depends on the brand, not its category. New bans cover all-caps eyebrows, numbered section markers, more than three fonts, and a hard contrast floor.</li>
-        <li><strong>It treats a new project differently from an existing one.</strong> On an existing codebase the skill reads your tokens, theme, and components first and works within them: preserving your identity wins over imposing a fresh look. On a blank slate it draws a single seed color from 129 hand-curated anchors, each carrying a mood and a composition strategy, then builds the full palette around it by hand. One seed becomes a dark jazz club or a light hospitality brand depending on the brief. Either way it ends the cold-start drift toward the same safe palette every time.</li>
-        <li><strong>Live Mode is Beta.</strong> Out of alpha, and it now works at two scales. Type a direction into the new Steer bar, or speak it, and the agent reads the whole page and edits it in place, no element selected and no variant cycling. Or pick a single element, steer it in plain language, and accept the variant straight back to source. You can also edit copy in place: change an element's text right in the browser, and on Apply a subagent rewrites the real source it renders from and repairs anything wired to it, like card labels that double as image keys. Insert mode scaffolds brand-new elements between the ones already there. Recovery survives HMR, hidden heroes, and dev-tool overlays, and an experimental streaming poll mode cuts pickup from seconds to sub-second.</li>
-        <li><strong><code>/tektone teach</code> is now <code>/tektone init</code>.</strong> Renamed to match what it does: one command to set up a project. From a single codebase scan it writes PRODUCT.md, offers a DESIGN.md, configures Live Mode so it just works the first time you run it, then points you at the best command to start with. The old name still works as an alias.</li>
-        <li><strong>A bare <code>/tektone</code> recommends your next move.</strong> Run it with no command and, instead of a static menu, it reads the project, your dirty git tree, and your latest critique, then leads with the two or three highest-value commands and why (no DESIGN.md yet, run document; unresolved findings in the files you're editing, run polish). It always asks before running anything, and the full menu is still right below.</li>
-        <li><strong>A faster detector with no jsdom.</strong> The HTML/CSS engine was rebuilt from the ground up on <code>htmlparser2</code> and a real CSS cascade resolver, replacing jsdom. On the same 160-file HTML corpus it runs about 20x faster under Node: 0.34s where the old jsdom engine took 6.8s, roughly 2 ms per file instead of 43 ms. Dependency-free and small enough to bundle straight into the skill and run inline, not just in the CLI and the extension.</li>
-        <li><strong>Detector: 14 new rules.</strong> <code>cream-palette</code>, <code>em-dash-overuse</code>, <code>marketing-buzzword</code>, <code>numbered-section-markers</code>, <code>aphoristic-cadence</code>, <code>theater-slop-phrase</code>, <code>oversized-h1</code>, <code>extreme-negative-tracking</code>, <code>gpt-thin-border-wide-shadow</code>, <code>repeating-stripes-gradient</code>, <code>image-hover-transform</code>, <code>broken-image</code>, <code>text-overflow</code>, and <code>clipped-overflow-container</code>. 41 deterministic rules total, one canonical registry feeding the CLI, the browser extension, critique, and the evals.</li>
-        <li><strong>The skill keeps itself current.</strong> On the first session of the day, Tektone quietly checks whether a newer version shipped. If one has, it offers to run <code>npx tektone skills update</code> for you. It always asks first, never nags about a version you declined, and never interrupts the task you're on. Set <code>TEKTONE_NO_UPDATE_CHECK=1</code> to turn it off.</li>
-        <li><strong>Sharper craft under the hood.</strong> Beyond the bans, the craft itself got tighter. Small defaults landed where they pay off, like <code>text-wrap: balance</code> on headings, which cleaned up ragged hero type across the ablation runs. And the instructions themselves got leaner: orphan reference files folded into their commands, context loading simplified, and a new LLM-backed test suite that catches instruction-following regressions across three providers on every change. Plus dedicated <a href="/changelog">/changelog</a> and <a href="/faq">/faq</a> pages.</li>
+        <li><strong>Drasticamente melhor no GPT e no Codex.</strong> O Tektone agora compila regras específicas de cada harness na skill em tempo de build. O Codex e o GPT-5.5 recebem regras escritas para os defeitos exatos que produzem, que nenhum outro harness jamais vê. Nenhuma outra design skill faz isso; todo mundo entrega um único arquivo genérico para todos os modelos.</li>
+        <li><strong>Muito menos slop padrão de IA.</strong> A mineração de viés contra ~190 amostras descobriu que as próprias linhas da skill estavam causando defeitos, e as removeu. O sinal do fundo creme / bege (74% no GPT) está banido em toda a faixa de neutros quentes. As receitas de categoria para estética que levavam a letter-spacing extremo e heroes em serifa itálica foram embora: a forma depende da marca, não da sua categoria. Novos banimentos cobrem eyebrows em caixa-alta, marcadores de seção numerados, mais de três fontes e um piso de contraste rígido.</li>
+        <li><strong>Ela trata um projeto novo de forma diferente de um já existente.</strong> Em uma base de código já existente, a skill lê primeiro seus tokens, tema e componentes e trabalha dentro deles: preservar sua identidade vence impor um visual novo. Em uma folha em branco, ela escolhe uma única cor-semente entre 129 âncoras curadas à mão, cada uma carregando um clima e uma estratégia de composição, e então monta a paleta completa em torno dela à mão. Uma semente vira um clube de jazz escuro ou uma marca de hospitalidade clara dependendo do brief. De qualquer forma, ela acaba com a deriva de partida fria sempre rumo à mesma paleta segura.</li>
+        <li><strong>O Live Mode está em Beta.</strong> Saiu do alpha e agora funciona em duas escalas. Digite uma direção na nova barra Steer, ou fale, e o agente lê a página inteira e a edita no lugar, sem nenhum elemento selecionado e sem ciclar variantes. Ou escolha um único elemento, oriente-o em linguagem simples e aceite a variante direto de volta para o código-fonte. Você também pode editar o texto no lugar: altere o texto de um elemento direto no navegador, e ao aplicar um subagente reescreve o código-fonte real do qual ele é renderizado e conserta qualquer coisa conectada a ele, como labels de cards que também servem de chaves de imagem. O modo Insert cria do zero elementos totalmente novos entre os que já estão lá. A recuperação sobrevive a HMR, heroes ocultos e overlays de dev-tools, e um modo experimental de poll em streaming reduz o pickup de segundos para abaixo de um segundo.</li>
+        <li><strong><code>/tektone teach</code> agora é <code>/tektone init</code>.</strong> Renomeado para combinar com o que faz: um comando para configurar um projeto. A partir de um único scan da base de código, ele escreve o PRODUCT.md, oferece um DESIGN.md, configura o Live Mode para que ele simplesmente funcione na primeira vez que você o roda, e então aponta o melhor comando para começar. O nome antigo ainda funciona como alias.</li>
+        <li><strong>Um <code>/tektone</code> sozinho recomenda seu próximo passo.</strong> Rode-o sem nenhum comando e, em vez de um menu estático, ele lê o projeto, sua árvore git suja e sua crítica mais recente, e então começa pelos dois ou três comandos de maior valor e o porquê (ainda sem DESIGN.md, rode document; achados não resolvidos nos arquivos que você está editando, rode polish). Ele sempre pergunta antes de rodar qualquer coisa, e o menu completo continua logo abaixo.</li>
+        <li><strong>Um detector mais rápido, sem jsdom.</strong> A engine de HTML/CSS foi reconstruída do zero sobre <code>htmlparser2</code> e um resolvedor real de cascata CSS, substituindo o jsdom. No mesmo corpus de 160 arquivos HTML, ela roda cerca de 20x mais rápido no Node: 0,34s onde a antiga engine jsdom levava 6,8s, aproximadamente 2 ms por arquivo em vez de 43 ms. Sem dependências e pequena o suficiente para ser empacotada direto na skill e rodar inline, não só no CLI e na extensão.</li>
+        <li><strong>Detector: 14 novas regras.</strong> <code>cream-palette</code>, <code>em-dash-overuse</code>, <code>marketing-buzzword</code>, <code>numbered-section-markers</code>, <code>aphoristic-cadence</code>, <code>theater-slop-phrase</code>, <code>oversized-h1</code>, <code>extreme-negative-tracking</code>, <code>gpt-thin-border-wide-shadow</code>, <code>repeating-stripes-gradient</code>, <code>image-hover-transform</code>, <code>broken-image</code>, <code>text-overflow</code> e <code>clipped-overflow-container</code>. 41 regras determinísticas no total, um registro canônico alimentando o CLI, a extensão de navegador, a crítica e os evals.</li>
+        <li><strong>A skill se mantém atualizada sozinha.</strong> Na primeira sessão do dia, o Tektone verifica discretamente se uma versão mais nova foi lançada. Se houver, ele oferece rodar <code>npx tektone skills update</code> para você. Ele sempre pergunta antes, nunca insiste sobre uma versão que você recusou e nunca interrompe a tarefa em que você está. Defina <code>TEKTONE_NO_UPDATE_CHECK=1</code> para desligar.</li>
+        <li><strong>Craft mais afiada por baixo dos panos.</strong> Além dos banimentos, a própria craft ficou mais apertada. Pequenos defaults entraram onde valem a pena, como <code>text-wrap: balance</code> em títulos, que limpou tipografia de hero irregular ao longo das rodadas de ablação. E as próprias instruções ficaram mais enxutas: arquivos de referência órfãos foram dobrados em seus comandos, o carregamento de contexto foi simplificado e uma nova suíte de testes baseada em LLM que captura regressões de seguimento de instruções em três provedores a cada mudança. Mais páginas dedicadas de <a href="/changelog">/changelog</a> e <a href="/faq">/faq</a>.</li>
       </ul>
     </article>
 
     <article id="cli-v2.3.2" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.2</span><span class="cf-date">May 29, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.2</span><span class="cf-date">29 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>The <code>i-</code> command prefix is gone.</strong> Opting into a prefix at install time was a holdover from when every command was its own skill. With a single <code>tektone</code> skill it only ever renamed that one skill to <code>i-tektone</code>, while the install message wrongly promised <code>/i-audit</code> style commands that never existed, and the rename could clobber unrelated third-party skills in the same harness folder. The flag and the prompt are removed.</li>
-        <li><strong>Existing prefixed installs heal themselves.</strong> <code>skills install</code> and <code>skills update</code> now rename any old <code>i-tektone</code> (or custom-prefixed) skill back to the canonical <code>tektone</code>, scoped by name so a third-party skill that happens to start with <code>i-</code> is left untouched. Want a short top-level command? <code>/tektone pin audit</code> still makes <code>/audit</code> a standalone shortcut.</li>
+        <li><strong>O prefixo de comando <code>i-</code> acabou.</strong> Optar por um prefixo no momento da instalação era um resquício de quando cada comando era sua própria skill. Com uma única skill <code>tektone</code>, ele apenas renomeava aquela skill para <code>i-tektone</code>, enquanto a mensagem de instalação prometia erroneamente comandos no estilo <code>/i-audit</code> que nunca existiram, e a renomeação podia atropelar skills de terceiros sem relação na mesma pasta de harness. A flag e o prompt foram removidos.</li>
+        <li><strong>Instalações prefixadas existentes se consertam sozinhas.</strong> <code>skills install</code> e <code>skills update</code> agora renomeiam qualquer skill antiga <code>i-tektone</code> (ou com prefixo personalizado) de volta para a canônica <code>tektone</code>, com escopo por nome para que uma skill de terceiros que por acaso comece com <code>i-</code> fique intacta. Quer um comando curto de nível superior? <code>/tektone pin audit</code> ainda transforma <code>/audit</code> em um atalho independente.</li>
       </ul>
     </article>
 
     <article id="cli-v2.3.1" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.1</span><span class="cf-date">May 28, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.1</span><span class="cf-date">28 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>Codex agent delivery simplified.</strong> Codex auto-discovers subagents bundled inside an installed skill's own <code>agents/</code> folder, so <code>skills install</code> and <code>skills update</code> no longer write a separate <code>.codex/agents/*.toml</code> sidecar. The nested in-skill agent is the whole delivery now: one fewer file to install and heal, and nothing left behind in non-Codex projects.</li>
-        <li><strong><code>--fast</code> deprecated.</strong> Since the jsdom removal the full static scan runs at about 4 ms per file and covers every rule, so the regex-only <code>--fast</code> path only lost coverage (about 10 of 41 rules) for no real speed gain, and a <code>--fast</code> run could read "clean" because most rules silently never ran. The flag is still accepted so existing CI scripts keep working, but it is ignored with a one-line notice and the full scan always runs.</li>
+        <li><strong>Entrega de agente do Codex simplificada.</strong> O Codex descobre automaticamente subagentes empacotados dentro da própria pasta <code>agents/</code> de uma skill instalada, então <code>skills install</code> e <code>skills update</code> não escrevem mais um sidecar <code>.codex/agents/*.toml</code> separado. O agente aninhado dentro da skill é a entrega inteira agora: um arquivo a menos para instalar e consertar, e nada deixado para trás em projetos que não usam Codex.</li>
+        <li><strong><code>--fast</code> descontinuado.</strong> Desde a remoção do jsdom, o scan estático completo roda a cerca de 4 ms por arquivo e cobre todas as regras, então o caminho <code>--fast</code> só com regex apenas perdia cobertura (cerca de 10 das 41 regras) sem ganho real de velocidade, e uma rodada <code>--fast</code> podia aparecer como "limpa" porque a maioria das regras silenciosamente nunca rodava. A flag ainda é aceita para que scripts de CI existentes continuem funcionando, mas é ignorada com um aviso de uma linha e o scan completo sempre roda.</li>
       </ul>
     </article>
 
     <article id="cli-v2.3.0" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.0</span><span class="cf-date">May 28, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">CLI v2.3.0</span><span class="cf-date">28 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>Codex subagent delivery.</strong> <code>skills install</code> and <code>skills update</code> now write <code>.codex/agents/tektone_asset_producer.toml</code> alongside the skill for Codex projects, detected from a <code>.agents</code> target or a global <code>~/.codex</code> install. Update heals the file when an older install left it out, and non-Codex projects stay untouched.</li>
+        <li><strong>Entrega de subagente do Codex.</strong> <code>skills install</code> e <code>skills update</code> agora escrevem <code>.codex/agents/tektone_asset_producer.toml</code> junto da skill para projetos Codex, detectados a partir de um alvo <code>.agents</code> ou de uma instalação global <code>~/.codex</code>. O update conserta o arquivo quando uma instalação mais antiga o deixou de fora, e projetos que não usam Codex ficam intactos.</li>
       </ul>
     </article>
 
     <article id="cli-v2.2.0" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">CLI v2.2.0</span><span class="cf-date">May 28, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">CLI v2.2.0</span><span class="cf-date">28 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>Static engine, no jsdom.</strong> Detection was rebuilt on <code>htmlparser2</code> and a real CSS cascade resolver, replacing jsdom. About 20x faster on large HTML scans (a 160-file corpus drops from 6.8s to 0.34s under Node), dependency-free, and small enough to bundle, with no change to the rules themselves.</li>
-        <li><strong>14 new detection rules.</strong> <code>cream-palette</code> (warm off-white "claude beige" backgrounds, including Tailwind warm-light utilities), <code>em-dash-overuse</code>, <code>marketing-buzzword</code>, <code>numbered-section-markers</code>, <code>aphoristic-cadence</code>, <code>theater-slop-phrase</code>, <code>oversized-h1</code>, <code>extreme-negative-tracking</code>, <code>gpt-thin-border-wide-shadow</code>, <code>repeating-stripes-gradient</code>, <code>image-hover-transform</code>, <code>broken-image</code>, <code>text-overflow</code>, and <code>clipped-overflow-container</code>. 41 deterministic rules total.</li>
-        <li><strong>everything-centered removed.</strong> Dropped from the registry, the regex analyzer, and the layout checks: the rule caught too many legitimately centered layouts to earn its place.</li>
-        <li><strong>One canonical registry.</strong> Eval-side detection logic folded back into the shared engine, so the CLI, the browser extension, the critique skill, and the evals all run the exact same checks.</li>
+        <li><strong>Engine estática, sem jsdom.</strong> A detecção foi reconstruída sobre <code>htmlparser2</code> e um resolvedor real de cascata CSS, substituindo o jsdom. Cerca de 20x mais rápida em scans grandes de HTML (um corpus de 160 arquivos cai de 6,8s para 0,34s no Node), sem dependências e pequena o suficiente para empacotar, sem mudança nas próprias regras.</li>
+        <li><strong>14 novas regras de detecção.</strong> <code>cream-palette</code> (fundos quentes em off-white "claude beige", incluindo utilitários warm-light do Tailwind), <code>em-dash-overuse</code>, <code>marketing-buzzword</code>, <code>numbered-section-markers</code>, <code>aphoristic-cadence</code>, <code>theater-slop-phrase</code>, <code>oversized-h1</code>, <code>extreme-negative-tracking</code>, <code>gpt-thin-border-wide-shadow</code>, <code>repeating-stripes-gradient</code>, <code>image-hover-transform</code>, <code>broken-image</code>, <code>text-overflow</code> e <code>clipped-overflow-container</code>. 41 regras determinísticas no total.</li>
+        <li><strong>everything-centered removida.</strong> Tirada do registro, do analisador de regex e das verificações de layout: a regra pegava layouts centralizados legítimos demais para justificar seu lugar.</li>
+        <li><strong>Um registro canônico.</strong> A lógica de detecção do lado dos evals foi dobrada de volta na engine compartilhada, então o CLI, a extensão de navegador, a skill de crítica e os evals rodam exatamente as mesmas verificações.</li>
       </ul>
     </article>
 
     <article id="ext-v1.2.0" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">Extension v1.2.0</span><span class="cf-date">June 1, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">Extension v1.2.0</span><span class="cf-date">1 de junho de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>Firefox build.</strong> The same detector, popup, DevTools panel, and per-rule toggles now ship as a Firefox add-on. <code>bun run build:extension</code> emits a Gecko-compatible package next to the Chrome one, with the background worker declared as an event page and a data-collection declaration that states what the extension already does: the scan runs in the page, and nothing leaves your machine.</li>
+        <li><strong>Build para Firefox.</strong> O mesmo detector, popup, painel do DevTools e toggles por regra agora chegam como um add-on do Firefox. <code>bun run build:extension</code> emite um pacote compatível com o Gecko ao lado do do Chrome, com o background worker declarado como event page e uma declaração de coleta de dados que diz o que a extensão já faz: o scan roda na página, e nada sai da sua máquina.</li>
       </ul>
     </article>
 
     <article id="ext-v1.1.0" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">Extension v1.1.0</span><span class="cf-date">May 28, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">Extension v1.1.0</span><span class="cf-date">28 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong>The new detection rules flag in the overlay.</strong> cream-palette, em-dash-overuse, marketing-buzzword, numbered-section-markers, aphoristic-cadence, theater-slop-phrase, oversized-h1, broken-image, text-overflow, and the rest now light up on any page you scan, same engine as the CLI.</li>
-        <li><strong>Per-rule toggles in settings.</strong> Every rule, including the new ones, has an on/off switch grouped by AI tells and Quality. Toggle state syncs across your browsers and the scan honors it immediately.</li>
+        <li><strong>As novas regras de detecção sinalizam no overlay.</strong> cream-palette, em-dash-overuse, marketing-buzzword, numbered-section-markers, aphoristic-cadence, theater-slop-phrase, oversized-h1, broken-image, text-overflow e o resto agora se acendem em qualquer página que você escaneia, a mesma engine do CLI.</li>
+        <li><strong>Toggles por regra nas configurações.</strong> Cada regra, incluindo as novas, tem um interruptor liga/desliga agrupado por sinais de IA e Qualidade. O estado dos toggles sincroniza entre seus navegadores e o scan o respeita imediatamente.</li>
       </ul>
     </article>
 
     <article id="v3.1.1" class="cf-entry">
-      <header class="cf-entry-head"><span class="cf-version">v3.1.1</span><span class="cf-date">May 14, 2026</span></header>
+      <header class="cf-entry-head"><span class="cf-version">v3.1.1</span><span class="cf-date">14 de maio de 2026</span></header>
       <ul class="cf-items">
-        <li><strong><code>/tektone critique</code> works on Windows.</strong> The CLI entry-point check in <code>critique-storage.mjs</code> compared <code>import.meta.url</code> against a hand-built <code>file://</code> string, which silently failed on Windows because Node returns forward slashes in <code>import.meta.url</code> but backslashes in <code>process.argv[1]</code>. The script exited 0 with no output and the snapshot save was skipped. Switched to <code>pathToFileURL</code>, the standard cross-platform pattern. Reported by <a href="https://github.com/Genmutant" target="_blank" rel="noopener">@Genmutant</a> in <a href="https://github.com/pbakaus/tektone/issues/155" target="_blank" rel="noopener">#155</a>.</li>
+        <li><strong><code>/tektone critique</code> funciona no Windows.</strong> A verificação de entry-point do CLI em <code>critique-storage.mjs</code> comparava <code>import.meta.url</code> com uma string <code>file://</code> montada à mão, o que falhava silenciosamente no Windows porque o Node retorna barras normais em <code>import.meta.url</code> mas barras invertidas em <code>process.argv[1]</code>. O script saía com 0 sem nenhuma saída e o salvamento do snapshot era pulado. Trocado por <code>pathToFileURL</code>, o padrão multiplataforma. Reportado por <a href="https://github.com/Genmutant" target="_blank" rel="noopener">@Genmutant</a> em <a href="https://github.com/pbakaus/tektone/issues/155" target="_blank" rel="noopener">#155</a>.</li>
       </ul>
     </article>
 

@@ -162,4 +162,50 @@ router.delete('/oauth', async (c) => {
   return c.json({ ok: true })
 })
 
+// GET /api/ml/search?q=...&limit=20&sort=sold_quantity_desc&site=MLB
+// Proxies the Mercado Livre search API through the Worker to avoid CORS blocks
+// that happen when the browser calls api.mercadolibre.com directly.
+// `site` defaults to 'MLB' (Brasil); pass 'MLM' for México.
+router.get('/search', async (c) => {
+  const q     = c.req.query('q')
+  const limit = c.req.query('limit') ?? '20'
+  const sort  = c.req.query('sort')  ?? 'sold_quantity_desc'
+  const site  = c.req.query('site')  ?? 'MLB'
+
+  if (!q?.trim()) return c.json({ error: 'Parâmetro q é obrigatório' }, 400)
+
+  // Resolve auth token: KV-stored OAuth token → fresh client_credentials token
+  let authToken = null
+  if (c.env.KV1 && c.env.CREDENTIALS_SECRET) {
+    try {
+      const { decrypt } = await import('../lib/crypto.js')
+      const stored = await c.env.KV1.get('apikey:ML_USER_ACCESS_TOKEN', { type: 'json' }).catch(() => null)
+      if (stored?.ciphertext) {
+        authToken = await decrypt(stored.ciphertext, stored.iv, c.env.CREDENTIALS_SECRET).catch(() => null)
+      }
+    } catch {}
+  }
+  if (!authToken) {
+    try {
+      const { getMLToken } = await import('../services/miningService.js')
+      const { token } = await getMLToken(c.env)
+      authToken = token
+    } catch {}
+  }
+
+  const params = new URLSearchParams({ q: q.trim(), limit, sort })
+  const headers = { Accept: 'application/json' }
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`
+
+  const res = await fetch(`https://api.mercadolibre.com/sites/${site}/search?${params}`, { headers })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return c.json({ error: `ML API ${res.status}: ${err.message ?? 'erro'}`, status: res.status }, res.status === 401 ? 401 : 502)
+  }
+
+  const data = await res.json()
+  return c.json(data)
+})
+
 export default router

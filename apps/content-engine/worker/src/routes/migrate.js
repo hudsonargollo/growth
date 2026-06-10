@@ -41,6 +41,11 @@ ALTER TABLE voiceovers
   ADD COLUMN IF NOT EXISTS "sectionLabel" TEXT,
   ADD COLUMN IF NOT EXISTS "sectionIndex" INTEGER;
 
+-- Real product review count (ML /reviews/item). rating already exists; this persists
+-- the buyer review volume so it survives catalog reloads instead of being stripped.
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS "reviewCount" INTEGER DEFAULT 0;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_mining_sessions_project ON mining_sessions ("projectId");
 CREATE INDEX IF NOT EXISTS idx_scripts_project         ON scripts         ("projectId");
