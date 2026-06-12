@@ -1,0 +1,272 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TEKTONE x Paraguay — brand tokens
+   Editorial, architectural, exclusive. Structural borders over rounded cards.
+   ───────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --color-ivory: #efe8dc;       /* dominant background — premium textured paper */
+  --color-ivory-deep: #e6ddcd;
+  --color-mineral: #141618;     /* structure: typography, borders, containers */
+  --color-green: #2e4a43;       /* wealth & growth: networking, strategic accents */
+  --color-green-deep: #233a34;
+  --color-sand: #c7b79c;        /* the premium foil: lines, badges, CTA details */
+  --color-sand-deep: #b3a081;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "EB Garamond", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ivory);
+  color: var(--color-mineral);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Reusable brand utilities ──────────────────────────────────────────────── */
+
+/* The "whisper": EB Garamond italic for principles, quotes, legal clarifications */
+.whisper {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--color-green);
+}
+
+/* Data / logs: JetBrains Mono for prices, dates, step numbers */
+.data {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+
+/* Tracked-out uppercase label */
+.eyebrow {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-sand-deep);
+}
+
+/* Architectural CTA — wide flat bar, tracked uppercase, no e-commerce shine */
+.cta-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1.25rem 2rem;
+  background: var(--color-mineral);
+  color: var(--color-ivory);
+  border: 1px solid var(--color-mineral);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+.cta-bar:hover {
+  background: var(--color-green);
+  border-color: var(--color-green);
+}
+/* Foil = the prominent premium CTA. Solid sand so it pops on dark sections. */
+.cta-bar--foil {
+  background: var(--color-sand);
+  color: var(--color-mineral);
+  border-color: var(--color-sand);
+  font-weight: 600;
+  box-shadow: 0 14px 34px -12px rgba(199, 183, 156, 0.55);
+}
+.cta-bar--foil:hover {
+  background: #ddd0b6;
+  color: var(--color-mineral);
+  border-color: #ddd0b6;
+}
+
+/* Hide horizontal scrollbar (used by the admin top-nav on small screens) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Hairline that mimics architectural drafting grid */
+.rule {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-mineral) 18%, transparent);
+}
+
+/* Section wrapper */
+.shell {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Form field */
+.field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-mineral) 35%, transparent);
+  padding: 0.85rem 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--color-mineral);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.field:focus {
+  border-color: var(--color-green);
+}
+.field::placeholder {
+  color: color-mix(in srgb, var(--color-mineral) 45%, transparent);
+}
+.field-label {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.62rem;
+  color: var(--color-sand-deep);
+}
+
+/* ── Lead form — higher-contrast, boxed inputs for best legibility ──────────── */
+.lead-form {
+  background: #f4efe6;                              /* lighter than ivory-deep → card lifts off the page */
+  border-color: color-mix(in srgb, var(--color-mineral) 22%, transparent) !important;
+}
+.lead-form .field-label {
+  color: color-mix(in srgb, var(--color-mineral) 70%, transparent);
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+.lead-form .field {
+  background: #fffdf8;                              /* near-white input wells stand out clearly */
+  border: 1px solid color-mix(in srgb, var(--color-mineral) 22%, transparent);
+  border-radius: 0;
+  padding: 0.8rem 0.85rem;
+  color: var(--color-mineral);
+}
+.lead-form .field::placeholder {
+  color: color-mix(in srgb, var(--color-mineral) 38%, transparent);
+}
+.lead-form .field:focus {
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-green) 14%, transparent);
+}
+.lead-form .eyebrow {
+  color: color-mix(in srgb, var(--color-mineral) 55%, transparent);
+}
+
+/* ── CRM admin theme (scoped to .ci-theme) — mirrors landing TEKTONE tokens ── */
+.ci-theme {
+  --ci-ivory: #efe8dc; --ci-ivory-deep: #ded3c0; --ci-mineral: #141618;
+  --ci-surface: #f7f2e9;        /* card surface — lighter than the page → cards pop */
+  --ci-green: #2e4a43; --ci-sand: #c7b79c; --ci-sand-deep: #7e6e52;
+  --ci-line: rgba(20,22,24,0.22); --ci-line-soft: rgba(20,22,24,0.10);
+  --ci-shadow: 0 1px 2px rgba(20,22,24,0.06), 0 14px 30px -18px rgba(20,22,24,0.30);
+  --ci-text-2: rgba(20,22,24,0.66); --ci-text-3: rgba(20,22,24,0.5);
+  background: var(--ci-ivory-deep); color: var(--ci-mineral);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif; font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+.ci-theme ::placeholder { color: rgba(20,22,24,0.4); }
+.ci-eyebrow { font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.24em; font-size: 0.62rem; font-weight: 500; color: var(--ci-sand-deep); }
+.ci-data    { font-family: "JetBrains Mono", monospace; font-feature-settings: "tnum"; }
+.ci-whisper { font-family: "EB Garamond", Georgia, serif; font-style: italic; color: var(--ci-green); }
+.ci-h1      { font-size: 1.55rem; font-weight: 300; letter-spacing: -0.01em; color: var(--ci-mineral); line-height: 1.15; }
+.ci-h1 b, .ci-h1 strong { font-weight: 600; }
+.ci-card      { background: var(--ci-surface); border: 1px solid var(--ci-line); border-radius: 12px; box-shadow: var(--ci-shadow); }
+.ci-card-soft { background: var(--ci-ivory); border: 1px solid var(--ci-line); border-radius: 12px; box-shadow: var(--ci-shadow); }
+.ci-card-h    { display: flex; align-items: center; gap: 8px; padding: 13px 18px; border-bottom: 1px solid var(--ci-line); }
+.ci-title     { font-size: 12.5px; font-weight: 700; letter-spacing: 0.01em; color: var(--ci-mineral); }
+.ci-input { width: 100%; background: rgba(255,255,255,0.55); border: 1px solid var(--ci-line); border-radius: 8px; padding: 10px 12px; font-size: 14px; color: var(--ci-mineral); font-family: "Inter", sans-serif; outline: none; transition: border-color .15s, box-shadow .15s; }
+.ci-input:focus { box-shadow: 0 0 0 3px rgba(46,74,67,0.12); }
+.ci-input:focus { border-color: var(--ci-green); }
+select.ci-input { appearance: none; }
+.ci-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; font-weight: 500; padding: 10px 16px; cursor: pointer; border: 1px solid var(--ci-mineral); background: var(--ci-mineral); color: var(--ci-ivory); transition: background .2s, border-color .2s, color .2s; }
+.ci-btn:hover:not(:disabled) { background: var(--ci-green); border-color: var(--ci-green); }
+.ci-btn:disabled { opacity: .5; cursor: default; }
+.ci-btn--ghost { background: transparent; color: var(--ci-mineral); border-color: var(--ci-sand-deep); }
+.ci-btn--ghost:hover:not(:disabled) { background: var(--ci-sand); border-color: var(--ci-sand); }
+.ci-th { font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.1em; font-size: 9px; font-weight: 600; color: var(--ci-sand-deep); text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--ci-line); }
+.ci-tr td { border-bottom: 1px solid var(--ci-line-soft); }
+.ci-tr:nth-child(even) td { background: rgba(20,22,24,0.035); }
+.ci-tr:hover td { background: rgba(46,74,67,0.08); }
+.ci-pill { display: inline-flex; align-items: center; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+.ci-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--ci-green); background: rgba(46,74,67,0.08); border: 1px solid rgba(46,74,67,0.2); padding: 2px 8px; border-radius: 999px; }
+
+/* Whispers (EB Garamond italic) default to green; on dark/green sections use sand for legibility. */
+.bg-mineral .whisper, .bg-green .whisper { color: var(--color-sand); }
+
+/* Any green icon/text on dark sections → sand for contrast. */
+.bg-mineral .text-green, .bg-green .text-green { color: var(--color-sand); }
+
+/* Subtle brand texture over dark sections (93% Mineral overlay on the pattern). */
+.bg-tex { background-image: linear-gradient(rgba(20,22,24,0.93), rgba(20,22,24,0.93)), url('/brand/background-pattern.webp'); background-size: cover; background-position: center; }
+.bg-tex-green { background-image: linear-gradient(rgba(46,74,67,0.92), rgba(46,74,67,0.92)), url('/brand/background-pattern.webp'); background-size: cover; background-position: center; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   /v3 landing — fonts, keyframes and responsive grid helpers (scoped to .ci-*)
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --font-cinzel: 'Cinzel', serif;
+  --font-cormorant: 'Cormorant Garamond', Georgia, serif;
+  --font-archivo: 'Archivo', system-ui, sans-serif;
+}
+@keyframes ci-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes ci-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes ci-ping{0%{transform:scale(1);opacity:.6}80%,100%{transform:scale(1.7);opacity:0}}
+@keyframes ci-sheen{0%{background-position:0% 0}100%{background-position:-220% 0}}
+@keyframes ci-blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes ci-redpulse{0%{box-shadow:0 0 0 0 rgba(240,71,58,.65)}70%,100%{box-shadow:0 0 0 7px rgba(240,71,58,0)}}
+@keyframes ci-glow{0%,100%{text-shadow:0 0 4px rgba(251,235,190,.35)}50%{text-shadow:0 0 12px rgba(251,235,190,.9),0 0 22px rgba(234,203,126,.55)}}
+.ci-sheen-bg{background:linear-gradient(115deg,#15110A,#2a2010,#15110A);background-size:220% 100%;animation:ci-sheen 7s linear infinite}
+.ci-blink-dot{animation:ci-blink 1.05s ease-in-out infinite, ci-redpulse 1.8s ease-out infinite}
+.ci-glow-countdown{animation:ci-glow 1.6s ease-in-out infinite}
+.ci-float-badge{animation:ci-float 7s ease-in-out infinite}
+.ci-pulse-dot{animation:ci-pulse 2.6s ease-in-out infinite}
+@media(max-width:880px){
+  .ci-2col{grid-template-columns:1fr !important}
+  .ci-3col{grid-template-columns:1fr !important}
+  .ci-4col{grid-template-columns:1fr 1fr !important}
+  .ci-turmas{grid-template-columns:1fr 1fr !important}
+  .ci-hero{grid-template-columns:1fr !important;text-align:center}
+  .ci-day{grid-template-columns:1fr !important;text-align:center}
+}
+
+/* /v3 — 7-day section: scroll-pinned ("locked") on desktop, stacked on mobile.
+   Locks right below the sticky header (urgency bar + nav) so the section starts clean. */
+.ci-day-track { height: 700vh; }
+.ci-day-pin { position: sticky; top: var(--v3-header-h, 0px); height: calc(100vh - var(--v3-header-h, 0px)); }
+@media(max-width:880px){
+  .ci-day-track { height: auto !important; }
+  .ci-day-pin { position: static !important; height: auto !important; padding: 70px 0; }
+}
+
+/* /v3 — mobile optimization ------------------------------------------------ */
+/* Section padding driven by a CSS var so media queries can override the
+   inline `padding: var(--v3-pad)` set on each section's inner container. */
+:root{ --v3-pad: 100px 28px; }
+@media(max-width:880px){
+  :root{ --v3-pad: 60px 20px; }
+  /* Mentor seal: pull it in-bounds and shrink so it never overflows the
+     centered single-column layout. */
+  .ci-float-badge{ top:-18px !important; right:8px !important; width:84px !important; height:84px !important; }
+  .ci-float-badge svg{ width:84px !important; height:84px !important; }
+}
+@media(max-width:430px){
+  :root{ --v3-pad: 52px 16px; }
+}
+@media(max-width:880px){
+  /* Leave room under the footer for the fixed mobile bottom CTA. */
+  .ci-footer > div{ padding-bottom: 96px !important; padding-left:20px !important; padding-right:20px !important; }
+}

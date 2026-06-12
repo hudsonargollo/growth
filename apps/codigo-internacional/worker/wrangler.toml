@@ -1,0 +1,26 @@
+name = "codigo-internacional-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 — shared pipeline database (lives on the ClubeMKT account)
+[[d1_databases]]
+binding       = "CI_DB"
+database_name = "codigo-internacional"
+database_id   = "3b79dd03-874f-4a40-9e2e-48ef3c055618"
+
+# KV — rate limiting for the public lead form
+[[kv_namespaces]]
+binding = "CI_KV"
+id      = "1354acc9e70641fe96383d4ae67727a1"
+
+[vars]
+EVOLUTION_API_URL     = "https://evo.clubemkt.digital"
+EVOLUTION_INSTANCE    = "FABRICADECONTEUDO"
+CI_EVOLUTION_INSTANCE = "CODIGOINTERNACIONAL"
+CI_OWNER_WHATSAPP     = "5573988083318"
+
+# ── Secrets (set via: wrangler secret put NAME) ──
+#   SESSION_SECRET        — HMAC key for session tokens (REQUIRED)
+#   CI_EVOLUTION_KEY      — Evolution apikey for the CODIGOINTERNACIONAL instance
+#   EVOLUTION_INSTANCE_KEY — fallback Evolution apikey
