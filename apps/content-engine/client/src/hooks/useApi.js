@@ -1,4 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase.js'
+
+// Attach the logged-in user's Supabase JWT so the worker can authorize
+// protected endpoints (e.g. /api/ci/admin/*).
+async function authHeaders() {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export function useApi(path, deps = []) {
   const [data, setData]       = useState(null)
@@ -10,7 +19,7 @@ export function useApi(path, deps = []) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api${path}`)
+      const res = await fetch(`/api${path}`, { headers: { ...(await authHeaders()) } })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       setData(await res.json())
     } catch (e) {
@@ -29,7 +38,7 @@ export function useApi(path, deps = []) {
 export async function apiPost(path, body) {
   const res = await fetch(`/api${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   })
   const json = await res.json()
@@ -40,7 +49,18 @@ export async function apiPost(path, body) {
 export async function apiPut(path, body) {
   const res = await fetch(`/api${path}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify(body),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? res.statusText)
+  return json
+}
+
+export async function apiPatch(path, body) {
+  const res = await fetch(`/api${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   })
   const json = await res.json()
@@ -49,7 +69,7 @@ export async function apiPut(path, body) {
 }
 
 export async function apiDelete(path) {
-  const res = await fetch(`/api${path}`, { method: 'DELETE' })
+  const res = await fetch(`/api${path}`, { method: 'DELETE', headers: { ...(await authHeaders()) } })
   const json = await res.json()
   if (!res.ok) throw new Error(json.error ?? res.statusText)
   return json

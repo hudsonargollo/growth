@@ -61,6 +61,10 @@ router.get('/oauth/url', async (c) => {
     redirect_uri:          REDIRECT_URI,
     code_challenge:        codeChallenge,
     code_challenge_method: 'S256',
+    // offline_access is REQUIRED for ML to return a refresh_token (so we can keep
+    // the user token alive); read grants the search/items scope. Without these,
+    // no refresh token is issued and the access token dies in ~6h.
+    scope:                 'offline_access read write',
   })
 
   return c.json({ url: `${ML_AUTH_BASE}/authorization?${params}` })

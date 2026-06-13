@@ -260,6 +260,53 @@ async function getMLUserToken(env) {
   }
 }
 
+// Refresh the ML user access token using the stored refresh_token (ML rotates the
+// refresh token on each use, so we persist BOTH new tokens). Returns the fresh
+// access token, or null if no refresh token is stored / the refresh is rejected
+// (in which case the user must reconnect ML in Settings).
+export async function refreshMLUserToken(env) {
+  if (!env.KV1 || !env.CREDENTIALS_SECRET) return null
+  try {
+    const { decrypt, encrypt } = await import('../lib/crypto.js')
+    const { resolveKey }        = await import('../lib/resolveKey.js')
+    const stored = await env.KV1.get('apikey:ML_USER_REFRESH_TOKEN', { type: 'json' }).catch(() => null)
+    if (!stored?.ciphertext) { console.warn('[ML] no refresh token stored — reconnect ML in Settings'); return null }
+    const refreshToken = await decrypt(stored.ciphertext, stored.iv, env.CREDENTIALS_SECRET).catch(() => null)
+    if (!refreshToken) return null
+
+    const [appId, clientSecret] = await Promise.all([
+      resolveKey(env, 'ML_APP_ID'),
+      resolveKey(env, 'ML_CLIENT_SECRET'),
+    ])
+    if (!appId || !clientSecret) return null
+
+    const res = await mlFetch(env, '/oauth/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body:    new URLSearchParams({ grant_type: 'refresh_token', client_id: appId, client_secret: clientSecret, refresh_token: refreshToken }),
+    })
+    if (!res.ok) {
+      console.warn(`[ML] refresh failed ${res.status}: ${(await res.text()).slice(0, 150)}`)
+      return null
+    }
+    const json = await res.json()
+    if (!json.access_token) return null
+
+    const now = new Date().toISOString()
+    const a = await encrypt(json.access_token, env.CREDENTIALS_SECRET)
+    await env.KV1.put('apikey:ML_USER_ACCESS_TOKEN', JSON.stringify({ ciphertext: a.ciphertext, iv: a.iv, updated_at: now }))
+    if (json.refresh_token) {
+      const r = await encrypt(json.refresh_token, env.CREDENTIALS_SECRET)
+      await env.KV1.put('apikey:ML_USER_REFRESH_TOKEN', JSON.stringify({ ciphertext: r.ciphertext, iv: r.iv, updated_at: now }))
+    }
+    console.log('[ML] user token refreshed OK')
+    return json.access_token
+  } catch (e) {
+    console.warn(`[ML] refresh error: ${e.message}`)
+    return null
+  }
+}
+
 // ── MercadoLivre Direct API ───────────────────────────────────────────────────
 // `site` is the ML site code: 'MLB' = Brasil, 'MLM' = México. Defaults to 'MLB'.
 async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_desc', limit = 20, mlAffiliateId = '', site = 'MLB' }) {
@@ -276,26 +323,43 @@ async function fetchMercadoLivreDirectAPI(env, { query, sortBy = 'sold_quantity_
 
   // Always include a User-Agent so ML doesn't silently block the request
   const baseHeaders = { 'User-Agent': 'FabricaDeConteudo/1.0' }
-  const headers = token
-    ? { ...baseHeaders, Authorization: `Bearer ${token}` }
-    : baseHeaders
+  // ML's app (client_credentials) token gets 403 on /sites/{site}/search — that
+  // endpoint is restricted. A connected USER token with read scope may still be
+  // permitted, so prefer it for the search request and fall back to the app token.
+  let usingUser    = !!userToken
+  let activeToken  = userToken ?? token
+  console.log(`[ML] searchToken=${usingUser ? 'user' : (token ? 'app' : 'none')}`)
+  const authHeaders = (tok) => (tok ? { ...baseHeaders, Authorization: `Bearer ${tok}` } : baseHeaders)
+  const doSearch    = (sort, tok) => mlFetch(env, `/sites/${site}/search?${makeParams(sort)}`, { headers: authHeaders(tok) })
 
-  // 1. Preferred sort with token
-  let params = makeParams(sortBy)
-  let res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers })
-  console.log(`[ML] attempt1 sort=${sortBy} status=${res.status}`)
+  // 1. Preferred sort with the best available token (user > app)
+  let res = await doSearch(sortBy, activeToken)
+  console.log(`[ML] attempt1 token=${usingUser ? 'user' : 'app'} sort=${sortBy} status=${res.status}`)
+
+  // 1b. User token expired (401) → refresh once and retry with the fresh token.
+  if (res.status === 401 && usingUser) {
+    const fresh = await refreshMLUserToken(env)
+    if (fresh) {
+      activeToken = fresh
+      res = await doSearch(sortBy, fresh)
+      console.log(`[ML] attempt1b refreshed-user sort=${sortBy} status=${res.status}`)
+    } else {
+      // Refresh unavailable → fall back to the app token
+      usingUser = false; activeToken = token
+      res = await doSearch(sortBy, token)
+      console.log(`[ML] attempt1c app sort=${sortBy} status=${res.status}`)
+    }
+  }
 
   // 2. sold_quantity_desc needs higher scope → fall back to relevance, keep token
   if (res.status === 403 && sortBy !== 'relevance') {
-    params = makeParams('relevance')
-    res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers })
+    res = await doSearch('relevance', activeToken)
     console.log(`[ML] attempt2 sort=relevance status=${res.status}`)
   }
 
   // 3. Token itself rejected → try relevance without auth (public endpoint)
   if (res.status === 403 || res.status === 401) {
-    params = makeParams('relevance')
-    res    = await mlFetch(env, `/sites/${site}/search?${params}`, { headers: baseHeaders })
+    res = await doSearch('relevance', null)
     console.log(`[ML] attempt3 sort=relevance noauth status=${res.status}`)
   }
 
@@ -950,6 +1014,24 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
     }
   }
 
+  // ── Resilience fallback ──────────────────────────────────────────────────────
+  // If every primary source came up empty (e.g. SerpAPI out of credits AND the ML
+  // token expired), try Amazon Creators for this region's markets. Creators needs
+  // neither SerpAPI nor ML, so it keeps mining alive instead of dead-ending.
+  if (rawProducts.length === 0 && marketplace !== 'amazon' && marketplace !== 'both') {
+    console.warn('[mining] primary source empty — falling back to Amazon Creators')
+    const fbQuery = await localizeQuery(env, category, group.lang)
+    for (const mkt of group.markets.map(m => MARKETS[m])) {
+      try {
+        const { products: items, error: aErr } = await searchAmazonCreators(env, { query: fbQuery, region: mkt.code, limit: 10 })
+        if (!aErr && items.length > 0) {
+          rawProducts.push(...items.map(p => normalizeAmazonCreatorsProduct(p, { market: mkt, amazonTag })))
+          console.log(`[mining-fallback] amazon ${mkt.code}: ${items.length} products`)
+        }
+      } catch (e) { errors.push(`Amazon fallback ${mkt.label}: ${e.message}`) }
+    }
+  }
+
   if (rawProducts.length === 0) {
     await db.from('mining_sessions').update({ status: 'failed', completedAt: new Date().toISOString() }).eq('id', sessionId)
     const msg = errors.length
@@ -972,11 +1054,16 @@ export async function runMiningSession(env, { marketplace, category, siteFilter 
   const blogById  = {}
   const imagesById = {}
 
+  // Google review-image enrichment is OPT-IN: it costs one extra SerpAPI search
+  // per product (5/run), which burns the SerpAPI quota faster. Enable explicitly
+  // with MINING_REVIEW_IMAGES=true once the SerpAPI plan has headroom.
+  const wantReviewImages = ['true', '1', 'on'].includes(String(env.MINING_REVIEW_IMAGES ?? '').toLowerCase())
+
   await Promise.allSettled(top5.map(async (p) => {
-    // Blog review snippets + Google review images, fetched in parallel per product.
+    // Blog review snippets (pre-existing) + optional Google review images.
     const [reviews, images] = await Promise.all([
       fetchBlogReviews(env, p.title, serpApiKey),
-      fetchReviewImages(env, p.title, serpApiKey),
+      wantReviewImages ? fetchReviewImages(env, p.title, serpApiKey) : Promise.resolve([]),
     ])
     blogById[p.id]   = reviews
     imagesById[p.id] = images

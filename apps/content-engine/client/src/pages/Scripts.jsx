@@ -35,6 +35,8 @@ export function friendlyError(raw = '') {
     return 'Créditos insuficientes no ElevenLabs. Adicione créditos em elevenlabs.io ou troque para OpenAI TTS.'
   if (r.includes('invalid_api_key') || r.includes('invalid api key') || r.includes('unauthorized') || r.includes('401'))
     return 'Chave de API inválida ou expirada. Verifique em Configurações.'
+  if (r.includes('out of searches') || r.includes('run out of searches'))
+    return 'Sua conta SerpAPI esgotou as buscas do plano. Recarregue o plano ou aguarde a renovação do ciclo. A mineração via Amazon continua funcionando.'
   if (r.includes('rate_limit') || r.includes('rate limit') || r.includes('429'))
     return 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
   if (r.includes('openai_api_key') || r.includes('openai api key'))
