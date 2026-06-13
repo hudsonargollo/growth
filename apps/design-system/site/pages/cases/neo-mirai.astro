@@ -1,0 +1,108 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/sub-pages.css';
+---
+
+<Base
+  title="Estudo de caso Neo Mirai | Tektone"
+  description="Como o Tektone transformou marca gerada e referências hi-fi no site da conferência Neo Mirai que foi publicado."
+  canonicalPath="/cases/neo-mirai"
+  bodyClass="sub-page neon-case-page kinpaku-chrome"
+>
+
+  <div class="neon-case">
+  <section class="neon-case-hero">
+    <div class="neon-case-hero-copy">
+      <a class="neon-case-back" href="/designing#start">Projetando com o Tektone</a>
+      <span class="neon-case-eyebrow">Estudo de caso</span>
+      <h1>Neo Mirai: do mock gerado à página publicada.</h1>
+      <p>O Neo Mirai começou como um único mock hi-fi do OpenAI GPT Image 2 e um toolkit de marca gerado. O <code>/tektone craft</code> o transformou no site da conferência no ar: interpretação de marca, implementação semântica, assets regenerados, ajustes responsivos e iteração no browser em uma única execução.</p>
+      <div class="neon-case-actions">
+        <a class="neon-case-primary" href="/neo-mirai/">Abrir o build no ar</a>
+        <a class="neon-case-secondary" href="/docs/craft">Ler a documentação do craft</a>
+      </div>
+    </div>
+    <a class="neon-case-hero-shot" href="/neo-mirai/" aria-label="Abrir o build no ar do Neo Mirai">
+      <img src="/assets/cases/neo-mirai/live-fold.png" alt="O hero e a agenda do site da conferência Neo Mirai publicado, mostrando um skyline retrofuturista e caloroso de Tóquio e o grande título NEO MIRAI." width="1440" height="1100">
+    </a>
+  </section>
+
+  <section class="neon-case-strip" aria-label="De referências geradas a site publicado">
+    <figure>
+      <span>01 &middot; Visualizar</span>
+      <img src="/assets/openai_image_2_hifi.jpg" alt="Mock hi-fi gerado do site para a página da conferência Neo Mirai." loading="lazy" width="864" height="1821">
+      <figcaption>Norte hi-fi. Uma composição concreta para construir em direção a ela, não um parágrafo para interpretar.</figcaption>
+    </figure>
+    <figure>
+      <span>02 &middot; Moldar</span>
+      <img src="/assets/openai_image_2_brand.jpg" alt="Plate do toolkit de marca Neo Mirai gerado, com paleta, tipografia, símbolos e mockups de aplicação." loading="lazy" width="1536" height="1024">
+      <figcaption>Toolkit de marca. Identidade, paleta, tipografia, linguagem de imagem e direção de movimento antes do código.</figcaption>
+    </figure>
+    <figure>
+      <span>03 &middot; Publicar</span>
+      <a href="/neo-mirai/" aria-label="Abrir o build no ar do Neo Mirai">
+        <img src="/assets/cases/neo-mirai/live-page.png" alt="Screenshot de página inteira do site Neo Mirai implementado." loading="lazy" width="1440" height="3013">
+      </a>
+      <figcaption>Página implementada. HTML semântico, layout responsivo, assets regenerados, estados reais e polish.</figcaption>
+    </figure>
+  </section>
+
+  <section class="neon-case-body">
+    <div class="neon-case-column">
+      <span class="neon-case-section-label">O que mudou</span>
+      <h2>O mock não virou um screenshot. Ele virou HTML, CSS, assets regenerados e o comportamento responsivo que uma imagem estática apenas sugere.</h2>
+    </div>
+    <div class="neon-case-notes">
+      <article>
+        <h3>Correspondência de composição</h3>
+        <p>O build preservou o ritmo assimétrico do mock: artwork de hero full-bleed, bloco escuro de agenda, faixa laranja de manifesto, grid de instalação em deriva e campo estruturado de ingressos.</p>
+      </article>
+      <article>
+        <h3>Regeneração de assets</h3>
+        <p>As peças nativas de imagem continuaram nativas de imagem. A cidade do manifesto, os retratos dos palestrantes, a sobreposição de pinheiros e as ilustrações de apoio foram regeneradas ou isoladas onde o detalhe raster importava.</p>
+      </article>
+      <article>
+        <h3>Iteração no browser</h3>
+        <p>A página foi testada no browser após cada passada. Sobreposições, crops ruins, estado ativo da navegação, comportamento do carrossel de palestrantes, alturas no mobile e equilíbrio em viewports grandes foram ajustados visualmente.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="neon-case-details" aria-label="Comparação entre o mock e a página no ar">
+    <figure>
+      <img src="/assets/openai_image_2_hifi.jpg" alt="Mock hi-fi gerado da página Neo Mirai." loading="lazy" width="864" height="1821">
+      <figcaption><span>Mock norte</span> A imagem de referência preservou o ritmo pretendido: hero full-bleed, agenda escura, carrossel de palestrantes, campo de instalação, manifesto e ingressos.</figcaption>
+    </figure>
+    <figure>
+      <a href="/neo-mirai/" aria-label="Abrir o build no ar do Neo Mirai">
+        <img src="/assets/cases/neo-mirai/live-page.png" alt="Screenshot de página inteira do site Neo Mirai implementado." loading="lazy" width="1440" height="3013">
+      </a>
+      <figcaption><span>Build no ar</span> A página publicada mantém a mesma ambição visual ao mesmo tempo que vira markup responsivo, links reais, controles de carrossel, estados de hover e layout testado no browser.</figcaption>
+    </figure>
+  </section>
+
+  <section class="neon-case-command">
+    <div>
+      <span class="neon-case-section-label">Reproduza o loop</span>
+      <h2>Use o craft quando o resultado precisa parecer desenhado.</h2>
+      <p>O <code>/tektone craft</code> é o comando certo quando uma feature precisa de modelagem, direção visual, implementação e iteração no browser em uma única execução.</p>
+    </div>
+    <div class="code-block-wrap"><pre class="code-block"><code>/tektone craft retro-futurist AI design conference website</code></pre><button class="code-block-copy" type="button" data-copy="/tektone craft retro-futurist AI design conference website" aria-label="Copiar para a área de transferência">
+      <svg class="code-block-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+      </svg>
+      <svg class="code-block-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 6 9 17l-5-5"></path>
+      </svg>
+    </button></div>
+  </section>
+  </div>
+
+  <script>
+    import { initCopyFeedback } from "../../scripts/utils/copy-feedback.js";
+
+    initCopyFeedback();
+  </script>
+
+</Base>

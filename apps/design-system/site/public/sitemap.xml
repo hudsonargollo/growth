@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Landing + utility pages -->
+  <url>
+    <loc>https://tektone.design/</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://tektone.design/privacy</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Section indexes -->
+  <url>
+    <loc>https://tektone.design/docs</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://tektone.design/slop</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://tektone.design/tutorials</loc>
+    <lastmod>2026-04-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://tektone.design/cases/neo-mirai</loc>
+    <lastmod>2026-04-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Command detail pages (the tektone skill + 22 commands) -->
+  <url><loc>https://tektone.design/docs/tektone</loc><lastmod>2026-04-11</lastmod><priority>0.9</priority></url>
+  <url><loc>https://tektone.design/docs/craft</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/teach</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/extract</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/shape</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/critique</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/audit</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/polish</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/bolder</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/quieter</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/distill</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/harden</loc><lastmod>2026-04-11</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/onboard</loc><lastmod>2026-04-11</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/animate</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/colorize</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/typeset</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/layout</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/delight</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/overdrive</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/clarify</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/adapt</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/optimize</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/docs/live</loc><lastmod>2026-04-12</lastmod><priority>0.8</priority></url>
+
+  <!-- Tutorial detail pages -->
+  <url><loc>https://tektone.design/tutorials/getting-started</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://tektone.design/tutorials/critique-with-overlay</loc><lastmod>2026-04-10</lastmod><priority>0.8</priority></url>
+</urlset>

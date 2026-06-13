@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code agent worktrees (harness artifacts)
+.claude/worktrees/
+
+# Stray root image exports (do not commit)
+growth.png
+landingexpress.png
+pixelco.png

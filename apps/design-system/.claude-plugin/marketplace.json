@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tektone",
+  "metadata": {
+    "description": "Design fluency for AI harnesses. 1 skill, 23 commands, and curated anti-patterns for tektone frontend design."
+  },
+  "owner": {
+    "name": "Paul Bakaus",
+    "email": "paul@paulbakaus.com"
+  },
+  "plugins": [
+    {
+      "name": "tektone",
+      "description": "Design fluency for frontend development. 1 skill with 23 commands (/tektone polish, /tektone audit, /tektone critique, etc.) and curated anti-pattern detection.",
+      "version": "3.5.0",
+      "author": {
+        "name": "Paul Bakaus",
+        "email": "paul@paulbakaus.com"
+      },
+      "source": "./plugin",
+      "category": "design",
+      "homepage": "https://tektone.design",
+      "tags": ["design", "frontend", "ui", "ux", "skills", "commands"]
+    }
+  ]
+}

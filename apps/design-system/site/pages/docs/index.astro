@@ -1,0 +1,287 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
+import '../../styles/sub-pages.css';
+import '../../styles/docs-kinpaku.css';
+import {
+  SKILL_CATEGORIES,
+  CATEGORY_ORDER,
+  CATEGORY_LABELS,
+} from '../../data/sub-pages-data';
+
+const entries = await getCollection('skills');
+
+const tutorials = (await getCollection('tutorials'))
+  .sort((a, b) => a.data.order - b.data.order);
+
+const taglineFor = (slug: string) =>
+  entries.find(e => e.id === slug)?.data.tagline ?? '';
+
+const grouped: Record<string, { slug: string; tagline: string }[]> = {};
+for (const cat of CATEGORY_ORDER) {
+  grouped[cat] = entries
+    .filter(e => SKILL_CATEGORIES[e.id] === cat)
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(e => ({ slug: e.id, tagline: e.data.tagline }));
+}
+
+const session = [
+  { slug: 'shape', verb: 'Planejar' },
+  { slug: 'craft', verb: 'Construir' },
+  { slug: 'critique', verb: 'Revisar' },
+  { slug: 'polish', verb: 'Refinar' },
+];
+
+const startSteps = [
+  {
+    label: 'Instalar',
+    command: 'npx tektone skills install',
+    line: 'Rode isto a partir da raiz do projeto e recarregue sua ferramenta de código com IA.',
+  },
+  {
+    label: 'Definir contexto',
+    command: '/tektone init',
+    line: 'Responda à breve entrevista de setup. Diga sim quando ela oferecer o DESIGN.md.',
+  },
+  {
+    label: 'Experimentar',
+    command: '/tektone polish the pricing page',
+    line: 'Escolha qualquer página ou componente que já exista.',
+  },
+];
+
+const choices = [
+  {
+    need: 'Configurar um projeto',
+    command: '/tektone init',
+    href: '/docs/init',
+    line: 'Crie o PRODUCT.md e o DESIGN.md.',
+  },
+  {
+    need: 'Melhorar uma página existente',
+    command: '/tektone polish',
+    href: '/docs/polish',
+    line: 'Ajuste espaçamento, tipografia, estados, copy e consistência.',
+  },
+  {
+    need: 'Encontrar problemas de design',
+    command: '/tektone critique',
+    href: '/docs/critique',
+    line: 'Receba os problemas de design de maior prioridade.',
+  },
+  {
+    need: 'Verificar a qualidade da implementação',
+    command: '/tektone audit',
+    href: '/docs/audit',
+    line: 'Verifique acessibilidade, responsividade, performance e os achados do detector.',
+  },
+  {
+    need: 'Apontar para a UI no navegador',
+    command: '/tektone live',
+    href: '/docs/live',
+    line: 'Escolha um elemento, gere variantes, aceite uma no código.',
+  },
+  {
+    need: 'Construir um novo recurso',
+    command: '/tektone craft',
+    href: '/docs/craft',
+    line: 'Planeje, construa e verifique o recurso visualmente.',
+  },
+];
+
+const chains: { id: string; a: string; b: string; arrow: string; line: string }[] = [
+  { id: 'bolder-quieter', a: 'bolder', b: 'quieter', arrow: '↔', line: 'Duas metades da voz. Alta ou contida, nunca neutra.' },
+  { id: 'audit-harden', a: 'audit', b: 'harden', arrow: '→', line: 'Encontre os problemas técnicos. Depois corrija-os.' },
+  { id: 'critique-polish', a: 'critique', b: 'polish', arrow: '→', line: 'Revise o trabalho. Depois refine-o.' },
+  { id: 'shape-craft', a: 'shape', b: 'craft', arrow: '→', line: 'Planeje o recurso. Depois construa o plano.' },
+];
+---
+
+<Base
+  title="Docs | Tektone"
+  description="Comece a usar o /tektone: instale, rode o init, crie o contexto do projeto e escolha o comando certo para a tarefa."
+  activeNav="docs"
+  canonicalPath="/docs"
+  bodyClass="sub-page skills-layout-page docs-kinpaku kinpaku-chrome"
+>
+  <div class="skills-layout">
+    <DocsSidebar />
+
+    <div class="skills-main skills-main--docs-index">
+      <div class="docs-index">
+
+        <section class="docs-start-rail" aria-labelledby="docs-start-h">
+          <header class="docs-start-rail-head">
+            <h1 class="docs-start-rail-title" id="docs-start-h">Comece com <span>/tektone</span>.</h1>
+            <p class="docs-start-rail-lede">Instale, rode o setup e experimente um comando em uma página existente.</p>
+          </header>
+
+          <div class="docs-start-rail-sequence">
+            <div class="docs-start-rail-divider docs-start-rail-divider--top" aria-hidden="true">
+              <div class="ksd-divider ksd-divider--double-notch"></div>
+            </div>
+
+            <ol class="docs-start-rail-steps docs-start-rail-steps--number-gutter docs-start-rail-steps--inner-inset" aria-label="Passos de início rápido">
+              {startSteps.map((step, i) => (
+                <li class="docs-start-rail-step">
+                  <span class="docs-start-rail-num">{String(i + 1).padStart(2, "0")}</span>
+                  <span class="docs-start-rail-label">{step.label}</span>
+                  <code class="docs-start-rail-command">{step.command}</code>
+                  <span class="docs-start-rail-line">{step.line}</span>
+                </li>
+              ))}
+            </ol>
+
+            <div class="docs-start-rail-divider docs-start-rail-divider--bottom" aria-hidden="true">
+              <div class="ksd-divider ksd-divider--double-notch"></div>
+            </div>
+          </div>
+
+          <p class="docs-start-rail-note">Passo a passo completo: <a href="/tutorials/getting-started">Primeiros passos</a>.</p>
+        </section>
+
+        <section class="docs-chooser-section" aria-labelledby="docs-chooser-h">
+          <header class="docs-chooser-head">
+            <h2 class="docs-chooser-title" id="docs-chooser-h">Escolha um comando.</h2>
+          </header>
+
+          <div class="docs-chooser-list">
+            {choices.map(choice => (
+              <a class="docs-chooser-list-row" href={choice.href}>
+                <span class="docs-chooser-list-need">{choice.need}</span>
+                <span class="docs-chooser-list-command">{choice.command}</span>
+                <span class="docs-chooser-list-line">{choice.line}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <!-- Live mode: visual iteration -->
+        <section class="docs-live" aria-labelledby="docs-live-h">
+          <div class="docs-live-copy">
+            <h2 class="docs-live-title" id="docs-live-h">Itere onde você consegue ver.</h2>
+            <p class="docs-live-lede">Use o Live Mode quando um problema é mais fácil de apontar do que descrever. Escolha um elemento, gere variantes, aceite uma no código.</p>
+            <p class="docs-live-cta">
+              <a class="ks-button ks-button-primary" href="/docs/live">
+                Leia a documentação do live
+                <span class="ks-button-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 16 8" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M0 4h14M10 0l4 4-4 4"/></svg>
+                </span>
+              </a>
+            </p>
+          </div>
+
+          <figure class="docs-live-figure" aria-hidden="true">
+            <div class="docs-live-frame">
+              <div class="docs-live-chrome">
+                <span class="docs-live-dot"></span>
+                <span class="docs-live-dot"></span>
+                <span class="docs-live-dot"></span>
+                <span class="docs-live-url">localhost:4321</span>
+              </div>
+              <div class="docs-live-stage">
+                <div class="docs-live-target">
+                  <div class="docs-live-target-title">Título do hero</div>
+                  <div class="docs-live-target-sub">Variante 2 de 3</div>
+                </div>
+                <div class="docs-live-bar">
+                  <span class="docs-live-bar-prev">Anterior</span>
+                  <span class="docs-live-bar-counter">2 / 3</span>
+                  <span class="docs-live-bar-next">Próxima</span>
+                  <span class="docs-live-bar-divider"></span>
+                  <span class="docs-live-bar-accept">Aceitar</span>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </section>
+
+        <!-- A typical session: linear workflow -->
+        <section class="docs-flow-section">
+          <header class="docs-flow-head">
+            <h2 class="docs-flow-title">Caminho completo da sessão.</h2>
+            <p class="docs-flow-sub">Planejar, construir, revisar, refinar.</p>
+          </header>
+
+          <ol class="docs-flow" aria-label="Sessão típica">
+            {session.map((step, i) => (
+              <li class="docs-flow-step">
+                <a class="docs-flow-link" href={`/docs/${step.slug}`}>
+                  <span class="docs-flow-verb">{step.verb}</span>
+                  <span class="docs-flow-cmd">/tektone {step.slug}</span>
+                  <span class="docs-flow-tag">{taglineFor(step.slug)}</span>
+                </a>
+                {i < session.length - 1 && (
+                  <span class="docs-flow-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 8" fill="none" stroke="currentColor" stroke-width="1"><path d="M0 4h22M18 0l4 4-4 4"/></svg>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          <p class="docs-flow-alt">
+            Já está em produção? Use <a href="/docs/polish">/tektone polish</a> na página que precisa de ajustes, ou <a href="/docs/audit">/tektone audit</a> para verificações.
+          </p>
+        </section>
+
+        <!-- Pairs and chains: the schema -->
+        <section class="docs-chains-section">
+          <header class="docs-chains-head">
+            <h2 class="docs-chains-title">Pares de comandos úteis.</h2>
+            <p class="docs-chains-sub">Use estes quando uma passagem não basta.</p>
+          </header>
+
+          <div class="docs-chains-grid">
+            {chains.map(chain => (
+              <article class="docs-chain">
+                <p class="docs-chain-formula">
+                  <a class="docs-chain-cmd" href={`/docs/${chain.a}`}>{chain.a}</a>
+                  <span class="docs-chain-arrow" aria-hidden="true">{chain.arrow}</span>
+                  <a class="docs-chain-cmd" href={`/docs/${chain.b}`}>{chain.b}</a>
+                </p>
+                <p class="docs-chain-line">{chain.line}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <!-- Full reference: the cheatsheet -->
+        <section class="docs-reference-section" aria-labelledby="docs-reference-h">
+          <header class="docs-reference-head">
+            <h2 class="docs-reference-title" id="docs-reference-h">Referência completa de comandos.</h2>
+          </header>
+
+          <div class="docs-reference">
+            {CATEGORY_ORDER.map(cat => (
+              <div class="docs-reference-group" id={`category-${cat}`}>
+                <p class="docs-reference-cat">{CATEGORY_LABELS[cat]} <span class="docs-reference-count">{grouped[cat].length}</span></p>
+                <ul class="docs-reference-list">
+                  {grouped[cat].map(entry => (
+                    <li>
+                      <a class="docs-reference-row" href={`/docs/${entry.slug}`}>
+                        <span class="docs-reference-name">{entry.slug}</span>
+                        <span class="docs-reference-line">{entry.tagline}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    document.addEventListener('click', (e) => {
+      const toggle = e.target.closest('.skills-sidebar-toggle');
+      if (!toggle) return;
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+    });
+  </script>
+</Base>

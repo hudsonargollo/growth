@@ -1,0 +1,12 @@
+{
+  "name": "tektone",
+  "description": "Design fluency for frontend development. 1 skill with 23 commands (/tektone polish, /tektone audit, /tektone critique, etc.) and curated anti-pattern detection.",
+  "version": "3.5.0",
+  "author": {
+    "name": "Paul Bakaus",
+    "email": "paul@paulbakaus.com"
+  },
+  "homepage": "https://tektone.design",
+  "repository": "https://github.com/pbakaus/tektone",
+  "skills": "./.claude/skills/"
+}

@@ -1,0 +1,6 @@
+# robots.txt for tektone.design
+
+User-agent: *
+Allow: /
+
+Sitemap: https://tektone.design/sitemap.xml
