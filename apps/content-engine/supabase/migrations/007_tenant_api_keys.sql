@@ -1,2 +1,0 @@
--- Migration 007: VOIDED — API keys are stored in Cloudflare KV (binding: KV1), not in Supabase.
--- This file is intentionally empty.
