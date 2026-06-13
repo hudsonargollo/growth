@@ -10,8 +10,9 @@ YouTube growth automation — product mining, script generation, voiceover, edit
 | Backend  | Cloudflare Worker (Hono)                  |
 | Database | Supabase (PostgreSQL + Storage)           |
 | Cron     | Cloudflare Cron Triggers (`0 */4 * * *`)  |
-| LLM      | OpenAI `gpt-4o-mini`                      |
-| TTS      | ElevenLabs `eleven_multilingual_v2`       |
+| LLM      | Claude `claude-haiku-4-5` (OpenAI fallback) |
+| TTS      | ElevenLabs `eleven_multilingual_v2` · OpenAI · Google |
+| Mining   | SerpAPI · Amazon Creators · MercadoLibre (OAuth) |
 
 ## Live
 
@@ -37,12 +38,12 @@ apps/content-engine/
 
 | Service       | Route prefix          | Description                                                  |
 |---------------|-----------------------|--------------------------------------------------------------|
-| Mining        | `/api/mining`         | MercadoLibre product search, scoring, catalog management     |
-| Scripts       | `/api/scripts`        | Blueprint-driven YouTube script generation via OpenAI        |
-| Voiceover     | `/api/voiceover`      | ElevenLabs TTS → MP3 uploaded to Supabase Storage            |
-| Delivery      | `/api/delivery`       | WhatsApp Cloud API handoff to video editor                   |
+| Mining        | `/api/mining`         | Product mining across SerpAPI, Amazon Creators, and MercadoLibre; scoring + catalog management. Resilient: if a primary source is empty (e.g. SerpAPI out of credits or the ML token expired), it falls back to Amazon Creators so a run never dead-ends. |
+| Scripts       | `/api/scripts`        | Blueprint-driven YouTube script generation via Claude (LLM)  |
+| Voiceover     | `/api/voiceover`      | TTS (ElevenLabs / OpenAI / Google) → MP3 uploaded to Supabase Storage |
+| Delivery      | `/api/delivery`       | WhatsApp handoff to the video editor (Evolution API / WhatsApp Cloud) |
 | Comment Agent | `/api/comments`       | YouTube comment fetch, AI reply generation, human review     |
-| Credentials   | `/api/credentials`    | AES-GCM encrypted secret storage                             |
+| Credentials   | `/api/credentials`    | AES-GCM encrypted secret storage (keys resolved at runtime via `resolveKey`) |
 
 ## Local Development
 
@@ -84,24 +85,34 @@ npm run deploy             # wrangler deploy
 
 The worker serves the built client from `client/dist` via the `[assets]` binding, so a single deploy ships both frontend and API.
 
-## Secrets
+## Secrets & API keys
 
-Set all secrets via Wrangler before deploying:
+Most third-party keys can be set **either** as a Wrangler secret **or** through the in-app
+Settings page (stored AES-GCM-encrypted in KV and read at runtime via `resolveKey`). The few
+that must be Wrangler secrets are the database and the encryption key itself.
 
 ```bash
-# Database
+# Database (Wrangler secrets)
 wrangler secret put SUPABASE_URL
 wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+wrangler secret put CREDENTIALS_SECRET        # 32-byte hex — encrypts the in-app key store
 
-# Mining (MercadoLibre)
-wrangler secret put ML_APP_ID
+# LLM — scripts + comment replies (Claude is primary; OpenAI is a fallback)
+wrangler secret put ANTHROPIC_API_KEY
+wrangler secret put OPENAI_API_KEY            # optional fallback
+
+# Mining
+wrangler secret put SERPAPI_KEY               # blog reviews + (opt-in) review images
+wrangler secret put ML_APP_ID                 # MercadoLibre OAuth
 wrangler secret put ML_CLIENT_SECRET
-
-# Scripts + Comment Agent
-wrangler secret put OPENAI_API_KEY
+wrangler secret put ML_AFFILIATE_TAG          # optional
+wrangler secret put AMAZON_LWA_CLIENT_ID      # Amazon Creators (LWA)
+wrangler secret put AMAZON_LWA_CLIENT_SECRET
+wrangler secret put AMAZON_AFFILIATE_TAG      # or AMAZON_ASSOCIATE_TAG
 
 # Voiceover
 wrangler secret put ELEVENLABS_API_KEY
+wrangler secret put GOOGLE_API_KEY            # Google TTS (optional)
 
 # Delivery
 wrangler secret put WHATSAPP_TOKEN
@@ -111,18 +122,22 @@ wrangler secret put WHATSAPP_PHONE_NUMBER_ID
 wrangler secret put YOUTUBE_API_KEY
 wrangler secret put YOUTUBE_CHANNEL_ID        # or YOUTUBE_VIDEO_IDS="id1,id2,id3"
 wrangler secret put YOUTUBE_OAUTH_TOKEN       # optional — needed to post replies
-
-# Credentials encryption
-wrangler secret put CREDENTIALS_SECRET        # 32-byte hex
 ```
+
+> MercadoLibre OAuth issues a rotating refresh token (scope `offline_access read write`); the
+> worker refreshes the user token on 401 and falls back to the app token, then public search.
+> Connect/reconnect ML from the in-app Settings.
 
 ## Environment Variables (wrangler.toml)
 
 | Variable   | Default       | Description                                              |
 |------------|---------------|----------------------------------------------------------|
 | `NODE_ENV` | `production`  |                                                          |
-| `LLM_MODEL`| `gpt-4o-mini` | OpenAI model used for scripts and comment replies        |
+| `LLM_MODEL`| `claude-haiku-4-5-20251001` | Claude model used for scripts and comment replies |
 | `ML_SITE`  | `brazil`      | MercadoLibre site: `brazil` `argentina` `mexico` `chile` `colombia` |
+| `EVOLUTION_API_URL` | `https://evo.clubemkt.digital` | Evolution API base (WhatsApp delivery) |
+| `EVOLUTION_INSTANCE` | `FABRICADECONTEUDO` | Evolution instance name |
+| `MINING_REVIEW_IMAGES` | _(unset)_ | Opt-in (`true`) to fetch Google review images per product — costs one extra SerpAPI search each, so off by default |
 
 ## Cron
 
