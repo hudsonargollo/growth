@@ -7,7 +7,7 @@
     "dev": "vite --port 5175",
     "build": "vite build",
     "preview": "vite preview --port 5175",
-    "deploy": "vite build && wrangler pages deploy dist --project-name codigo-internacional"
+    "deploy": "vite build && CLOUDFLARE_ACCOUNT_ID=193882a3226d5fb9c3611ea50c95992e wrangler pages deploy dist --project-name codigo-internacional --branch main"
   },
   "dependencies": {
     "framer-motion": "^11.18.2",
