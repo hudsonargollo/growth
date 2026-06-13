@@ -28,12 +28,15 @@ Pass the target account explicitly when deploying, e.g. `CLOUDFLARE_ACCOUNT_ID=�
 
 ## Getting started
 
-Each app is self-contained — `cd` into it and follow its own `README.md`:
+The root **Growth Clube** app builds from this directory (`npm run build` → `./dist`,
+served by the `growth-clube` worker). The vendored design system is self-contained:
 
 ```bash
-cd apps/content-engine   && cat README.md   # active backend
 cd apps/design-system    && cat README.md   # tektone (3rd-party)
 ```
+
+For the full deployment map — repos, Cloudflare accounts, CI, secrets, domains —
+see **[`INFRASTRUCTURE.md`](INFRASTRUCTURE.md)**.
 
 ## Conventions
 
